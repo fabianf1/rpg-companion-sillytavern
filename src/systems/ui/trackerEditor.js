@@ -1476,8 +1476,8 @@ function renderHistoryPersistenceTab() {
     html += `<label for="rpg-history-persistence-enabled">Enable History Persistence</label>`;
     html += '</div>';
 
-    // External API Only toggle - only show for separate/external modes
-    if (generationMode === 'separate' || generationMode === 'external') {
+    // Send All Enabled toggle - only show for separate mode
+    if (generationMode === 'separate') {
         html += '<div class="rpg-editor-toggle-row" style="margin-top: 8px;">';
         html += `<input type="checkbox" id="rpg-history-send-all-enabled" ${historyPersistence.sendAllEnabledOnRefresh ? 'checked' : ''}>`;
         html += `<label for="rpg-history-send-all-enabled">Send All Enabled Stats on Refresh</label>`;
@@ -1631,8 +1631,7 @@ function setupHistoryPersistenceListeners() {
             enabled: false,
             messageCount: 5,
             injectionPosition: 'assistant_message_end',
-            contextPreamble: '',
-            externalApiOnly: false
+            contextPreamble: ''
         };
     }
 

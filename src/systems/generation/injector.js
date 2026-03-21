@@ -662,11 +662,11 @@ export async function onGenerationStarted(type, data, dryRun) {
         // });
     }
 
-    // For SEPARATE and EXTERNAL modes: Check if we need to commit extension data
+    // For SEPARATE mode: Check if we need to commit extension data
     // BUT: Only do this for the MAIN generation, not the tracker update generation
     // If isGenerating is true, this is the tracker update generation (second call), so skip flag logic
     // console.log('[RPG Companion DEBUG] Before generating:', lastGeneratedData.characterThoughts, ' , committed - ', committedTrackerData.characterThoughts);
-    if ((extensionSettings.generationMode === 'separate' || extensionSettings.generationMode === 'external') && !isGenerating) {
+    if (extensionSettings.generationMode === 'separate' && !isGenerating) {
         if (!lastActionWasSwipe) {
             // User sent a new message - commit lastGeneratedData before generation
             // console.log('[RPG Companion] 📝 COMMIT: New message - committing lastGeneratedData');
@@ -842,8 +842,8 @@ export async function onGenerationStarted(type, data, dryRun) {
             setExtensionPrompt('rpg-companion-zzz-cyoa', '', extension_prompt_types.IN_CHAT, 0, false);
         }
 
-    } else if (extensionSettings.generationMode === 'separate' || extensionSettings.generationMode === 'external') {
-        // In SEPARATE and EXTERNAL modes, inject the contextual summary for main roleplay generation
+    } else if (extensionSettings.generationMode === 'separate') {
+        // In SEPARATE mode, inject the contextual summary for main roleplay generation
         const contextSummary = generateContextualSummary();
 
         if (contextSummary) {
@@ -861,7 +861,7 @@ ${contextInstructionsText}
             if (!shouldSuppress) {
                 setExtensionPrompt('rpg-companion-context', wrappedContext, extension_prompt_types.IN_CHAT, 1, false);
             }
-            // console.log('[RPG Companion] Injected contextual summary for separate/external mode:', contextSummary);
+            // console.log('[RPG Companion] Injected contextual summary for separate mode:', contextSummary);
         } else {
             // Clear if no data yet
             setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, 1, false);
@@ -874,7 +874,7 @@ ${contextInstructionsText}
             const htmlPrompt = `\n- ${htmlPromptText}\n`;
 
             setExtensionPrompt('rpg-companion-html', htmlPrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected HTML prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected HTML prompt at depth 0 for separate mode');
         } else {
             // Clear HTML prompt if disabled
             setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, 0, false);
@@ -887,7 +887,7 @@ ${contextInstructionsText}
             const dialogueColoringPrompt = `\n- ${dialogueColoringPromptText}\n`;
 
             setExtensionPrompt('rpg-companion-dialogue-coloring', dialogueColoringPrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected Dialogue Coloring prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected Dialogue Coloring prompt at depth 0 for separate mode');
         } else {
             // Clear Dialogue Coloring prompt if disabled
             setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, 0, false);
@@ -900,7 +900,7 @@ ${contextInstructionsText}
             const deceptionPrompt = `\n- ${deceptionPromptText}\n`;
 
             setExtensionPrompt('rpg-companion-deception', deceptionPrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected Deception System prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected Deception System prompt at depth 0 for separate mode');
         } else {
             // Clear Deception System prompt if disabled
             setExtensionPrompt('rpg-companion-deception', '', extension_prompt_types.IN_CHAT, 0, false);
@@ -913,7 +913,7 @@ ${contextInstructionsText}
             const omnisciencePrompt = `\n${omnisciencePromptText}\n`;
 
             setExtensionPrompt('rpg-companion-omniscience', omnisciencePrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected Omniscience Filter prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected Omniscience Filter prompt at depth 0 for separate mode');
         } else {
             // Clear Omniscience Filter prompt if disabled
             setExtensionPrompt('rpg-companion-omniscience', '', extension_prompt_types.IN_CHAT, 0, false);
@@ -926,7 +926,7 @@ ${contextInstructionsText}
             const spotifyPrompt = `\n- ${spotifyPromptText} ${SPOTIFY_FORMAT_INSTRUCTION}\n`;
 
             setExtensionPrompt('rpg-companion-spotify', spotifyPrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected Spotify prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected Spotify prompt at depth 0 for separate mode');
         } else {
             // Clear Spotify prompt if disabled
             setExtensionPrompt('rpg-companion-spotify', '', extension_prompt_types.IN_CHAT, 0, false);
@@ -939,7 +939,7 @@ ${contextInstructionsText}
             const cyoaPrompt = `\n- ${cyoaPromptText}\n`;
 
             setExtensionPrompt('rpg-companion-zzz-cyoa', cyoaPrompt, extension_prompt_types.IN_CHAT, 0, false);
-            // console.log('[RPG Companion] Injected CYOA prompt at depth 0 for separate/external mode');
+            // console.log('[RPG Companion] Injected CYOA prompt at depth 0 for separate mode');
         } else {
             // Clear CYOA prompt if disabled
             setExtensionPrompt('rpg-companion-zzz-cyoa', '', extension_prompt_types.IN_CHAT, 0, false);

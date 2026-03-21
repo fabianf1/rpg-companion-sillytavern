@@ -768,6 +768,10 @@ export async function buildCombatSummaryPrompt(combatLog, result) {
  */
 export function parseEncounterJSON(response) {
     try {
+        // Retrieve the raw response string if response is an object with a content property (e.g., from some APIs)
+        if(response && typeof response === 'object' && typeof response.content === 'string') {
+            response = response.content;
+        }
         // Ensure response is a string
         if (!response || typeof response !== 'string') {
             console.error('[RPG Companion] parseEncounterJSON received non-string input:', typeof response);

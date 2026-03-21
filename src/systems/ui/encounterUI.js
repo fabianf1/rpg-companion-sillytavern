@@ -5,7 +5,6 @@
 
 import { getContext } from '../../../../../../extensions.js';
 import { chat, saveChatDebounced, characters, this_chid, user_avatar } from '../../../../../../../script.js';
-import { safeGenerateRaw } from '../../utils/responseExtractor.js';
 import { selected_group, getGroupMembers, groups } from '../../../../../../group-chats.js';
 import { executeSlashCommandsOnChatInput } from '../../../../../../../scripts/slash-commands.js';
 import { extensionSettings } from '../../core/state.js';
@@ -26,6 +25,7 @@ import {
     buildCombatSummaryPrompt,
     parseEncounterJSON
 } from '../generation/encounterPrompts.js';
+import { getCurrentProfile } from '../generation/apiClient.js';
 
 /**
  * EncounterModal class
@@ -82,10 +82,9 @@ export class EncounterModal {
             // Store request for potential regeneration
             this.lastRequest = { type: 'init', prompt: initPrompt };
 
-            const response = await safeGenerateRaw({
-                prompt: initPrompt,
-                quietToLoud: false
-            });
+            // Generate response in separate mode
+            let profile = getCurrentProfile();
+            let response = await getContext().ConnectionManagerRequestService.sendRequest(profile, initPrompt)
 
             if (!response) {
                 this.showErrorWithRegenerate('No response received from AI. The model may be unavailable.');
@@ -817,10 +816,8 @@ export class EncounterModal {
             // Store request for potential regeneration
             this.lastRequest = { type: 'action', action, prompt: actionPrompt };
 
-            const response = await safeGenerateRaw({
-                prompt: actionPrompt,
-                quietToLoud: false
-            });
+            const profile = getCurrentProfile();
+            const response = await getContext().ConnectionManagerRequestService.sendRequest(profile, actionPrompt)
 
             if (!response) {
                 this.showErrorWithRegenerate('No response received from AI. The model may be unavailable.');
@@ -1079,14 +1076,12 @@ export class EncounterModal {
             // Generate summary
             const summaryPrompt = await buildCombatSummaryPrompt(currentEncounter.encounterLog, result);
 
-            const summaryResponse = await safeGenerateRaw({
-                prompt: summaryPrompt,
-                quietToLoud: false
-            });
+            const profile = getCurrentProfile();
+            const summaryResponse = await getContext().ConnectionManagerRequestService.sendRequest(profile, summaryPrompt)
 
             if (summaryResponse) {
                 // Extract summary (remove [FIGHT CONCLUDED] tag)
-                const summary = summaryResponse.replace(/\[FIGHT CONCLUDED\]\s*/i, '').trim();
+                const summary = summaryResponse.content.replace(/\[FIGHT CONCLUDED\]\s*/i, '').trim();
 
                 // Determine which character should speak the summary
                 const speakerName = this.getCombatNarrator();

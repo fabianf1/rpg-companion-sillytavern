@@ -117,7 +117,7 @@ export function onMessageSent() {
 
     // Note: FAB spinning is NOT shown for together mode since no extra API request is made
     // The RPG data comes embedded in the main response
-    // FAB spinning is handled by apiClient.js for separate/external modes when updateRPGData() is called
+    // FAB spinning is handled by apiClient.js for separate mode when updateRPGData() is called
 
     // For separate mode with auto-update disabled, commit displayed tracker
     if (extensionSettings.generationMode === 'separate' && !extensionSettings.autoUpdate) {
@@ -247,8 +247,8 @@ export async function onMessageReceived(data) {
             // Save to chat metadata
             saveChatData();
         }
-    } else if (extensionSettings.generationMode === 'separate' || extensionSettings.generationMode === 'external') {
-        // In separate/external mode, also parse Spotify URLs from the main roleplay response
+    } else if (extensionSettings.generationMode === 'separate') {
+        // In separate mode, also parse Spotify URLs from the main roleplay response
         const lastMessage = chat[chat.length - 1];
         if (lastMessage && !lastMessage.is_user) {
             const responseText = lastMessage.mes;
@@ -263,7 +263,7 @@ export async function onMessageReceived(data) {
             }
         }
 
-        // Trigger auto-update if enabled (for both separate and external modes)
+        // Trigger auto-update if enabled (for separate mode)
         // Only trigger if this is a newly generated message, not loading chat history
         if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
             setTimeout(async () => {

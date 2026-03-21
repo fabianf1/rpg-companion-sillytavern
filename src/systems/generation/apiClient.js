@@ -5,7 +5,7 @@
 
 import { chat, eventSource } from '../../../../../../../script.js';
 import { executeSlashCommandsOnChatInput } from '../../../../../../../scripts/slash-commands.js';
-import { safeGenerateRaw, extractTextFromResponse } from '../../utils/responseExtractor.js';
+import { getContext } from '../../../../../../extensions.js';
 
 // Custom event name for when RPG Companion finishes updating tracker data
 // Other extensions can listen for this event to know when RPG Companion is done
@@ -41,122 +41,7 @@ import { updateStripWidgets } from '../ui/desktop.js';
 // Store the original preset name to restore after tracker generation
 let originalPresetName = null;
 
-/**
- * Generates tracker data using an external OpenAI-compatible API.
- * Used when generationMode is 'external'.
- *
- * @param {Array<{role: string, content: string}>} messages - Array of message objects for the API
- * @returns {Promise<string>} The generated response content
- * @throws {Error} If the API call fails or configuration is invalid
- */
-export async function generateWithExternalAPI(messages) {
-    const { baseUrl, model, maxTokens, temperature } = extensionSettings.externalApiSettings || {};
-    // Retrieve API key from secure storage (not shared extension settings)
-    const apiKey = localStorage.getItem('rpg_companion_external_api_key');
 
-    // Validate required settings
-    if (!baseUrl || !baseUrl.trim()) {
-        throw new Error('External API base URL is not configured');
-    }
-    if (!model || !model.trim()) {
-        throw new Error('External API model is not configured');
-    }
-
-    // Normalize base URL (remove trailing slash if present)
-    const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, '');
-    const endpoint = `${normalizedBaseUrl}/chat/completions`;
-
-    // console.log(`[RPG Companion] Calling external API: ${normalizedBaseUrl} with model: ${model}`);
-
-    // Prepare headers - only include Authorization if API key is provided
-    const headers = {
-        'Content-Type': 'application/json'
-    };
-
-    if (apiKey && apiKey.trim()) {
-        headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-    }
-
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                model: model.trim(),
-                messages: messages,
-                max_tokens: maxTokens || 2048,
-                temperature: temperature ?? 0.7
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage = `External API error: ${response.status} ${response.statusText}`;
-            try {
-                const errorJson = JSON.parse(errorText);
-                if (errorJson.error?.message) {
-                    errorMessage = `External API error: ${errorJson.error.message}`;
-                }
-            } catch (e) {
-                // If parsing fails, use the raw text if it's short enough
-                if (errorText.length < 200) {
-                    errorMessage = `External API error: ${errorText}`;
-                }
-            }
-            throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-
-        const content = extractTextFromResponse(data);
-        if (!content || !content.trim()) {
-            throw new Error('Invalid response format from external API — no text content found');
-        }
-        // console.log('[RPG Companion] External API response received successfully');
-
-        return content;
-    } catch (error) {
-        if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-            throw new Error(`CORS Access Blocked: This API endpoint (${normalizedBaseUrl}) does not allow direct access from a browser. This is a browser security restriction (CORS), not a bug in the extension. Please use an endpoint that supports CORS (like OpenRouter or a local proxy) or use SillyTavern's internal API system (Separate Mode).`);
-        }
-        throw error;
-    }
-}
-
-/**
- * Tests the external API connection with a simple request.
- * @returns {Promise<{success: boolean, message: string, model?: string}>}
- */
-export async function testExternalAPIConnection() {
-    const { baseUrl, model } = extensionSettings.externalApiSettings || {};
-    const apiKey = localStorage.getItem('rpg_companion_external_api_key');
-
-    if (!baseUrl || !model) {
-        return {
-            success: false,
-            message: 'Please fill in all required fields (Base URL and Model). API Key is optional for local servers.'
-        };
-    }
-
-    try {
-        const testMessages = [
-            { role: 'user', content: 'Respond with exactly: "Connection successful"' }
-        ];
-
-        const response = await generateWithExternalAPI(testMessages);
-
-        return {
-            success: true,
-            message: `Connection successful! Model: ${model}`,
-            model: model
-        };
-    } catch (error) {
-        return {
-            success: false,
-            message: error.message || 'Connection failed'
-        };
-    }
-}
 
 /**
  * Gets the current preset name using the /preset command
@@ -207,6 +92,61 @@ export async function switchToPreset(presetName) {
     }
 }
 
+/**
+ * Checks if a connection profile with the given name exists in the Connection Manager.
+ * @param {string} profileName - Name of the profile to check
+ * @returns {boolean} True if the profile exists
+ */
+export function isConnectionProfileAvailable(profileName) {
+    try {
+        const context = getContext();
+        const stExtSettings = context.extension_settings || context.extensionSettings;
+        const profiles = stExtSettings?.connectionManager?.profiles;
+        if (!Array.isArray(profiles)) return false;
+
+        return profiles.some(p => p.id === profileName);
+    } catch {
+        return false;
+    }
+}
+/**
+ * Gets all available connection profiles from the Connection Manager.
+ * @returns {Array<{name: string, id: string}>} Array of profile objects with name and id, empty if Connection Manager is not available
+ */
+export function getAvailableConnectionProfiles() {
+    try {
+        const context = getContext();
+        const stExtSettings = context.extension_settings || context.extensionSettings;
+        const profiles = stExtSettings?.connectionManager?.profiles;
+        
+        if (!Array.isArray(profiles)) return [];
+        return profiles.sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+        return [];
+    }
+}
+
+/**
+ *  Retrieves the current profile to be used for tracker generation, based on extension settings and availability.
+ *  @returns {string|null} The profile ID to use for generation, or null if no valid profile is found
+ */
+export function getCurrentProfile() {
+    let profile  =  getContext().extensionSettings.connectionManager.selectedProfile;
+    // Check if the profile specified in settings is available and switch to it for generation if needed
+    if (extensionSettings.connectionProfile && extensionSettings.connectionProfile.trim() !== '') {
+        if (isConnectionProfileAvailable(extensionSettings.connectionProfile)) {
+            profile = extensionSettings.connectionProfile;
+        } else {
+            console.warn(`[RPG Companion] Connection profile "${extensionSettings.connectionProfile}" not found, using current connection`);
+        }
+    }
+    else{
+        console.log('[RPG Companion] No connection profile specified in settings, using current connection');
+    }
+
+    console.log(`[RPG Companion] Using profile "${profile}" for tracker generation`);
+    return profile;
+}
 
 /**
  * Updates RPG tracker data using separate API call (separate mode only).
@@ -228,12 +168,10 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
         return;
     }
 
-    if (extensionSettings.generationMode !== 'separate' && extensionSettings.generationMode !== 'external') {
-        // console.log('[RPG Companion] Not in separate or external mode, skipping manual update');
+    if (extensionSettings.generationMode !== 'separate') {
+        // console.log('[RPG Companion] Not in separate mode, skipping manual update');
         return;
     }
-
-    const isExternalMode = extensionSettings.generationMode === 'external';
 
     try {
         setIsGenerating(true);
@@ -248,19 +186,9 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
 
         const prompt = await generateSeparateUpdatePrompt();
 
-        // Generate response based on mode
-        let response;
-        if (isExternalMode) {
-            // External mode: Use external OpenAI-compatible API directly
-            // console.log('[RPG Companion] Using external API for tracker generation');
-            response = await generateWithExternalAPI(prompt);
-        } else {
-            // Separate mode: Use SillyTavern's generateRaw (with extended thinking fallback)
-            response = await safeGenerateRaw({
-                prompt: prompt,
-                quietToLoud: false
-            });
-        }
+        // Generate response in separate mode
+        let profile = getCurrentProfile();
+        let response = await getContext().ConnectionManagerRequestService.sendRequest(profile, prompt)
 
         if (response) {
             // console.log('[RPG Companion] Raw AI response:', response);
@@ -376,9 +304,6 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
 
     } catch (error) {
         console.error('[RPG Companion] Error updating RPG data:', error);
-        if (isExternalMode) {
-            toastr.error(error.message, 'RPG Companion External API Error');
-        }
     } finally {
         setIsGenerating(false);
         setFabLoadingState(false); // Stop spinning FAB on mobile

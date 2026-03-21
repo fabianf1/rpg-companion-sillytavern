@@ -134,6 +134,18 @@ export function loadSettings() {
                 settingsChanged = true;
             }
 
+            // Migration to version 6
+            if (currentVersion < 6) {
+                // Remove externalApiSettings from settings
+                if(extensionSettings.externalApiSettings){
+                    delete extensionSettings.externalApiSettings;
+                    localStorage.removeItem('rpg_companion_external_api_key'); // Clear the API key
+                }
+
+                //extensionSettings.settingsVersion = 6; // During development keep disabled
+                settingsChanged = true;
+            }
+
             // Save migrated settings
             if (settingsChanged) {
                 saveSettings();

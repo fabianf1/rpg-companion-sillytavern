@@ -15,6 +15,7 @@ export let extensionSettings = {
     autoUpdate: false,
     updateDepth: 4, // How many messages to include in the context
     generationMode: 'together', // 'separate' or 'together' - whether to generate with main response or separately
+    connectionProfile: '', // Connection Manager profile name for tracker generation (empty = use current)
     showUserStats: true,
     showInfoBox: true,
     showCharacterThoughts: true,
@@ -274,14 +275,6 @@ export let extensionSettings = {
     // Auto avatar generation settings
     autoGenerateAvatars: true, // Master toggle for auto-generating avatars
     avatarLLMCustomInstruction: '', // Custom instruction for LLM prompt generation
-    // External API settings for 'external' generation mode
-    externalApiSettings: {
-        baseUrl: '',           // OpenAI-compatible API base URL (e.g., "https://api.openai.com/v1")
-        // apiKey is NOT stored here for security. It is stored in localStorage('rpg_companion_api_key')
-        model: '',             // Model identifier (e.g., "gpt-4o-mini")
-        maxTokens: 8192,       // Maximum tokens for generation
-        temperature: 0.7       // Temperature setting for generation
-    },
     // Lock state for tracker items (v3 JSON format feature)
     lockedItems: {
         stats: [],              // Array of locked stat IDs (e.g., ["health", "satiety"])

@@ -10,13 +10,12 @@
  */
 
 import { characters, this_chid } from '../../../../../../../script.js';
-import { safeGenerateRaw } from '../../utils/responseExtractor.js';
 import { executeSlashCommandsOnChatInput } from '../../../../../../../scripts/slash-commands.js';
 import { selected_group, getGroupMembers } from '../../../../../../group-chats.js';
 import { extensionSettings, sessionAvatarPrompts, setSessionAvatarPrompt } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
 import { generateAvatarPromptGenerationPrompt } from '../generation/promptBuilder.js';
-import { getCurrentPresetName, switchToPreset, generateWithExternalAPI } from '../generation/apiClient.js';
+import { getCurrentProfile } from '../generation/apiClient.js';
 
 // Generation state - tracks characters currently being generated
 const pendingGenerations = new Set();
@@ -249,20 +248,13 @@ async function generateAvatarPrompt(characterName) {
         // console.log('[RPG Avatar] Generating LLM prompt for:', characterName);
 
         const promptMessages = await generateAvatarPromptGenerationPrompt(characterName);
-        let response;
 
-        if (extensionSettings.generationMode === 'external') {
-            // console.log('[RPG Avatar] Using external API for avatar prompt generation');
-            response = await generateWithExternalAPI(promptMessages);
-        } else {
-            response = await safeGenerateRaw({
-                prompt: promptMessages,
-                quietToLoud: false
-            });
-        }
+        // Generate response in separate mode
+        let profile = getCurrentProfile();
+        let response = await getContext().ConnectionManagerRequestService.sendRequest(profile, promptMessages)
 
         if (response) {
-            const prompt = response.trim();
+            const prompt = response.content.trim();
             // console.log(`[RPG Avatar] Generated prompt for ${characterName}:`, prompt);
 
             // Store prompt in session storage

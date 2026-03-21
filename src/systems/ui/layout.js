@@ -435,7 +435,6 @@ export function updateGenerationModeUI() {
         // In "together" mode, manual update button is hidden
         $('#rpg-manual-update').hide();
         $('#rpg-strip-refresh').hide();
-        $('#rpg-external-api-settings').slideUp(200);
         $('#rpg-separate-mode-settings').slideUp(200);
         // Hide auto-update toggle (not applicable in together mode)
         $('#rpg-auto-update-container').slideUp(200);
@@ -443,17 +442,8 @@ export function updateGenerationModeUI() {
         // In "separate" mode, manual update button is visible
         $('#rpg-manual-update').show();
         $('#rpg-strip-refresh').show();
-        $('#rpg-external-api-settings').slideUp(200);
         $('#rpg-separate-mode-settings').slideDown(200);
         // Show auto-update toggle
-        $('#rpg-auto-update-container').slideDown(200);
-    } else if (extensionSettings.generationMode === 'external') {
-        // In "external" mode, manual update button is visible AND both settings are shown
-        $('#rpg-manual-update').show();
-        $('#rpg-strip-refresh').show();
-        $('#rpg-external-api-settings').slideDown(200);
-        $('#rpg-separate-mode-settings').slideDown(200);
-        // Show auto-update toggle for external mode too
         $('#rpg-auto-update-container').slideDown(200);
     }
 }

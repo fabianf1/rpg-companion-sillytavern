@@ -157,7 +157,7 @@ function debugLog(message, data = null) {
  * @param {string} responseText - The raw AI response text
  * @returns {{userStats: string|null, infoBox: string|null, characterThoughts: string|null}} Parsed tracker data
  */
-export function parseResponse(responseText) {
+export function parseResponse(response) {
     const result = {
         userStats: null,
         infoBox: null,
@@ -166,13 +166,11 @@ export function parseResponse(responseText) {
 
     // DEBUG: Log full response for troubleshooting
     debugLog('[RPG Parser] ==================== PARSING AI RESPONSE ====================');
-    debugLog('[RPG Parser] Response length:', responseText.length + ' chars');
-    debugLog('[RPG Parser] First 500 chars:', responseText.substring(0, 500));
+    debugLog('[RPG Parser] Response Raw:', response);
 
     // Remove content inside thinking tags first (model's internal reasoning)
     // This prevents parsing code blocks from the model's thinking process
-    let cleanedResponse = responseText.replace(/<think>[\s\S]*?<\/think>/gi, '');
-    cleanedResponse = cleanedResponse.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+    let cleanedResponse = response.content;
     debugLog('[RPG Parser] Removed thinking tags, new length:', cleanedResponse.length + ' chars');
 
     // Remove "FORMAT:" markers that the model might accidentally output

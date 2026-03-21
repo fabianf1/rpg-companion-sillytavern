@@ -54,7 +54,7 @@ import {
     generateSeparateUpdatePrompt
 } from './src/systems/generation/promptBuilder.js';
 import { parseResponse, parseUserStats } from './src/systems/generation/parser.js';
-import { updateRPGData, testExternalAPIConnection } from './src/systems/generation/apiClient.js';
+import { updateRPGData, getAvailableConnectionProfiles  } from './src/systems/generation/apiClient.js';
 import { onGenerationStarted } from './src/systems/generation/injector.js';
 
 // Rendering modules
@@ -249,6 +249,33 @@ async function addExtensionSettings() {
 }
 
 /**
+ * Populates the Connection Profile dropdown from the Connection Manager extension.
+ */
+function populateConnectionProfileDropdown() {
+    const $select = $('#rpg-connection-profile');
+    if (!$select.length) return;
+
+    const currentValue = extensionSettings.connectionProfile || '';
+    $select.empty();
+    $select.append('<option value="">Use Current</option>');
+
+    const profiles = getAvailableConnectionProfiles();
+    console.log('[RPG Companion] Available connection profiles:', profiles);
+    for (const profile of profiles) {
+        $select.append($('<option>').val(profile.id).text(profile.name));
+    }
+
+    // Restore saved value; if saved profile no longer exists, reset
+    if (currentValue && profiles.some(p => p.id === currentValue)) {
+        $select.val(currentValue);
+    } else if (currentValue && !profiles.some(p => p.id === currentValue)) {
+        extensionSettings.connectionProfile = '';
+        saveSettings();
+        $select.val('');
+    }
+}
+
+/**
  * Initializes the UI for the extension.
  */
 async function initUI() {
@@ -411,6 +438,13 @@ async function initUI() {
 
     $('#rpg-toggle-narrator').on('change', function() {
         extensionSettings.narratorMode = $(this).prop('checked');
+        saveSettings();
+    });
+
+    // Connection Profile dropdown
+    $('#rpg-connection-profile').on('change', function() {
+        extensionSettings.connectionProfile = String($(this).val());
+        console.log('[RPG Companion] Connection profile changed to:', extensionSettings.connectionProfile);
         saveSettings();
     });
 
@@ -943,99 +977,6 @@ async function initUI() {
         saveSettings();
     });
 
-    // External API settings event handlers
-    $('#rpg-external-base-url').on('change', function() {
-        if (!extensionSettings.externalApiSettings) {
-            extensionSettings.externalApiSettings = {
-                baseUrl: '', apiKey: '', model: '', maxTokens: 8192, temperature: 0.7
-            };
-        }
-        extensionSettings.externalApiSettings.baseUrl = String($(this).val()).trim();
-        saveSettings();
-    });
-
-    $('#rpg-external-api-key').on('change', function() {
-        // Securely store API key in localStorage instead of shared extension settings
-        const apiKey = String($(this).val()).trim();
-        localStorage.setItem('rpg_companion_external_api_key', apiKey);
-
-        // Ensure the externalApiSettings object exists, but don't store the key in it
-        if (!extensionSettings.externalApiSettings) {
-            extensionSettings.externalApiSettings = {
-                baseUrl: '', model: '', maxTokens: 8192, temperature: 0.7
-            };
-            saveSettings();
-        }
-    });
-
-    $('#rpg-external-model').on('change', function() {
-        if (!extensionSettings.externalApiSettings) {
-            extensionSettings.externalApiSettings = {
-                baseUrl: '', apiKey: '', model: '', maxTokens: 8192, temperature: 0.7
-            };
-        }
-        extensionSettings.externalApiSettings.model = String($(this).val()).trim();
-        saveSettings();
-    });
-
-    $('#rpg-external-max-tokens').on('change', function() {
-        if (!extensionSettings.externalApiSettings) {
-            extensionSettings.externalApiSettings = {
-                baseUrl: '', apiKey: '', model: '', maxTokens: 8192, temperature: 0.7
-            };
-        }
-        extensionSettings.externalApiSettings.maxTokens = parseInt(String($(this).val()));
-        saveSettings();
-    });
-
-    $('#rpg-external-temperature').on('change', function() {
-        if (!extensionSettings.externalApiSettings) {
-            extensionSettings.externalApiSettings = {
-                baseUrl: '', apiKey: '', model: '', maxTokens: 8192, temperature: 0.7
-            };
-        }
-        extensionSettings.externalApiSettings.temperature = parseFloat(String($(this).val()));
-        saveSettings();
-    });
-
-    $('#rpg-toggle-api-key-visibility').on('click', function() {
-        const $input = $('#rpg-external-api-key');
-        const type = $input.attr('type') === 'password' ? 'text' : 'password';
-        $input.attr('type', type);
-        $(this).find('i').toggleClass('fa-eye fa-eye-slash');
-    });
-
-    $('#rpg-test-external-api').on('click', async function() {
-        const $result = $('#rpg-external-api-test-result');
-        const $btn = $(this);
-        const originalText = $btn.html();
-
-        $btn.html('<i class="fa-solid fa-spinner fa-spin"></i> Testing...').prop('disabled', true);
-        $result.hide().removeClass('rpg-success-message rpg-error-message');
-
-        try {
-            const result = await testExternalAPIConnection();
-
-            if (result.success) {
-                $result.addClass('rpg-success-message')
-                    .html(`<i class="fa-solid fa-check-circle"></i> ${result.message}`)
-                    .slideDown();
-                toastr.success(result.message);
-            } else {
-                $result.addClass('rpg-error-message')
-                    .html(`<i class="fa-solid fa-exclamation-circle"></i> ${result.message}`)
-                    .slideDown();
-                toastr.error(result.message);
-            }
-        } catch (error) {
-            $result.addClass('rpg-error-message')
-                .html(`<i class="fa-solid fa-exclamation-circle"></i> Error: ${error.message}`)
-                .slideDown();
-        } finally {
-            $btn.html(originalText).prop('disabled', false);
-        }
-    });
-
     // Initialize UI state (enable/disable is in Extensions tab)
     $('#rpg-toggle-auto-update').prop('checked', extensionSettings.autoUpdate);
     $('#rpg-position-select').val(extensionSettings.panelPosition);
@@ -1148,19 +1089,7 @@ async function initUI() {
     $('#rpg-custom-highlight-opacity').val(extensionSettings.customColors.highlightOpacity ?? 100);
     $('#rpg-custom-highlight-opacity-value').text((extensionSettings.customColors.highlightOpacity ?? 100) + '%');
 
-    // Initialize External API settings values
-    if (extensionSettings.externalApiSettings) {
-        $('#rpg-external-base-url').val(extensionSettings.externalApiSettings.baseUrl || '');
-
-        // Load API Key from secure localStorage
-        const storedApiKey = localStorage.getItem('rpg_companion_external_api_key') || '';
-        $('#rpg-external-api-key').val(storedApiKey);
-
-        $('#rpg-external-model').val(extensionSettings.externalApiSettings.model || '');
-        $('#rpg-external-max-tokens').val(extensionSettings.externalApiSettings.maxTokens || 8192);
-        $('#rpg-external-temperature').val(extensionSettings.externalApiSettings.temperature ?? 0.7);
-    }
-
+    populateConnectionProfileDropdown();
     $('#rpg-generation-mode').val(extensionSettings.generationMode);
     $('#rpg-skip-guided-mode').val(extensionSettings.skipInjectionsForGuided);
 
@@ -1357,6 +1286,10 @@ jQuery(async () => {
                 [event_types.USER_MESSAGE_RENDERED]: updatePersonaAvatar,
                 [event_types.SETTINGS_UPDATED]: updatePersonaAvatar
             });
+            // Re-populate connection profile dropdown when profiles are created/deleted/updated
+            eventSource.on(event_types.CONNECTION_PROFILE_CREATED, () => populateConnectionProfileDropdown());
+            eventSource.on(event_types.CONNECTION_PROFILE_DELETED, () => populateConnectionProfileDropdown());
+            eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, () => populateConnectionProfileDropdown());
         } catch (error) {
             console.error('[RPG Companion] Event registration failed:', error);
             throw error; // This is critical - can't continue without events
