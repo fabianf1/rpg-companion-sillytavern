@@ -7,7 +7,6 @@ import { saveSettingsDebounced, chat_metadata, saveChatDebounced } from '../../.
 import { getContext } from '../../../../../extensions.js';
 import {
     extensionSettings,
-    setExtensionSettings,
     updateExtensionSettings,
     FEATURE_FLAGS
 } from './state.js';
@@ -208,19 +207,6 @@ export function saveSettings() {
  * Saves RPG data to the current chat's metadata.
  */
 export function saveChatData() {
-    if (!chat_metadata) {
-        return;
-    }
-
-    // Tracker data is now persisted in message swipes (message.extra.rpg_companion_swipes)
-    // We only save working settings here
-    chat_metadata.rpg_companion = {
-        userStats: extensionSettings.userStats,
-        classicStats: extensionSettings.classicStats,
-        quests: extensionSettings.quests,
-        timestamp: Date.now()
-    };
-
     saveChatDebounced();
 }
 
@@ -327,72 +313,72 @@ export function updateMessageSwipeData() {
  * Automatically migrates v1 inventory to v2 format if needed.
  */
 export function loadChatData() {
-    if (!chat_metadata || !chat_metadata.rpg_companion) {
-        console.log('[RPG Companion] No chat metadata found, using default chat data');
-        // Reset to defaults if no data exists
-        updateExtensionSettings({
-            userStats: {
-                health: 100,
-                satiety: 100,
-                energy: 100,
-                hygiene: 100,
-                arousal: 0,
-                mood: '😐',
-                conditions: 'None',
-                // Use v2 inventory format for defaults
-                inventory: {
-                    version: 2,
-                    onPerson: "None",
-                    stored: {},
-                    assets: "None"
-                }
-            },
-            quests: {
-                main: "None",
-                optional: []
-            }
-        });
-        return;
-    }
-    console.log('[RPG Companion] Loading chat data from metadata');
+    // if (!chat_metadata || !chat_metadata.rpg_companion) {
+    //     console.log('[RPG Companion] No chat metadata found, using default chat data');
+    //     // Reset to defaults if no data exists
+    //     updateExtensionSettings({
+    //         userStats: {
+    //             health: 100,
+    //             satiety: 100,
+    //             energy: 100,
+    //             hygiene: 100,
+    //             arousal: 0,
+    //             mood: '😐',
+    //             conditions: 'None',
+    //             // Use v2 inventory format for defaults
+    //             inventory: {
+    //                 version: 2,
+    //                 onPerson: "None",
+    //                 stored: {},
+    //                 assets: "None"
+    //             }
+    //         },
+    //         quests: {
+    //             main: "None",
+    //             optional: []
+    //         }
+    //     });
+    //     return;
+    // }
+    // console.log('[RPG Companion] Loading chat data from metadata');
 
-    const savedData = chat_metadata.rpg_companion;
+    // const savedData = chat_metadata.rpg_companion;
 
-    // Restore stats
-    if (savedData.userStats) {
-        extensionSettings.userStats = { ...savedData.userStats };
-    }
+    // // Restore stats
+    // if (savedData.userStats) {
+    //     extensionSettings.userStats = { ...savedData.userStats };
+    // }
 
-    // Restore classic stats
-    if (savedData.classicStats) {
-        extensionSettings.classicStats = { ...savedData.classicStats };
-    }
+    // // Restore classic stats
+    // if (savedData.classicStats) {
+    //     extensionSettings.classicStats = { ...savedData.classicStats };
+    // }
 
-    // Restore quests
-    if (savedData.quests) {
-        extensionSettings.quests = { ...savedData.quests };
-    } else {
-        // Initialize with defaults if not present
-        extensionSettings.quests = {
-            main: "None",
-            optional: []
-        };
-    }
+    // // Restore quests
+    // if (savedData.quests) {
+    //     extensionSettings.quests = { ...savedData.quests };
+    // } else {
+    //     // Initialize with defaults if not present
+    //     extensionSettings.quests = {
+    //         main: "None",
+    //         optional: []
+    //     };
+    // }
 
-    // Migrate inventory in chat data if feature flag enabled
-    if (FEATURE_FLAGS.useNewInventory && extensionSettings.userStats.inventory) {
-        const migrationResult = migrateInventory(extensionSettings.userStats.inventory);
-        if (migrationResult.migrated) {
-            // console.log(`[RPG Companion] Chat inventory migrated from ${migrationResult.source} to v2 format`);
-            extensionSettings.userStats.inventory = migrationResult.inventory;
-            saveChatData(); // Persist migrated inventory to chat metadata
-        }
-    }
+    // // Migrate inventory in chat data if feature flag enabled
+    // if (FEATURE_FLAGS.useNewInventory && extensionSettings.userStats.inventory) {
+    //     const migrationResult = migrateInventory(extensionSettings.userStats.inventory);
+    //     if (migrationResult.migrated) {
+    //         // console.log(`[RPG Companion] Chat inventory migrated from ${migrationResult.source} to v2 format`);
+    //         extensionSettings.userStats.inventory = migrationResult.inventory;
+    //         saveChatData(); // Persist migrated inventory to chat metadata
+    //     }
+    // }
 
-    // Validate inventory structure (Bug #3 fix)
-    validateInventoryStructure(extensionSettings.userStats.inventory, 'chat');
+    // // Validate inventory structure (Bug #3 fix)
+    // validateInventoryStructure(extensionSettings.userStats.inventory, 'chat');
 
-    // console.log('[RPG Companion] Loaded chat data:', savedData);
+    // // console.log('[RPG Companion] Loaded chat data:', savedData);
 }
 
 /**

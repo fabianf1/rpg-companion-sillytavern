@@ -9,24 +9,8 @@ import { i18n } from './src/core/i18n.js';
 import { migrateToV3JSON } from './src/utils/jsonMigration.js';
 import {
     extensionSettings,
-    lastActionWasSwipe,
-    isGenerating,
-    isPlotProgression,
-    pendingDiceRoll,
-    FALLBACK_AVATAR_DATA_URI,
-    $panelContainer,
-    $userStatsContainer,
-    $infoBoxContainer,
-    $thoughtsContainer,
-    $inventoryContainer,
-    $questsContainer,
     $musicPlayerContainer,
-    setExtensionSettings,
     updateExtensionSettings,
-    setLastActionWasSwipe,
-    setIsGenerating,
-    setIsPlotProgression,
-    setPendingDiceRoll,
     setPanelContainer,
     setUserStatsContainer,
     setInfoBoxContainer,
@@ -40,21 +24,12 @@ import { loadSettings, saveSettings, saveChatData, loadChatData, updateMessageSw
 import { registerAllEvents } from './src/core/events.js';
 
 // Generation & Parsing modules
-import {
-    generateTrackerExample,
-    generateTrackerInstructions,
-    generateContextualSummary,
-    generateRPGPromptText,
-    generateSeparateUpdatePrompt
-} from './src/systems/generation/promptBuilder.js';
-import { parseResponse, parseUserStats } from './src/systems/generation/parser.js';
 import { updateRPGData, getAvailableConnectionProfiles  } from './src/systems/generation/apiClient.js';
 import { onGenerationStarted } from './src/systems/generation/injector.js';
 
 // Rendering modules
-import { getSafeThumbnailUrl } from './src/utils/avatars.js';
 import { renderUserStats } from './src/systems/rendering/userStats.js';
-import { renderInfoBox, updateInfoBoxField } from './src/systems/rendering/infoBox.js';
+import { renderInfoBox} from './src/systems/rendering/infoBox.js';
 import {
     renderThoughts,
     updateCharacterField,
@@ -79,7 +54,6 @@ import {
     toggleAnimations,
     updateFeatureTogglesVisibility,
     updateSettingsPopupTheme,
-    applyCustomThemeToSettingsPopup
 } from './src/systems/ui/theme.js';
 import {
     DiceModal,
@@ -106,7 +80,6 @@ import {
 import { restoreCheckpointOnLoad } from './src/systems/features/chapterCheckpoint.js';
 import {
     togglePlotButtons,
-    updateCollapseToggleIcon,
     setupCollapseToggle,
     updatePanelVisibility,
     updateSectionVisibility,
@@ -115,9 +88,7 @@ import {
 } from './src/systems/ui/layout.js';
 import {
     setupMobileToggle,
-    constrainFabToViewport,
     setupMobileTabs,
-    removeMobileTabs,
     setupMobileKeyboardHandling,
     setupContentEditableScrolling,
     updateMobileTabLabels,
@@ -133,14 +104,11 @@ import {
 import { setupPlotButtons, sendPlotProgression } from './src/systems/features/plotProgression.js';
 import { setupClassicStatsButtons } from './src/systems/features/classicStats.js';
 import { ensureHtmlCleaningRegex, detectConflictingRegexScripts, ensureTrackerCleaningRegex } from './src/systems/features/htmlCleaning.js';
-import { ensureJsonCleaningRegex, removeJsonCleaningRegex } from './src/systems/features/jsonCleaning.js';
-import { parseAndStoreSpotifyUrl } from './src/systems/features/musicPlayer.js';
-import { DEFAULT_HTML_PROMPT } from './src/systems/generation/promptBuilder.js';
+import { ensureJsonCleaningRegex} from './src/systems/features/jsonCleaning.js';
 import { openEncounterModal } from './src/systems/ui/encounterUI.js';
 
 // Integration modules
 import {
-    commitTrackerData,
     onMessageSent,
     onMessageReceived,
     onCharacterChanged,
@@ -1119,18 +1087,6 @@ async function initUI() {
     }
     window.RPGCompanion.updateWeatherEffect = updateWeatherEffect;
 }
-
-
-
-
-
-// Rendering functions removed - now imported from src/systems/rendering/*
-// (renderUserStats, renderInfoBox, renderThoughts, updateInfoBoxField,
-//  updateCharacterField, updateChatThoughts, createThoughtPanel)
-
-// Event handlers removed - now imported from src/systems/integration/sillytavern.js
-// (commitTrackerData, onMessageSent, onMessageReceived, onCharacterChanged,
-//  onMessageSwiped, updatePersonaAvatar, clearExtensionPrompts)
 
 /**
  * Main initialization function.

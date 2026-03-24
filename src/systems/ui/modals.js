@@ -14,7 +14,6 @@ import {
     clearSessionAvatarPrompts
 } from '../../core/state.js';
 import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
-import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
 import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
@@ -366,10 +365,6 @@ export function setupSettingsPopup() {
 
         // Clear chat metadata immediately (don't wait for debounced save)
         const context = getContext();
-        if (context.chat_metadata && context.chat_metadata.rpg_companion) {
-            delete context.chat_metadata.rpg_companion;
-            // console.log('[RPG Companion] Cleared chat_metadata.rpg_companion for current chat');
-        }
 
         // Clear all message swipe data
         const chat = context.chat;

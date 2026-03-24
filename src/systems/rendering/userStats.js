@@ -85,17 +85,6 @@ export function buildUserStatsText() {
 }
 
 /**
- * Persists tracker data after user edits.
- * Calls updateMessageSwipeData to write current extensionSettings to swipe store.
- * @private
- */
-function updateUserStatsData() {
-    // User edits are already in extensionSettings via the UI event handlers
-    // Just persist to swipe store
-    updateMessageSwipeData();
-}
-
-/**
  * Renders the user stats panel with health bars, mood, inventory, and classic stats.
  * Includes event listeners for editable fields.
 ```
@@ -365,12 +354,10 @@ export function renderUserStats() {
         // Update the setting
         extensionSettings.userStats[field] = value;
 
-        // Update userStats data (maintains JSON or text format)
-        updateUserStatsData();
-
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
-        updateMessageSwipeData();
 
         // Re-render to update the bar and FAB widgets
         renderUserStats();
@@ -382,12 +369,10 @@ export function renderUserStats() {
         const value = $(this).text().trim();
         extensionSettings.userStats.mood = value || '😐';
 
-        // Update userStats data (maintains JSON or text format)
-        updateUserStatsData();
-
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
-        updateMessageSwipeData();
     });
 
     $('.rpg-mood-conditions.rpg-editable').on('blur', function () {
@@ -395,12 +380,11 @@ export function renderUserStats() {
         const fieldKey = $(this).data('field');
         extensionSettings.userStats[fieldKey] = value || 'None';
 
-        // Update userStats data (maintains JSON or text format)
-        updateUserStatsData();
 
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
-        updateMessageSwipeData();
     });
 
     // Add event listener for skills editing
@@ -408,12 +392,10 @@ export function renderUserStats() {
         const value = $(this).text().trim();
         extensionSettings.userStats.skills = value || 'None';
 
-        // Update userStats data (maintains JSON or text format)
-        updateUserStatsData();
-
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
-        updateMessageSwipeData();
     });
 
     // Add event listeners for stat name editing
@@ -433,6 +415,8 @@ export function renderUserStats() {
 
         extensionSettings.statNames[field] = value || extensionSettings.statNames[field];
 
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
 
@@ -450,9 +434,11 @@ export function renderUserStats() {
         value = Math.min(100, value);
 
         extensionSettings.level = value;
+
+        // Update and persist data
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
-        updateMessageSwipeData();
 
         // Re-render to update the display
         renderUserStats();

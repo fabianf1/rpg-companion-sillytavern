@@ -73,7 +73,6 @@ export function updateInventoryItem(field, index, newName, location) {
     // Save changes
     saveSettings();
     saveChatData();
-    updateMessageSwipeData();
 
     // Re-render inventory
     renderInventory();

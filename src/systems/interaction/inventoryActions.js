@@ -217,7 +217,6 @@ export function saveAddItem(field, location) {
     updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
-    updateMessageSwipeData();
 
     // Hide form and re-render
     hideAddItemForm(field, location);
@@ -266,7 +265,6 @@ export function removeItem(field, itemIndex, location) {
     updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
-    updateMessageSwipeData();
 
     // Re-render
     renderInventory();
@@ -331,7 +329,6 @@ export function saveAddLocation() {
     updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
-    updateMessageSwipeData();
 
     // Hide form and re-render
     hideAddLocationForm();
@@ -391,7 +388,6 @@ export function confirmRemoveLocation(locationName) {
     updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
-    updateMessageSwipeData();
 
     // Re-render inventory UI
     // console.log('[RPG Companion] DEBUG calling renderInventory()');
