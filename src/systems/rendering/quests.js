@@ -3,16 +3,17 @@
  * Handles UI rendering for quests system (main and optional quests)
  */
 
-import { extensionSettings, $questsContainer, committedTrackerData, lastGeneratedData } from '../../core/state.js';
-import { saveSettings, saveChatData } from '../../core/persistence.js';
+import { extensionSettings, $questsContainer } from '../../core/state.js';
+import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 
 /**
- * Syncs the current extensionSettings.quests to committedTrackerData.userStats
+ * Syncs the current extensionSettings.quests to the swipe store
  * This ensures quest changes made via UI are reflected in the data sent to AI
  */
-function syncQuestsToCommittedData() {
-    const currentData = committedTrackerData.userStats || lastGeneratedData.userStats;
+function syncQuestsToSwipeStore() {
+    const currentData = getTrackerDataForContext('userStats');
     if (!currentData) return;
 
     const trimmed = currentData.trim();
@@ -23,11 +24,11 @@ function syncQuestsToCommittedData() {
                 // Update quests in the JSON data
                 jsonData.quests = extensionSettings.quests || { main: 'None', optional: [] };
                 const updatedJSON = JSON.stringify(jsonData, null, 2);
-                committedTrackerData.userStats = updatedJSON;
-                lastGeneratedData.userStats = updatedJSON;
+                // Persist to swipe store
+                updateMessageSwipeData('userStats', updatedJSON);
             }
         } catch (e) {
-            console.warn('[RPG Quests] Failed to sync quests to committed data:', e);
+            console.warn('[RPG Quests] Failed to sync quests to swipe store:', e);
         }
     }
 }
@@ -279,8 +280,8 @@ function attachQuestEventHandlers() {
                 }
                 extensionSettings.quests.optional.push(questTitle);
             }
-            // Sync quest changes to committedTrackerData so AI sees the addition
-            syncQuestsToCommittedData();
+            // Sync quest changes to swipeStore so AI sees the addition
+            syncQuestsToSwipeStore();
             saveSettings();
             saveChatData();
             renderQuests();
@@ -310,8 +311,8 @@ function attachQuestEventHandlers() {
 
         if (questTitle) {
             extensionSettings.quests.main = questTitle;
-            // Sync quest changes to committedTrackerData so AI sees the edit
-            syncQuestsToCommittedData();
+            // Sync quest changes to swipeStore so AI sees the edit
+            syncQuestsToSwipeStore();
             saveSettings();
             saveChatData();
             renderQuests();
@@ -328,8 +329,8 @@ function attachQuestEventHandlers() {
         } else {
             extensionSettings.quests.optional.splice(index, 1);
         }
-        // Sync quest changes to committedTrackerData so AI sees the removal
-        syncQuestsToCommittedData();
+        // Sync quest changes to swipeStore so AI sees the removal
+        syncQuestsToSwipeStore();
         saveSettings();
         saveChatData();
         renderQuests();
@@ -344,8 +345,8 @@ function attachQuestEventHandlers() {
 
         if (newTitle && field === 'optional' && index !== undefined) {
             extensionSettings.quests.optional[index] = newTitle;
-            // Sync quest changes to committedTrackerData so AI sees the edit
-            syncQuestsToCommittedData();
+            // Sync quest changes to swipeStore so AI sees the edit
+            syncQuestsToSwipeStore();
             saveSettings();
             saveChatData();
         }

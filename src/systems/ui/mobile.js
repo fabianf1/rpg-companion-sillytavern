@@ -3,12 +3,13 @@
  * Handles mobile-specific UI functionality: FAB dragging, tabs, keyboard handling
  */
 
-import { extensionSettings, committedTrackerData, lastGeneratedData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
 import { closeMobilePanelWithAnimation, updateCollapseToggleIcon } from './layout.js';
 import { setupDesktopTabs, removeDesktopTabs } from './desktop.js';
 import { i18n } from '../../core/i18n.js';
 import { hexToRgba } from './theme.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 
 /**
  * Updates the text labels of the mobile navigation tabs based on the current language.
@@ -650,7 +651,7 @@ export function setupMobileTabs() {
     if ($infoBox.length > 0) {
         $infoTab.append($infoBox.detach());
         // Only show if has data
-        const infoBoxData = window.lastGeneratedData?.infoBox || window.committedTrackerData?.infoBox;
+        const infoBoxData = getTrackerDataForContext('infoBox');
         if (infoBoxData) $infoBox.show();
     }
     if ($thoughts.length > 0) {
@@ -742,7 +743,7 @@ export function removeMobileTabs() {
     // Show/hide sections based on settings (respect visibility settings)
     if (extensionSettings.showUserStats) $userStats.show();
     if (extensionSettings.showInfoBox) {
-        const infoBoxData = window.lastGeneratedData?.infoBox || window.committedTrackerData?.infoBox;
+        const infoBoxData = getTrackerDataForContext('infoBox');
         if (infoBoxData) $infoBox.show();
     }
     if (extensionSettings.showCharacterThoughts) $thoughts.show();
@@ -1274,9 +1275,9 @@ export function updateFabWidgets() {
     // Don't show widgets on desktop or when panel is open
     if (window.innerWidth > 1000) return;
 
-    // Get tracker data - prefer lastGeneratedData (most recent) over committedTrackerData
-    const infoBox = lastGeneratedData?.infoBox || committedTrackerData?.infoBox;
-    const userStats = lastGeneratedData?.userStats || committedTrackerData?.userStats;
+    // Get tracker data from swipe store
+    const infoBox = getTrackerDataForContext('infoBox');
+    const userStats = getTrackerDataForContext('userStats');
 
     // Parse infoBox if it's a string
     let infoData = null;
@@ -1400,7 +1401,7 @@ export function updateFabWidgets() {
     }
 
     // Stats (large - goes to West) - respects trackerConfig.userStats.customStats
-    // Use extensionSettings.userStats as primary source (contains all stats), fallback to committedTrackerData
+    // Use extensionSettings.userStats as primary source (contains all stats)
     let allStats = [];
     try {
         const userStatsJson = extensionSettings.userStats;

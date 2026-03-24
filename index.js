@@ -9,8 +9,6 @@ import { i18n } from './src/core/i18n.js';
 import { migrateToV3JSON } from './src/utils/jsonMigration.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     lastActionWasSwipe,
     isGenerating,
     isPlotProgression,
@@ -25,10 +23,6 @@ import {
     $musicPlayerContainer,
     setExtensionSettings,
     updateExtensionSettings,
-    setLastGeneratedData,
-    updateLastGeneratedData,
-    setCommittedTrackerData,
-    updateCommittedTrackerData,
     setLastActionWasSwipe,
     setIsGenerating,
     setIsPlotProgression,
@@ -151,33 +145,12 @@ import {
     onMessageReceived,
     onCharacterChanged,
     onMessageSwiped,
+    onMessageDeleted,
     updatePersonaAvatar,
     clearExtensionPrompts,
     onGenerationEnded,
     initHistoryInjection
 } from './src/systems/integration/sillytavern.js';
-
-// Old state variable declarations removed - now imported from core modules
-// (extensionSettings, lastGeneratedData, committedTrackerData, etc. are now in src/core/state.js)
-
-// Utility functions removed - now imported from src/utils/avatars.js
-// (getSafeThumbnailUrl)
-
-// Persistence functions removed - now imported from src/core/persistence.js
-// (loadSettings, saveSettings, saveChatData, loadChatData, updateMessageSwipeData)
-
-// Theme functions removed - now imported from src/systems/ui/theme.js
-// (applyTheme, applyCustomTheme, toggleCustomColors, toggleAnimations,
-//  updateSettingsPopupTheme, applyCustomThemeToSettingsPopup)
-
-// Layout functions removed - now imported from src/systems/ui/layout.js
-// (togglePlotButtons, updateCollapseToggleIcon, setupCollapseToggle,
-//  updatePanelVisibility, updateSectionVisibility, applyPanelPosition)
-// Note: closeMobilePanelWithAnimation is only used internally by mobile.js
-
-// Mobile UI functions removed - now imported from src/systems/ui/mobile.js
-// (setupMobileToggle, constrainFabToViewport, setupMobileTabs, removeMobileTabs,
-//  setupMobileKeyboardHandling, setupContentEditableScrolling)
 
 /**
  * Updates UI elements that are dynamically generated and not covered by data-i18n-key.
@@ -1283,6 +1256,7 @@ jQuery(async () => {
                 [event_types.GENERATION_ENDED]: onGenerationEnded,
                 [event_types.CHAT_CHANGED]: [onCharacterChanged, updatePersonaAvatar, restoreCheckpointOnLoad, clearSessionAvatarPrompts],
                 [event_types.MESSAGE_SWIPED]: onMessageSwiped,
+                [event_types.MESSAGE_DELETED]: onMessageDeleted,
                 [event_types.USER_MESSAGE_RENDERED]: updatePersonaAvatar,
                 [event_types.SETTINGS_UPDATED]: updatePersonaAvatar
             });

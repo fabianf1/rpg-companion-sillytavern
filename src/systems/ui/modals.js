@@ -6,8 +6,6 @@
 import { getContext } from '../../../../../../extensions.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     $infoBoxContainer,
     $thoughtsContainer,
     $userStatsContainer,
@@ -15,7 +13,8 @@ import {
     getPendingDiceRoll,
     clearSessionAvatarPrompts
 } from '../../core/state.js';
-import { saveSettings, saveChatData } from '../../core/persistence.js';
+import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
 import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
@@ -357,16 +356,10 @@ export function setupSettingsPopup() {
     $('#rpg-clear-cache').on('click', function() {
         // console.log('[RPG Companion] Clear Cache button clicked');
 
-        // Clear the data (set to null so panels show "not generated yet")
-        lastGeneratedData.userStats = null;
-        lastGeneratedData.infoBox = null;
-        lastGeneratedData.characterThoughts = null;
-        lastGeneratedData.html = null;
-
-        // Clear committed tracker data (used for generation context)
-        committedTrackerData.userStats = null;
-        committedTrackerData.infoBox = null;
-        committedTrackerData.characterThoughts = null;
+        // Clear the data by updating swipe store (set to null so panels show "not generated yet")
+        updateMessageSwipeData('userStats', null);
+        updateMessageSwipeData('infoBox', null);
+        updateMessageSwipeData('characterThoughts', null);
 
         // Clear session avatar prompts
         clearSessionAvatarPrompts();

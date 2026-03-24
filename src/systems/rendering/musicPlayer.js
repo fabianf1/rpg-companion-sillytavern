@@ -3,8 +3,9 @@
  * Handles UI rendering for Spotify music player widget
  */
 
-import { extensionSettings, committedTrackerData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
 import { i18n } from '../../core/i18n.js';
+import { getCurrentSpotifyUrl } from '../features/musicPlayer.js';
 
 /**
  * Creates a Spotify deep link URL that opens the Spotify app
@@ -68,7 +69,7 @@ export function renderMusicPlayer(container) {
         return;
     }
 
-    const songData = committedTrackerData.spotifyUrl;
+    const songData = getCurrentSpotifyUrl();
     // console.log('[RPG Companion] Music Player: Rendering with song:', songData);
 
     if (!songData || !songData.displayText) {

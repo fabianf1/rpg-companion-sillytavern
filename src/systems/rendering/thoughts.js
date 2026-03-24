@@ -8,14 +8,13 @@ import { this_chid, characters } from '../../../../../../../script.js';
 import { selected_group, getGroupMembers } from '../../../../../../group-chats.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     $thoughtsContainer,
     FALLBACK_AVATAR_DATA_URI,
     addDebugLog
 } from '../../core/state.js';
 import { i18n } from '../../core/i18n.js';
-import { saveChatData, saveSettings } from '../../core/persistence.js';
+import { saveChatData, saveSettings, updateMessageSwipeData } from '../../core/persistence.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { getSafeThumbnailUrl } from '../../utils/avatars.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 
@@ -169,7 +168,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
     }
 
     // Don't render if no data exists (e.g., after cache clear)
-    const thoughtsData = lastGeneratedData.characterThoughts || committedTrackerData.characterThoughts;
+    const thoughtsData = getTrackerDataForContext('characterThoughts');
     if (!thoughtsData) {
         $thoughtsContainer.html('<div class="rpg-inventory-empty">No character data generated yet</div>');
         return;
@@ -192,11 +191,8 @@ export function renderThoughts({ preserveScroll = false } = {}) {
     const relationshipFields = config?.relationshipFields || [];
     const hasRelationshipEnabled = relationshipFields.length > 0;
 
-    // Use committedTrackerData as fallback if lastGeneratedData is empty (e.g., after page refresh)
-    const characterThoughtsData = lastGeneratedData.characterThoughts || committedTrackerData.characterThoughts || '';
-
-    // console.log('[RPG Companion] renderThoughts - Reading from lastGeneratedData:', JSON.stringify(lastGeneratedData.characterThoughts));
-    // console.log('[RPG Companion] renderThoughts - Reading from committedTrackerData:', JSON.stringify(committedTrackerData.characterThoughts));
+    // Read character thoughts data from swipe store
+    const characterThoughtsData = thoughtsData || '';
 
     debugLog('[RPG Thoughts] Raw characterThoughts data:', characterThoughtsData);
     debugLog('[RPG Thoughts] Data length:', characterThoughtsData.length + ' chars');
@@ -744,7 +740,9 @@ export function renderThoughts({ preserveScroll = false } = {}) {
  * @param {string} characterName - Name of the character to remove
  */
 export function removeCharacter(characterName) {
-    if (!lastGeneratedData.characterThoughts) {
+    // Read current character thoughts from swipe store
+    let characterThoughtsData = getTrackerDataForContext('characterThoughts');
+    if (!characterThoughtsData) {
         return;
     }
 
@@ -753,9 +751,9 @@ export function removeCharacter(characterName) {
     let parsedData = null;
 
     try {
-        parsedData = typeof lastGeneratedData.characterThoughts === 'string'
-            ? JSON.parse(lastGeneratedData.characterThoughts)
-            : lastGeneratedData.characterThoughts;
+        parsedData = typeof characterThoughtsData === 'string'
+            ? JSON.parse(characterThoughtsData)
+            : characterThoughtsData;
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -776,11 +774,11 @@ export function removeCharacter(characterName) {
         }
 
         const updatedJSON = JSON.stringify(parsedData, null, 2);
-        lastGeneratedData.characterThoughts = updatedJSON;
-        committedTrackerData.characterThoughts = updatedJSON;
+        // Persist to swipe store
+        updateMessageSwipeData('characterThoughts', updatedJSON);
     } else {
         // Text format - remove character block
-        const lines = lastGeneratedData.characterThoughts.split('\n');
+        const lines = characterThoughtsData.split('\n');
         const dividerIndex = lines.findIndex(line => line.includes('---'));
 
         if (dividerIndex === -1) return;
@@ -826,26 +824,13 @@ export function removeCharacter(characterName) {
             }
         }
 
-        lastGeneratedData.characterThoughts = lines.join('\n');
-        committedTrackerData.characterThoughts = lines.join('\n');
+        // Persist to swipe store
+        updateMessageSwipeData('characterThoughts', lines.join('\n'));
     }
 
-    // Update message swipe data
-    const chat = getContext().chat;
-    if (chat && chat.length > 0) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-            if (!message.is_user) {
-                if (message.extra && message.extra.rpg_companion_swipes) {
-                    const swipeId = message.swipe_id || 0;
-                    if (message.extra.rpg_companion_swipes[swipeId]) {
-                        message.extra.rpg_companion_swipes[swipeId].characterThoughts = lastGeneratedData.characterThoughts;
-                    }
-                }
-                break;
-            }
-        }
-    }
+    // Re-render
+    renderThoughts();
+
 
     saveChatData();
 
@@ -864,14 +849,21 @@ export function addNewCharacter() {
     const enabledCharStats = characterStats?.enabled && characterStats?.customStats?.filter(s => s && s.enabled && s.name) || [];
     const hasRelationship = presentCharsConfig?.relationshipFields?.length > 0;
 
+    // Read current character thoughts from swipe store
+    let characterThoughtsData = getTrackerDataForContext('characterThoughts');
+    if (!characterThoughtsData) {
+        // Initialize with empty data if not present
+        characterThoughtsData = 'Present Characters\n---\n';
+    }
+
     // Check if data is in JSON format
     let isJSON = false;
     let parsedData = null;
 
     try {
-        parsedData = typeof lastGeneratedData.characterThoughts === 'string'
-            ? JSON.parse(lastGeneratedData.characterThoughts)
-            : lastGeneratedData.characterThoughts;
+        parsedData = typeof characterThoughtsData === 'string'
+            ? JSON.parse(characterThoughtsData)
+            : characterThoughtsData;
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -910,16 +902,16 @@ export function addNewCharacter() {
 
         charactersArray.push(newCharacter);
 
-        // Save back as JSON string
-        lastGeneratedData.characterThoughts = JSON.stringify(
+        // Save back as JSON string and persist to swipe store
+        const updatedJSON = JSON.stringify(
             Array.isArray(parsedData) ? charactersArray : { ...parsedData, characters: charactersArray },
             null,
             2
         );
-        committedTrackerData.characterThoughts = lastGeneratedData.characterThoughts;
+        updateMessageSwipeData('characterThoughts', updatedJSON);
     } else {
         // Text format - add new character block
-        const lines = lastGeneratedData.characterThoughts.split('\n');
+        const lines = characterThoughtsData.split('\n');
         const dividerIndex = lines.findIndex(line => line.includes('---'));
 
         if (dividerIndex >= 0) {
@@ -955,31 +947,12 @@ export function addNewCharacter() {
             }
 
             lines.splice(insertIndex, 0, ...newCharacterLines);
-            lastGeneratedData.characterThoughts = lines.join('\n');
-            committedTrackerData.characterThoughts = lines.join('\n');
+            // Persist to swipe store
+            updateMessageSwipeData('characterThoughts', lines.join('\n'));
         }
     }
 
-    // Update message swipe data
-    const chat = getContext().chat;
-    if (chat && chat.length > 0) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-            if (!message.is_user) {
-                if (message.extra && message.extra.rpg_companion_swipes) {
-                    const swipeId = message.swipe_id || 0;
-                    if (message.extra.rpg_companion_swipes[swipeId]) {
-                        message.extra.rpg_companion_swipes[swipeId].characterThoughts = lastGeneratedData.characterThoughts;
-                    }
-                }
-                break;
-            }
-        }
-    }
-
-    saveChatData();
-
-    // Re-render to show new character
+    // Re-render
     renderThoughts();
 }
 
@@ -992,11 +965,6 @@ export function addNewCharacter() {
  * @param {string} value - New value for the field
  */
 export function updateCharacterField(characterName, field, value) {
-    // Initialize if it doesn't exist
-    if (!lastGeneratedData.characterThoughts) {
-        lastGeneratedData.characterThoughts = 'Present Characters\n---\n';
-    }
-
     const presentCharsConfig = extensionSettings.trackerConfig?.presentCharacters;
     const enabledFields = presentCharsConfig?.customFields?.filter(f => f && f.enabled && f.name) || [];
     const characterStats = presentCharsConfig?.characterStats;
@@ -1015,14 +983,20 @@ export function updateCharacterField(characterName, field, value) {
         emojiToRelationship[emoji] = name;
     }
 
+    // Read current character thoughts from swipe store
+    let characterThoughtsData = getTrackerDataForContext('characterThoughts');
+    if (!characterThoughtsData) {
+        characterThoughtsData = 'Present Characters\n---\n';
+    }
+
     // Check if data is in JSON format
     let isJSON = false;
     let parsedData = null;
 
     try {
-        parsedData = typeof lastGeneratedData.characterThoughts === 'string'
-            ? JSON.parse(lastGeneratedData.characterThoughts)
-            : lastGeneratedData.characterThoughts;
+        parsedData = typeof characterThoughtsData === 'string'
+            ? JSON.parse(characterThoughtsData)
+            : characterThoughtsData;
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -1136,12 +1110,10 @@ export function updateCharacterField(characterName, field, value) {
             }
         }
 
-        // Save back to lastGeneratedData as JSON string (consistent with infoBox and userStats)
-        lastGeneratedData.characterThoughts = JSON.stringify(Array.isArray(parsedData) ? charactersArray : { ...parsedData, characters: charactersArray }, null, 2);
-        committedTrackerData.characterThoughts = lastGeneratedData.characterThoughts;
+        // Save back to swipe store as JSON string
+        updateMessageSwipeData('characterThoughts', JSON.stringify(Array.isArray(parsedData) ? charactersArray : { ...parsedData, characters: charactersArray }, null, 2));
 
-        // console.log('[RPG Companion] Saved to lastGeneratedData.characterThoughts:', JSON.stringify(lastGeneratedData.characterThoughts));
-        // console.log('[RPG Companion] Saved to committedTrackerData.characterThoughts:', JSON.stringify(committedTrackerData.characterThoughts));
+        // console.log('[RPG Companion] Saved to swipe store characterThoughts');
 
         // Update in chat metadata
         const chat = getContext().chat;
@@ -1152,7 +1124,7 @@ export function updateCharacterField(characterName, field, value) {
                     if (message.extra && message.extra.rpg_companion_swipes) {
                         const swipeId = message.swipe_id || 0;
                         if (message.extra.rpg_companion_swipes[swipeId]) {
-                            message.extra.rpg_companion_swipes[swipeId].characterThoughts = lastGeneratedData.characterThoughts;
+                            message.extra.rpg_companion_swipes[swipeId].characterThoughts = JSON.stringify(Array.isArray(parsedData) ? charactersArray : { ...parsedData, characters: charactersArray }, null, 2);
                         }
                     }
                     break;
@@ -1163,7 +1135,7 @@ export function updateCharacterField(characterName, field, value) {
         saveChatData();
 
         // console.log('[RPG Companion] JSON format updated successfully');
-        // console.log('[RPG Companion] Updated data:', lastGeneratedData.characterThoughts);
+        // console.log('[RPG Companion] Updated data:', getTrackerDataForContext('characterThoughts'));
 
         // Re-render the thoughts panel to show updated value (preserve scroll position)
         renderThoughts({ preserveScroll: true });
@@ -1180,7 +1152,12 @@ export function updateCharacterField(characterName, field, value) {
     }
 
     // Continue with text format handling below
-    const lines = lastGeneratedData.characterThoughts.split('\n');
+    // Read current character thoughts from swipe store
+    characterThoughtsData = getTrackerDataForContext('characterThoughts');
+    if (!characterThoughtsData) {
+        characterThoughtsData = 'Present Characters\n---\n';
+    }
+    const lines = characterThoughtsData.split('\n');
 
     let characterFound = false;
     let inTargetCharacter = false;
@@ -1368,10 +1345,10 @@ export function updateCharacterField(characterName, field, value) {
         }
     }
 
-    lastGeneratedData.characterThoughts = lines.join('\n');
-    committedTrackerData.characterThoughts = lines.join('\n');
+    // Persist to swipe store
+    updateMessageSwipeData('characterThoughts', lines.join('\n'));
 
-    // console.log('[RPG Companion] Updated characterThoughts data:', lastGeneratedData.characterThoughts);
+    // console.log('[RPG Companion] Updated characterThoughts data:', getTrackerDataForContext('characterThoughts'));
 
     const chat = getContext().chat;
     if (chat && chat.length > 0) {
@@ -1392,18 +1369,18 @@ export function updateCharacterField(characterName, field, value) {
     saveChatData();
 
     // Don't re-render to avoid overwriting user edits while they're still editing
-    // The changes are already saved to lastGeneratedData and committedTrackerData
+    // The changes are already saved to swipe store
     // Re-rendering would cause the display to reset and lose focus
 
     // console.log('[RPG Companion] updateCharacterField called:', { characterName, field, value });
-    // console.log('[RPG Companion] Before update - lastGeneratedData.characterThoughts:', lastGeneratedData.characterThoughts);
+    // console.log('[RPG Companion] Before update - Swipe Store Data:', getTrackerDataForContext('characterThoughts'));
 
     // Only update chat thought overlays if editing thoughts field
     const thoughtsFieldName = presentCharsConfig?.thoughts?.name || 'Thoughts';
     const isEditingThoughts = field === thoughtsFieldName || field === 'thoughts';
 
     // console.log('[RPG Companion] Is editing thoughts?', isEditingThoughts, 'Field:', field, 'Thoughts field name:', thoughtsFieldName);
-    // console.log('[RPG Companion] After update - lastGeneratedData.characterThoughts:', lastGeneratedData.characterThoughts);
+    // console.log('[RPG Companion] After update - Swipe Store Data:', getTrackerDataForContext('characterThoughts'));
 
     if (isEditingThoughts && extensionSettings.showThoughtsInChat) {
         // console.log('[RPG Companion] Updating chat thought bubbles');
@@ -1423,7 +1400,7 @@ function renderThoughtsSidebarOnly() {
 
     // This is a simplified version that only updates the sidebar
     // Copy the rendering logic from renderThoughts but skip the updateChatThoughts call
-    const thoughtsData = lastGeneratedData.characterThoughts || committedTrackerData.characterThoughts;
+    const thoughtsData = getTrackerDataForContext('characterThoughts');
     if (!thoughtsData) {
         $thoughtsContainer.html('<div class="rpg-inventory-empty">No character data generated yet</div>');
         return;
@@ -1446,7 +1423,7 @@ export function updateChatThoughts() {
     // console.log('[RPG Companion] Extension enabled:', extensionSettings.enabled);
     // console.log('[RPG Companion] showThoughtsInChat setting:', extensionSettings.showThoughtsInChat);
     // console.log('[RPG Companion] Toggle element checked:', $('#rpg-toggle-thoughts-in-chat').prop('checked'));
-    // console.log('[RPG Companion] lastGeneratedData.characterThoughts:', lastGeneratedData.characterThoughts);
+    // console.log('[RPG Companion] Swipe Store Data:', getTrackerDataForContext('characterThoughts'));
 
     // Remove existing thought panel and icon
     $('#rpg-thought-panel').remove();
@@ -1456,7 +1433,7 @@ export function updateChatThoughts() {
     $(document).off('click.thoughtPanel');
 
     // If extension is disabled, thoughts in chat are disabled, or no thoughts, just return
-    if (!extensionSettings.enabled || !extensionSettings.showThoughtsInChat || !lastGeneratedData.characterThoughts) {
+    if (!extensionSettings.enabled || !extensionSettings.showThoughtsInChat || !getTrackerDataForContext('characterThoughts')) {
         // console.log('[RPG Companion] Thoughts in chat disabled or no data');
         return;
     }
@@ -1466,11 +1443,14 @@ export function updateChatThoughts() {
     const thoughtsConfig = extensionSettings.trackerConfig?.presentCharacters?.thoughts;
     const thoughtsLabel = thoughtsConfig?.name || 'Thoughts';
 
+    // Read from swipe store
+    const characterThoughtsData = getTrackerDataForContext('characterThoughts');
+
     // Try JSON format first
     try {
-        const parsed = typeof lastGeneratedData.characterThoughts === 'string'
-            ? JSON.parse(lastGeneratedData.characterThoughts)
-            : lastGeneratedData.characterThoughts;
+        const parsed = typeof characterThoughtsData === 'string'
+            ? JSON.parse(characterThoughtsData)
+            : characterThoughtsData;
 
         // Handle both {characters: [...]} and direct array formats
         const charactersArray = Array.isArray(parsed) ? parsed : (parsed.characters || []);
@@ -1493,7 +1473,7 @@ export function updateChatThoughts() {
 
     // If JSON parsing failed or returned empty, try text format
     if (thoughtsArray.length === 0) {
-        const lines = lastGeneratedData.characterThoughts.split('\n');
+        const lines = characterThoughtsData.split('\n');
 
         // console.log('[RPG Companion] Parsing thoughts from lines:', lines);
 

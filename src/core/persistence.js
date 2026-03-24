@@ -7,12 +7,8 @@ import { saveSettingsDebounced, chat_metadata, saveChatDebounced } from '../../.
 import { getContext } from '../../../../../extensions.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     setExtensionSettings,
     updateExtensionSettings,
-    setLastGeneratedData,
-    setCommittedTrackerData,
     FEATURE_FLAGS
 } from './state.js';
 import { migrateInventory } from '../utils/migration.js';
@@ -216,20 +212,12 @@ export function saveChatData() {
         return;
     }
 
-    // console.log('[RPG Companion] 💾 saveChatData called - committedTrackerData:', {
-    //     userStats: committedTrackerData.userStats ? `${committedTrackerData.userStats.substring(0, 50)}...` : 'null',
-    //     infoBox: committedTrackerData.infoBox ? 'exists' : 'null',
-    //     characterThoughts: committedTrackerData.characterThoughts ? 'exists' : 'null'
-    // });
-    // console.log('[RPG Companion] 💾 saveChatData RAW committedTrackerData:', committedTrackerData);
-    // console.log('[RPG Companion] 💾 saveChatData RAW lastGeneratedData:', lastGeneratedData);
-
+    // Tracker data is now persisted in message swipes (message.extra.rpg_companion_swipes)
+    // We only save working settings here
     chat_metadata.rpg_companion = {
         userStats: extensionSettings.userStats,
         classicStats: extensionSettings.classicStats,
         quests: extensionSettings.quests,
-        lastGeneratedData: lastGeneratedData,
-        committedTrackerData: committedTrackerData,
         timestamp: Date.now()
     };
 
@@ -240,6 +228,11 @@ export function saveChatData() {
  * Updates the last assistant message's swipe data with current tracker data.
  * This ensures user edits are preserved across swipes and included in generation context.
  */
+/**
+ * Updates the last assistant message's swipe data with current tracker data.
+ * Called when user edits tracker fields (stats, conditions, etc).
+ * Reads current swipe data, updates it with extensionSettings, and writes back.
+ */
 export function updateMessageSwipeData() {
     const chat = getContext().chat;
     if (!chat || chat.length === 0) {
@@ -247,6 +240,7 @@ export function updateMessageSwipeData() {
     }
 
     // Find the last assistant message
+    console.log(`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}`);
     for (let i = chat.length - 1; i >= 0; i--) {
         const message = chat[i];
         if (!message.is_user) {
@@ -259,10 +253,67 @@ export function updateMessageSwipeData() {
             }
 
             const swipeId = message.swipe_id || 0;
+            const currentSwipeData = message.extra.rpg_companion_swipes[swipeId] || {};
+            
+            // Build updated user stats data
+            // If previous data was JSON, maintain JSON format; otherwise use text
+            let userStatsData = null;
+            if (currentSwipeData.userStats) {
+                const trimmed = currentSwipeData.userStats.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    // Maintain JSON format
+                    try {
+                        const jsonData = JSON.parse(currentSwipeData.userStats);
+                        if (jsonData && typeof jsonData === 'object') {
+                            const stats = extensionSettings.userStats;
+                            
+                            // Update stats array values from extensionSettings
+                            if (jsonData.stats && Array.isArray(jsonData.stats)) {
+                                jsonData.stats = jsonData.stats.map(stat => ({
+                                    ...stat,
+                                    value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
+                                }));
+                            }
+                            
+                            // Update status fields
+                            if (jsonData.status) {
+                                jsonData.status.mood = stats.mood || '😐';
+                                const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
+                                for (const fieldName of customFields) {
+                                    const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
+                                    jsonData.status[fieldKey] = stats[fieldKey] || 'None';
+                                }
+                            }
+                            
+                            // Update inventory
+                            if (stats.inventory) {
+                                jsonData.inventory = stats.inventory;
+                            }
+                            
+                            // Update quests
+                            if (extensionSettings.quests) {
+                                jsonData.quests = extensionSettings.quests;
+                            }
+                            
+                            // Update skills
+                            if (stats.skills !== undefined) {
+                                jsonData.skills = stats.skills;
+                            }
+                            
+                            userStatsData = JSON.stringify(jsonData, null, 2);
+                        }
+                    } catch (e) {
+                        console.warn('[RPG Companion] Failed to update JSON userStats:', e);
+                        // Fall through to text format
+                    }
+                }
+            }
+            
+            // Update swipe data with current tracker information
             message.extra.rpg_companion_swipes[swipeId] = {
-                userStats: lastGeneratedData.userStats,
-                infoBox: lastGeneratedData.infoBox,
-                characterThoughts: lastGeneratedData.characterThoughts
+                userStats: userStatsData !== null ? userStatsData : currentSwipeData.userStats,
+                infoBox: currentSwipeData.infoBox,
+                characterThoughts: currentSwipeData.characterThoughts
             };
 
             // console.log('[RPG Companion] Updated message swipe data after user edit');
@@ -277,6 +328,7 @@ export function updateMessageSwipeData() {
  */
 export function loadChatData() {
     if (!chat_metadata || !chat_metadata.rpg_companion) {
+        console.log('[RPG Companion] No chat metadata found, using default chat data');
         // Reset to defaults if no data exists
         updateExtensionSettings({
             userStats: {
@@ -300,19 +352,9 @@ export function loadChatData() {
                 optional: []
             }
         });
-        setLastGeneratedData({
-            userStats: null,
-            infoBox: null,
-            characterThoughts: null,
-            html: null
-        });
-        setCommittedTrackerData({
-            userStats: null,
-            infoBox: null,
-            characterThoughts: null
-        });
         return;
     }
+    console.log('[RPG Companion] Loading chat data from metadata');
 
     const savedData = chat_metadata.rpg_companion;
 
@@ -335,31 +377,6 @@ export function loadChatData() {
             main: "None",
             optional: []
         };
-    }
-
-    // Restore committed tracker data first
-    if (savedData.committedTrackerData) {
-        // console.log('[RPG Companion] 📥 loadChatData restoring committedTrackerData:', {
-        //     userStats: savedData.committedTrackerData.userStats ? `${savedData.committedTrackerData.userStats.substring(0, 50)}...` : 'null',
-        //     infoBox: savedData.committedTrackerData.infoBox ? 'exists' : 'null',
-        //     characterThoughts: savedData.committedTrackerData.characterThoughts ? 'exists' : 'null'
-        // });
-        // console.log('[RPG Companion] 📥 RAW savedData.committedTrackerData:', savedData.committedTrackerData);
-        // console.log('[RPG Companion] 📥 Type check:', {
-        //     userStatsType: typeof savedData.committedTrackerData.userStats,
-        //     infoBoxType: typeof savedData.committedTrackerData.infoBox,
-        //     characterThoughtsType: typeof savedData.committedTrackerData.characterThoughts
-        // });
-        setCommittedTrackerData({ ...savedData.committedTrackerData });
-    }
-
-    // Restore last generated data (for display)
-    // Always prefer lastGeneratedData as it contains the most recent generation (including swipes)
-    if (savedData.lastGeneratedData) {
-        // console.log('[RPG Companion] 📥 loadChatData restoring lastGeneratedData');
-        setLastGeneratedData({ ...savedData.lastGeneratedData });
-    } else {
-        // console.log('[RPG Companion] ⚠️ No lastGeneratedData found in save');
     }
 
     // Migrate inventory in chat data if feature flag enabled

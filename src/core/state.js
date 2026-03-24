@@ -259,6 +259,7 @@ export let extensionSettings = {
     },
     lastDiceRoll: null, // Store last dice roll result
     showDiceDisplay: true, // Show the "Last Roll" display in the panel
+    lastTrackerMessage: null, // Track which message ID contains the last tracker data
     collapsedInventoryLocations: [], // Array of collapsed storage location names
     inventoryViewModes: {
         onPerson: 'list', // 'list' or 'grid' view mode for On Person section
@@ -314,26 +315,6 @@ export let extensionSettings = {
 };
 
 /**
- * Last generated data from AI response
- */
-export let lastGeneratedData = {
-    userStats: null,
-    infoBox: null,
-    characterThoughts: null,
-    html: null
-};
-
-/**
- * Tracks the "committed" tracker data that should be used as source for next generation
- * This gets updated when user sends a new message or first time generation
- */
-export let committedTrackerData = {
-    userStats: null,
-    infoBox: null,
-    characterThoughts: null
-};
-
-/**
  * Session-only storage for LLM-generated avatar prompts
  * Maps character names to their generated prompts
  * Resets on new chat (not persisted to extensionSettings)
@@ -353,8 +334,7 @@ export function clearSessionAvatarPrompts() {
 }
 
 /**
- * Tracks whether the last action was a swipe (for separate mode)
- * Used to determine whether to commit lastGeneratedData to committedTrackerData
+ * Tracks whether the last action was a swipe
  */
 export let lastActionWasSwipe = false;
 
@@ -431,35 +411,6 @@ export function setExtensionSettings(newSettings) {
 
 export function updateExtensionSettings(updates) {
     Object.assign(extensionSettings, updates);
-}
-
-export function setLastGeneratedData(data) {
-    lastGeneratedData = data;
-}
-
-export function updateLastGeneratedData(updates) {
-    Object.assign(lastGeneratedData, updates);
-}
-
-export function setCommittedTrackerData(data) {
-    // console.log('[RPG State] setCommittedTrackerData called with:', data);
-    // console.log('[RPG State] Type check on input:', {
-    //     userStatsType: typeof data.userStats,
-    //     infoBoxType: typeof data.infoBox,
-    //     characterThoughtsType: typeof data.characterThoughts,
-    //     userStatsValue: data.userStats,
-    //     infoBoxValue: data.infoBox,
-    //     characterThoughtsValue: data.characterThoughts
-    // });
-    committedTrackerData = data;
-    // console.log('[RPG State] committedTrackerData after assignment:', committedTrackerData);
-}
-
-export function updateCommittedTrackerData(updates) {
-    // console.log('[RPG State] updateCommittedTrackerData called with:', updates);
-    // console.log('[RPG State] committedTrackerData before update:', committedTrackerData);
-    Object.assign(committedTrackerData, updates);
-    // console.log('[RPG State] committedTrackerData after update:', committedTrackerData);
 }
 
 export function setLastActionWasSwipe(value) {

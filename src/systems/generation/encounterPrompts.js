@@ -6,10 +6,10 @@
 import { getContext } from '../../../../../../extensions.js';
 import { chat, characters, this_chid, substituteParams } from '../../../../../../../script.js';
 import { selected_group, getGroupMembers, groups } from '../../../../../../group-chats.js';
-import { extensionSettings, committedTrackerData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
 import { currentEncounter } from '../features/encounterState.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
-import { buildInventorySummary, generateTrackerInstructions, generateTrackerExample } from './promptBuilder.js';
+import { buildInventorySummary, generateTrackerInstructions, generateTrackerExample, getTrackerDataForContext } from './promptBuilder.js';
 import { applyLocks } from './lockManager.js';
 
 /**
@@ -213,9 +213,10 @@ export async function buildEncounterInitPrompt() {
     // Build user's current stats
     let userStatsInfo = '';
 
-    // Add HP and other stats from committed tracker data
-    if (committedTrackerData.userStats) {
-        userStatsInfo += `${userName}'s Current Stats:\n${committedTrackerData.userStats}\n\n`;
+    // Add HP and other stats from tracker data
+    const userStats = getTrackerDataForContext('userStats');
+    if (userStats) {
+        userStatsInfo += `${userName}'s Current Stats:\n${userStats}\n\n`;
     }
 
     // Add skills if available
@@ -242,8 +243,9 @@ export async function buildEncounterInitPrompt() {
 
     // Add present characters info for party members
     let partyInfo = '';
-    if (committedTrackerData.characterThoughts) {
-        partyInfo += `Present Characters (potential party members):\n${committedTrackerData.characterThoughts}\n\n`;
+    const thoughtsData = getTrackerDataForContext('characterThoughts');
+    if (thoughtsData) {
+        partyInfo += `Present Characters (potential party members):\n${thoughtsData}\n\n`;
     }
 
     // Close history and add combat initialization instruction
@@ -715,28 +717,32 @@ export async function buildCombatSummaryPrompt(combatLog, result) {
         summaryMessage += `Account for any injuries sustained, resources used, emotional state changes, or other consequences of the battle.\n\n`;
 
         // Include pre-combat tracker state if available
-        if (committedTrackerData.userStats || committedTrackerData.infoBox || committedTrackerData.characterThoughts) {
+        const preUserStats = getTrackerDataForContext('userStats');
+        const preInfoBox = getTrackerDataForContext('infoBox');
+        const preCharacterThoughts = getTrackerDataForContext('characterThoughts');
+
+        if (preUserStats || preInfoBox || preCharacterThoughts) {
             summaryMessage += `Pre-combat tracker state:\n`;
             summaryMessage += `<previous>\n`;
 
-            if (committedTrackerData.userStats) {
-                const statsJSON = typeof committedTrackerData.userStats === 'object'
-                    ? JSON.stringify(committedTrackerData.userStats, null, 2)
-                    : committedTrackerData.userStats;
+            if (preUserStats) {
+                const statsJSON = typeof preUserStats === 'object'
+                    ? JSON.stringify(preUserStats, null, 2)
+                    : preUserStats;
                 summaryMessage += statsJSON + '\n';
             }
 
-            if (committedTrackerData.infoBox) {
-                const infoBoxJSON = typeof committedTrackerData.infoBox === 'object'
-                    ? JSON.stringify(committedTrackerData.infoBox, null, 2)
-                    : committedTrackerData.infoBox;
+            if (preInfoBox) {
+                const infoBoxJSON = typeof preInfoBox === 'object'
+                    ? JSON.stringify(preInfoBox, null, 2)
+                    : preInfoBox;
                 summaryMessage += infoBoxJSON + '\n';
             }
 
-            if (committedTrackerData.characterThoughts) {
-                const charactersJSON = typeof committedTrackerData.characterThoughts === 'object'
-                    ? JSON.stringify(committedTrackerData.characterThoughts, null, 2)
-                    : committedTrackerData.characterThoughts;
+            if (preCharacterThoughts) {
+                const charactersJSON = typeof preCharacterThoughts === 'object'
+                    ? JSON.stringify(preCharacterThoughts, null, 2)
+                    : preCharacterThoughts;
                 summaryMessage += charactersJSON + '\n';
             }
 

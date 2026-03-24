@@ -3,8 +3,10 @@
  * Handles desktop-specific UI functionality: tab navigation and strip widgets
  */
 
+import { getContext } from '../../../../../../extensions.js';
 import { i18n } from '../../core/i18n.js';
-import { extensionSettings, lastGeneratedData, committedTrackerData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { hexToRgba } from './theme.js';
 
 /**
@@ -43,8 +45,8 @@ export function updateStripWidgets() {
     // Add enabled class to panel for CSS styling (wider collapsed width)
     $panel.addClass('rpg-strip-widgets-enabled');
 
-    // Get tracker data - use imported state directly
-    const infoBox = lastGeneratedData?.infoBox || committedTrackerData?.infoBox;
+    // Get tracker data from swipe store
+    const infoBox = getTrackerDataForContext('infoBox');
 
     // Parse infoBox if it's a string
     let infoData = null;
@@ -115,13 +117,13 @@ export function updateStripWidgets() {
         $locationWidget.removeClass('rpg-strip-widget-visible');
     }
 
-    // Stats Widget - get from lastGeneratedData or committedTrackerData first, fallback to extensionSettings
+    // Stats Widget - get from swipe store first, fallback to extensionSettings
     const $statsWidget = $container.find('.rpg-strip-widget-stats');
     if (widgetSettings.stats?.enabled) {
         let allStats = [];
 
         // Try to get stats from tracker data first (most current)
-        const userStatsData = lastGeneratedData?.userStats || committedTrackerData?.userStats;
+        const userStatsData = getTrackerDataForContext('userStats');
         if (userStatsData) {
             try {
                 const parsedStats = typeof userStatsData === 'string' ? JSON.parse(userStatsData) : userStatsData;
@@ -348,7 +350,7 @@ export function setupDesktopTabs() {
         $statusTab.append($infoBox.detach());
         // Only show if enabled and has data
         if (extensionSettings.showInfoBox) {
-            const infoBoxData = window.lastGeneratedData?.infoBox || window.committedTrackerData?.infoBox;
+            const infoBoxData = getTrackerDataForContext('infoBox');
             if (infoBoxData) $infoBox.show();
         }
     }
@@ -442,7 +444,7 @@ export function removeDesktopTabs() {
     // Show/hide sections based on settings (respect visibility settings)
     if (extensionSettings.showUserStats) $userStats.show();
     if (extensionSettings.showInfoBox) {
-        const infoBoxData = window.lastGeneratedData?.infoBox || window.committedTrackerData?.infoBox;
+        const infoBoxData = getTrackerDataForContext('infoBox');
         if (infoBoxData) $infoBox.show();
     }
     if (extensionSettings.showCharacterThoughts) $thoughts.show();

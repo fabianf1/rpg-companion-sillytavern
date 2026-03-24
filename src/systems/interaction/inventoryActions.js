@@ -3,9 +3,11 @@
  * Handles all user interactions with the inventory v2 system
  */
 
-import { extensionSettings, lastGeneratedData, committedTrackerData } from '../../core/state.js';
+import { getContext } from '../../../../../../extensions.js';
+import { extensionSettings } from '../../core/state.js';
 import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
 import { buildInventorySummary } from '../generation/promptBuilder.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { buildUserStatsText } from '../rendering/userStats.js';
 import { renderInventory, getLocationId } from '../rendering/inventory.js';
 import { parseItems, serializeItems } from '../../utils/itemParser.js';
@@ -38,14 +40,14 @@ let openForms = {
 };
 
 /**
- * Updates lastGeneratedData.userStats AND committedTrackerData.userStats to include
- * current inventory.
+ * Updates the swipe store with current inventory.
  * Maintains JSON format if current data is JSON, otherwise uses text format.
  * This ensures manual edits are immediately visible to AI in next generation.
  */
-function updateLastGeneratedDataInventory() {
-    // Check if current data is in JSON format
-    const currentData = lastGeneratedData.userStats || committedTrackerData.userStats;
+function updateSwipeStoreInventory() {
+    // Read current user stats from swipe store
+    const currentData = getTrackerDataForContext('userStats');
+    
     if (currentData) {
         const trimmed = currentData.trim();
         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
@@ -77,8 +79,8 @@ function updateLastGeneratedDataInventory() {
                     };
 
                     const updatedJSON = JSON.stringify(jsonData, null, 2);
-                    lastGeneratedData.userStats = updatedJSON;
-                    committedTrackerData.userStats = updatedJSON;
+                    // Persist to swipe store
+                    updateMessageSwipeData('userStats', updatedJSON);
                     return;
                 }
             } catch (e) {
@@ -89,8 +91,8 @@ function updateLastGeneratedDataInventory() {
 
     // Fall back to text format
     const statsText = buildUserStatsText();
-    lastGeneratedData.userStats = statsText;
-    committedTrackerData.userStats = statsText;
+    // Persist to swipe store
+    updateMessageSwipeData('userStats', statsText);
 }
 
 /**
@@ -212,7 +214,7 @@ export function saveAddItem(field, location) {
         inventory[field] = newString;
     }
 
-    updateLastGeneratedDataInventory();
+    updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
     updateMessageSwipeData();
@@ -261,7 +263,7 @@ export function removeItem(field, itemIndex, location) {
 
     // console.log('[RPG Companion] DEBUG inventory after save:', inventory);
 
-    updateLastGeneratedDataInventory();
+    updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
     updateMessageSwipeData();
@@ -326,7 +328,7 @@ export function saveAddLocation() {
     // Create new location with default "None"
     inventory.stored[locationName] = 'None';
 
-    updateLastGeneratedDataInventory();
+    updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
     updateMessageSwipeData();
@@ -386,7 +388,7 @@ export function confirmRemoveLocation(locationName) {
         collapsedLocations.splice(index, 1);
     }
 
-    updateLastGeneratedDataInventory();
+    updateSwipeStoreInventory();
     saveSettings();
     saveChatData();
     updateMessageSwipeData();

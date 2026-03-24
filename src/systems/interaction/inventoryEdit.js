@@ -3,9 +3,11 @@
  * Handles inline editing of inventory item names
  */
 
-import { extensionSettings, lastGeneratedData, committedTrackerData } from '../../core/state.js';
+import { getContext } from '../../../../../../extensions.js';
+import { extensionSettings } from '../../core/state.js';
 import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
 import { buildInventorySummary } from '../generation/promptBuilder.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { renderInventory } from '../rendering/inventory.js';
 import { parseItems, serializeItems } from '../../utils/itemParser.js';
 import { sanitizeItemName } from '../../utils/security.js';
@@ -65,8 +67,8 @@ export function updateInventoryItem(field, index, newName, location) {
         inventory[field] = newItemString;
     }
 
-    // Update lastGeneratedData and committedTrackerData with new inventory
-    updateLastGeneratedDataInventory();
+    // Update swipe store with new inventory
+    updateSwipeStoreInventory();
 
     // Save changes
     saveSettings();
@@ -78,15 +80,15 @@ export function updateInventoryItem(field, index, newName, location) {
 }
 
 /**
- * Updates lastGeneratedData.userStats AND committedTrackerData.userStats to include
- * current inventory.
+ * Updates the user stats in the swipe store to include current inventory.
  * Maintains JSON format if current data is JSON, otherwise uses text format.
  * This ensures manual edits are immediately visible to AI in next generation.
  * @private
  */
-function updateLastGeneratedDataInventory() {
-    // Check if current data is in JSON format
-    const currentData = lastGeneratedData.userStats || committedTrackerData.userStats;
+function updateSwipeStoreInventory() {
+    // Read current user stats from swipe store
+    const currentData = getTrackerDataForContext('userStats');
+    
     if (currentData) {
         const trimmed = currentData.trim();
         if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
@@ -118,8 +120,8 @@ function updateLastGeneratedDataInventory() {
                     };
 
                     const updatedJSON = JSON.stringify(jsonData, null, 2);
-                    lastGeneratedData.userStats = updatedJSON;
-                    committedTrackerData.userStats = updatedJSON;
+                    // Persist to swipe store
+                    updateMessageSwipeData('userStats', updatedJSON);
                     return;
                 }
             } catch (e) {
@@ -139,6 +141,7 @@ function updateLastGeneratedDataInventory() {
         `Arousal: ${stats.arousal}%\n` +
         `${stats.mood}: ${stats.conditions}\n` +
         `${inventorySummary}`;
-    lastGeneratedData.userStats = statsText;
-    committedTrackerData.userStats = statsText;
+    
+    // Persist to swipe store
+    updateMessageSwipeData('userStats', statsText);
 }

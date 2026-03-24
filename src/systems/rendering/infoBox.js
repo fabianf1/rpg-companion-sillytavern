@@ -6,11 +6,10 @@
 import { getContext } from '../../../../../../extensions.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     $infoBoxContainer
 } from '../../core/state.js';
-import { saveChatData } from '../../core/persistence.js';
+import { saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { i18n } from '../../core/i18n.js';
 import { isItemLocked } from '../generation/lockManager.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
@@ -85,14 +84,14 @@ export function renderInfoBox() {
         return;
     }
 
-    // Use committedTrackerData as fallback if lastGeneratedData is empty (e.g., after page refresh)
-    const infoBoxData = lastGeneratedData.infoBox || committedTrackerData.infoBox;
+    // Read info box data from swipe store
+    const infoBoxData = getTrackerDataForContext('infoBox');
     // console.log('[RPG InfoBox Render] infoBoxData length:', infoBoxData ? infoBoxData.length : 'null');
     // console.log('[RPG InfoBox Render] infoBoxData preview:', infoBoxData ? infoBoxData.substring(0, 200) : 'null');
 
     // If no data yet, hide the container (e.g., after cache clear)
     if (!infoBoxData) {
-        // console.log('[RPG InfoBox Render] No data, hiding container');
+        console.log('[RPG InfoBox Render] No data, hiding container');
         $infoBoxContainer.empty().hide();
         return;
     }
@@ -679,16 +678,18 @@ export function renderInfoBox() {
  * @param {string} value - New value for the field
  */
 export function updateInfoBoxField(field, value) {
-    if (!lastGeneratedData.infoBox) {
+    // Read current info box from swipe store
+    let infoBoxData = getTrackerDataForContext('infoBox');
+    if (!infoBoxData) {
         // Initialize with empty info box if it doesn't exist
-        lastGeneratedData.infoBox = 'Info Box\n---\n';
+        infoBoxData = 'Info Box\n---\n';
     }
 
     // Check if data is in v3 JSON format
-    const trimmed = lastGeneratedData.infoBox.trim();
+    const trimmed = infoBoxData.trim();
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
         // Handle v3 JSON format
-        const jsonData = repairJSON(lastGeneratedData.infoBox);
+        const jsonData = repairJSON(infoBoxData);
         if (jsonData) {
             // Update the appropriate field based on v3 structure
             if (field === 'weatherEmoji') {
@@ -731,9 +732,9 @@ export function updateInfoBoxField(field, value) {
                 jsonData.date.value = dateParts.filter(p => p).join(', ');
             }
 
-            // Save back as JSON
-            lastGeneratedData.infoBox = JSON.stringify(jsonData, null, 2);
-            committedTrackerData.infoBox = lastGeneratedData.infoBox;
+            // Save back as JSON and persist to swipe store
+            const updatedData = JSON.stringify(jsonData, null, 2);
+            updateMessageSwipeData('infoBox', updatedData);
             saveChatData();
             renderInfoBox();
             // console.log('[RPG Companion] Updated info box field (v3 JSON):', { field, value });
@@ -743,7 +744,7 @@ export function updateInfoBoxField(field, value) {
 
     // Fall back to text format handling
     // Reconstruct the Info Box text with updated field
-    const lines = lastGeneratedData.infoBox.split('\n');
+    const lines = infoBoxData.split('\n');
     let dateLineFound = false;
     let dateLineIndex = -1;
     let weatherLineIndex = -1;
@@ -974,31 +975,12 @@ export function updateInfoBoxField(field, value) {
         }
     }
 
-    lastGeneratedData.infoBox = updatedLines.join('\n');
-
-    // Update BOTH lastGeneratedData AND committedTrackerData
-    // This makes manual edits immediately visible to AI
-    committedTrackerData.infoBox = updatedLines.join('\n');
-
-    // Update the message's swipe data
-    const chat = getContext().chat;
-    if (chat && chat.length > 0) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-            if (!message.is_user) {
-                if (message.extra && message.extra.rpg_companion_swipes) {
-                    const swipeId = message.swipe_id || 0;
-                    if (message.extra.rpg_companion_swipes[swipeId]) {
-                        message.extra.rpg_companion_swipes[swipeId].infoBox = updatedLines.join('\n');
-                        // console.log('[RPG Companion] Updated infoBox in message swipe data');
-                    }
-                }
-                break;
-            }
-        }
-    }
-
+    const updatedData = updatedLines.join('\n');
+    // Persist updated info box to swipe store
+    updateMessageSwipeData('infoBox', updatedData);
     saveChatData();
+    renderInfoBox();
+    // console.log('[RPG Companion] Updated info box field (text format):', { field, value });
 
     // Only re-render if NOT editing date fields
     // Date fields will update on next tracker generation to avoid losing user input
@@ -1021,8 +1003,9 @@ function updateRecentEvent(field, value) {
     }[field];
 
     if (eventIndex !== undefined) {
-        // Parse current infoBox to get existing events
-        const lines = (committedTrackerData.infoBox || '').split('\n');
+        // Read current infoBox from swipe store
+        const infoBoxData = getTrackerDataForContext('infoBox') || '';
+        const lines = infoBoxData.split('\n');
         let recentEvents = [];
 
         // Find existing Recent Events line
@@ -1062,26 +1045,8 @@ function updateRecentEvent(field, value) {
             updatedLines.splice(insertIndex, 0, newRecentEventsLine);
         }
 
-        committedTrackerData.infoBox = updatedLines.join('\n');
-        lastGeneratedData.infoBox = updatedLines.join('\n');
-
-        // Update the message's swipe data
-        const chat = getContext().chat;
-        if (chat && chat.length > 0) {
-            for (let i = chat.length - 1; i >= 0; i--) {
-                const message = chat[i];
-                if (!message.is_user) {
-                    if (message.extra && message.extra.rpg_companion_swipes) {
-                        const swipeId = message.swipe_id || 0;
-                        if (message.extra.rpg_companion_swipes[swipeId]) {
-                            message.extra.rpg_companion_swipes[swipeId].infoBox = updatedLines.join('\n');
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
+        // Persist to swipe store
+        updateMessageSwipeData('infoBox', updatedLines.join('\n'));
         saveChatData();
         renderInfoBox();
 

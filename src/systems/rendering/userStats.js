@@ -7,8 +7,6 @@ import { getContext } from '../../../../../../extensions.js';
 import { user_avatar } from '../../../../../../../script.js';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     $userStatsContainer,
     FALLBACK_AVATAR_DATA_URI
 } from '../../core/state.js';
@@ -19,10 +17,11 @@ import {
     updateMessageSwipeData
 } from '../../core/persistence.js';
 import { getSafeThumbnailUrl } from '../../utils/avatars.js';
-import { buildInventorySummary } from '../generation/promptBuilder.js';
+import { buildInventorySummary, getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 import { updateFabWidgets } from '../ui/mobile.js';
 import { getStatBarColors } from '../ui/theme.js';
+import { parseUserStats } from '../generation/parser.js';
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -86,110 +85,14 @@ export function buildUserStatsText() {
 }
 
 /**
- * Updates lastGeneratedData.userStats and committedTrackerData.userStats
- * Maintains JSON format if current data is JSON, otherwise uses text format.
+ * Persists tracker data after user edits.
+ * Calls updateMessageSwipeData to write current extensionSettings to swipe store.
  * @private
  */
 function updateUserStatsData() {
-    // Check if current data is in JSON format
-    const currentData = lastGeneratedData.userStats || committedTrackerData.userStats;
-    if (currentData) {
-        const trimmed = currentData.trim();
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            // Maintain JSON format
-            try {
-                const jsonData = JSON.parse(currentData);
-                if (jsonData && typeof jsonData === 'object') {
-                    const stats = extensionSettings.userStats;
-                    const config = extensionSettings.trackerConfig?.userStats || {};
-                    const enabledStats = config.customStats?.filter(stat => stat && stat.enabled && stat.name && stat.id) || [];
-
-                    // Build stats array - include all stats from extensionSettings, not just enabled ones
-                    // This preserves custom stats that AI might have added or that user has disabled
-                    const statsArray = [];
-                    const processedIds = new Set();
-
-                    // First, add all enabled stats from config (maintains order)
-                    enabledStats.forEach(stat => {
-                        statsArray.push({
-                            id: stat.id,
-                            name: stat.name,
-                            value: stats[stat.id] !== undefined ? stats[stat.id] : 100
-                        });
-                        processedIds.add(stat.id);
-                    });
-
-                    // Then, add any other numeric stats from extensionSettings that aren't in config
-                    // (these could be custom stats the AI added or disabled stats)
-                    const customFields = config.statusSection?.customFields || [];
-                    const excludeFields = new Set(['mood', ...customFields.map(f => toFieldKey(f)), 'inventory', 'skills', 'level']);
-                    Object.entries(stats).forEach(([key, value]) => {
-                        if (!processedIds.has(key) && !excludeFields.has(key) && typeof value === 'number') {
-                            statsArray.push({
-                                id: key,
-                                name: key.charAt(0).toUpperCase() + key.slice(1),
-                                value: value
-                            });
-                        }
-                    });
-
-                    jsonData.stats = statsArray;
-
-                    // Update status - include all custom status fields
-                    jsonData.status = {
-                        mood: stats.mood || '😐'
-                    };
-
-                    // Add all custom status fields
-                    for (const fieldName of customFields) {
-                        const fieldKey = toFieldKey(fieldName);
-                        jsonData.status[fieldKey] = stats[fieldKey] || 'None';
-                    }
-
-                    // Update inventory (convert to v3 format)
-                    const convertToV3Items = (itemString) => {
-                        if (!itemString) return [];
-                        const items = itemString.split(',').map(s => s.trim()).filter(s => s);
-                        return items.map(item => {
-                            const qtyMatch = item.match(/^(\\d+)x\\s+(.+)$/);
-                            if (qtyMatch) {
-                                return { name: qtyMatch[2].trim(), quantity: parseInt(qtyMatch[1]) };
-                            }
-                            return { name: item, quantity: 1 };
-                        });
-                    };
-
-                    jsonData.inventory = {
-                        onPerson: convertToV3Items(stats.inventory?.onPerson),
-                        clothing: convertToV3Items(stats.inventory?.clothing),
-                        stored: stats.inventory?.stored || {},
-                        assets: convertToV3Items(stats.inventory?.assets)
-                    };
-
-                    // Update quests
-                    jsonData.quests = extensionSettings.quests || { main: '', optional: [] };
-
-                    // Update skills if present
-                    if (stats.skills) {
-                        jsonData.skills = Array.isArray(stats.skills) ? stats.skills :
-                            stats.skills.split(',').map(s => s.trim()).filter(s => s);
-                    }
-
-                    const updatedJSON = JSON.stringify(jsonData, null, 2);
-                    lastGeneratedData.userStats = updatedJSON;
-                    committedTrackerData.userStats = updatedJSON;
-                    return;
-                }
-            } catch (e) {
-                console.warn('[RPG Companion] Failed to parse JSON, falling back to text format:', e);
-            }
-        }
-    }
-
-    // Fall back to text format
-    const statsText = buildUserStatsText();
-    lastGeneratedData.userStats = statsText;
-    committedTrackerData.userStats = statsText;
+    // User edits are already in extensionSettings via the UI event handlers
+    // Just persist to swipe store
+    updateMessageSwipeData();
 }
 
 /**
@@ -199,38 +102,25 @@ function updateUserStatsData() {
  */
 export function renderUserStats() {
     if (!extensionSettings.showUserStats || !$userStatsContainer) {
+        console.warn('[RPG Companion] User stats panel is disabled or container not found. Skipping render.');
         return;
     }
 
-    // Don't render if no data exists (e.g., after cache clear)
-    // Check both lastGeneratedData and committedTrackerData
-    // console.log('[RPG UserStats Render] Checking data:', {
-    //     hasLastGenerated: !!lastGeneratedData.userStats,
-    //     hasCommitted: !!committedTrackerData.userStats,
-    //     lastGeneratedPreview: lastGeneratedData.userStats ? lastGeneratedData.userStats.substring(0, 100) : 'null',
-    //     committedPreview: committedTrackerData.userStats ? committedTrackerData.userStats.substring(0, 100) : 'null'
-    // });
-
-    if (!lastGeneratedData.userStats && !committedTrackerData.userStats) {
-        // Always render to the #rpg-user-stats container (mobile layout just moves it around in DOM)
+    // Check if tracker data exists (from swipe store or extensionSettings)
+    const trackerData = getTrackerDataForContext('userStats');
+    
+    // Parse the trackerData. It's kinda... weird that we have to parse it. Espcially because it is also used in the inventory...
+    if (trackerData) {
+        parseUserStats(trackerData);
+    }
+    
+    if (!trackerData || !extensionSettings.userStats) {
+        // Always render to the #rpg-user-stats container
         $userStatsContainer.html('<div class="rpg-inventory-empty">No statuses generated yet</div>');
         return;
     }
 
-    // Use lastGeneratedData if available, otherwise fall back to committed data
-    if (!lastGeneratedData.userStats && committedTrackerData.userStats) {
-        lastGeneratedData.userStats = committedTrackerData.userStats;
-    }
-
     const stats = extensionSettings.userStats;
-    // console.log('[RPG UserStats Render] Current extensionSettings.userStats:', {
-    //     health: stats.health,
-    //     satiety: stats.satiety,
-    //     energy: stats.energy,
-    //     hygiene: stats.hygiene,
-    //     arousal: stats.arousal,
-    //     mood: stats.mood,
-    //     conditions: stats.conditions
     // });
     const config = extensionSettings.trackerConfig?.userStats || {
         customStats: [
@@ -252,11 +142,6 @@ export function renderUserStats() {
         skillsSection: { enabled: false, label: 'Skills' }
     };
     const userName = getContext().name1;
-
-    // Initialize lastGeneratedData.userStats if it doesn't exist
-    if (!lastGeneratedData.userStats) {
-        lastGeneratedData.userStats = buildUserStatsText();
-    }
 
     // Get user portrait
     let userPortrait = FALLBACK_AVATAR_DATA_URI;
@@ -605,4 +490,57 @@ export function renderUserStats() {
         // Save settings
         saveSettings();
     });
+
+    // Update tracker message display
+    updateTrackerMessageDisplay();
+}
+
+/**
+ * Updates the tracker message display in the sidebar.
+ * Shows the message ID where tracker data was found and warns if outdated.
+ */
+function updateTrackerMessageDisplay() {
+    const $display = $('#rpg-tracker-message');
+    const lastTrackerMessageId = extensionSettings.lastTrackerMessage;
+    
+    // Hide if no tracker message is set
+    if (!lastTrackerMessageId) {
+        $display.hide();
+        return;
+    } else {
+        $display.show();
+    }
+    
+    const chatToSearch = getContext().chat;
+    if (!chatToSearch) {
+        $display.hide();
+        return;
+    }
+    
+    // Check if the tracker message is the latest message
+    let lastAssistantMessage = chatToSearch.length -1;
+    for (let i = chatToSearch.length - 1; i >= 0; i--) {
+            const message = chatToSearch[i];
+            // Skip user and system messages
+            if (message.is_user || message.is_system) {
+                continue;
+            }
+            lastAssistantMessage = i;
+            break;
+        }
+
+    const isOutdated = lastAssistantMessage !== lastTrackerMessageId;
+    
+    const label = i18n.getTranslation('template.mainPanel.trackerMessage') || 'Tracker from message: ';
+    const outdatedLabel = i18n.getTranslation('template.mainPanel.trackerMessageOutdated') || ' (outdated)';
+    
+    const $element = $display.find('#rpg-tracker-message-text');
+    $element.text(`${label}${lastTrackerMessageId}${isOutdated ? outdatedLabel : ''}`);
+    
+    // Add/remove outdated class
+    if (isOutdated) {
+        $display.addClass('rpg-tracker-outdated');
+    } else {
+        $display.removeClass('rpg-tracker-outdated');
+    }
 }

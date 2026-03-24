@@ -3,8 +3,9 @@
  * Migrates committed tracker data from v2 text format to v3 JSON format
  */
 
-import { committedTrackerData, extensionSettings, updateCommittedTrackerData, updateExtensionSettings } from '../core/state.js';
+import { extensionSettings, updateExtensionSettings } from '../core/state.js';
 import { saveSettings, saveChatData } from '../core/persistence.js';
+import { getTrackerDataForContext } from '../systems/generation/promptBuilder.js';
 
 /**
  * Helper to separate emoji from text in a string
@@ -365,35 +366,48 @@ export async function migrateToV3JSON() {
         characterThoughts: null
     };
 
+    // Try to read data from swipe store first, then fall back to extensionSettings
+    const userStatsData = getTrackerDataForContext('userStats') || extensionSettings.userStats;
+    const infoBoxData = getTrackerDataForContext('infoBox') || extensionSettings.infoBox;
+    const characterThoughtsData = getTrackerDataForContext('characterThoughts') || extensionSettings.characterThoughts;
+
     // Migrate User Stats
-    if (committedTrackerData.userStats && typeof committedTrackerData.userStats === 'string') {
+    if (userStatsData && typeof userStatsData === 'string' && !userStatsData.trim().startsWith('{')) {
         // console.log('[RPG Migration] Migrating User Stats...');
-        migrated.userStats = migrateUserStatsToJSON(committedTrackerData.userStats);
+        migrated.userStats = migrateUserStatsToJSON(userStatsData);
         if (migrated.userStats) {
             // console.log('[RPG Migration] ✓ User Stats migrated');
         }
     }
 
     // Migrate Info Box
-    if (committedTrackerData.infoBox && typeof committedTrackerData.infoBox === 'string') {
+    if (infoBoxData && typeof infoBoxData === 'string' && !infoBoxData.trim().startsWith('{')) {
         // console.log('[RPG Migration] Migrating Info Box...');
-        migrated.infoBox = migrateInfoBoxToJSON(committedTrackerData.infoBox);
+        migrated.infoBox = migrateInfoBoxToJSON(infoBoxData);
         if (migrated.infoBox) {
             // console.log('[RPG Migration] ✓ Info Box migrated');
         }
     }
 
     // Migrate Present Characters
-    if (committedTrackerData.characterThoughts && typeof committedTrackerData.characterThoughts === 'string') {
+    if (characterThoughtsData && typeof characterThoughtsData === 'string' && !characterThoughtsData.trim().startsWith('[')) {
         // console.log('[RPG Migration] Migrating Present Characters...');
-        migrated.characterThoughts = migrateCharactersToJSON(committedTrackerData.characterThoughts);
+        migrated.characterThoughts = migrateCharactersToJSON(characterThoughtsData);
         if (migrated.characterThoughts) {
             // console.log('[RPG Migration] ✓ Present Characters migrated');
         }
     }
 
-    // Update committed data
-    updateCommittedTrackerData(migrated);
+    // Update extensionSettings with migrated data
+    if (migrated.userStats) {
+        extensionSettings.userStats = migrated.userStats;
+    }
+    if (migrated.infoBox) {
+        extensionSettings.infoBox = migrated.infoBox;
+    }
+    if (migrated.characterThoughts) {
+        extensionSettings.characterThoughts = migrated.characterThoughts;
+    }
 
     // Initialize lockedItems if not present
     if (!extensionSettings.lockedItems) {

@@ -3,7 +3,10 @@
  * Handles parsing and storing Spotify URLs from AI responses
  */
 
-import { extensionSettings, committedTrackerData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
+
+// Store Spotify URL in extensionSettings for persistence
+let currentSpotifyUrl = null;
 
 /**
  * Extracts song suggestion from AI response in <spotify:Song - Artist/> format
@@ -54,9 +57,9 @@ export function parseAndStoreSpotifyUrl(responseText) {
     const songData = extractSpotifyUrl(responseText);
     // console.log('[RPG Companion] Spotify Parser: Found song:', songData);
     if (songData) {
-        // Store in committed tracker data
-        committedTrackerData.spotifyUrl = songData;
-        // console.log('[RPG Companion] Spotify Parser: Stored song in committedTrackerData:', committedTrackerData.spotifyUrl);
+        // Store in extensionSettings
+        currentSpotifyUrl = songData;
+        // console.log('[RPG Companion] Spotify Parser: Stored song in extensionSettings:', currentSpotifyUrl);
         return true;
     }
 
@@ -64,16 +67,16 @@ export function parseAndStoreSpotifyUrl(responseText) {
 }
 
 /**
- * Gets the current song data from committed tracker data
+ * Gets the current song data
  * @returns {Object|null} Current song data or null
  */
 export function getCurrentSpotifyUrl() {
-    return committedTrackerData.spotifyUrl || null;
+    return currentSpotifyUrl || null;
 }
 
 /**
  * Clears the current song data
  */
 export function clearSpotifyUrl() {
-    committedTrackerData.spotifyUrl = null;
+    currentSpotifyUrl = null;
 }

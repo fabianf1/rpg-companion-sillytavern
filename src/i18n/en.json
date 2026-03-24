@@ -153,6 +153,8 @@
     "template.mainPanel.title": "RPG Companion",
     "template.mainPanel.lastRoll": "Last Roll:",
     "template.mainPanel.clearLastRoll": "Clear last roll",
+    "template.mainPanel.trackerMessage": "Tracker from message: ",
+    "template.mainPanel.trackerMessageOutdated": " (outdated)",
     "template.mainPanel.immersiveHtml": "Immersive HTML",
     "template.mainPanel.coloredDialogues": "Colored Dialogues",
     "template.mainPanel.deceptionSystem": "Deception System",

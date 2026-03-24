@@ -13,13 +13,12 @@ import {
     $questsContainer,
     $musicPlayerContainer,
     setInventoryContainer,
-    setQuestsContainer,
-    lastGeneratedData,
-    committedTrackerData
+    setQuestsContainer
 } from '../../core/state.js';
 import { i18n } from '../../core/i18n.js';
 import { setupMobileTabs, removeMobileTabs } from './mobile.js';
 import { setupDesktopTabs, removeDesktopTabs, updateStripWidgets } from './desktop.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 
 /**
  * Toggles the visibility of plot buttons based on settings.
@@ -288,7 +287,7 @@ export function updateSectionVisibility() {
 
     if (extensionSettings.showInfoBox) {
         // Only show if there's data to display
-        const infoBoxData = lastGeneratedData.infoBox || committedTrackerData.infoBox;
+        const infoBoxData = getTrackerDataForContext('infoBox');
         if (infoBoxData) {
             $infoBoxContainer.show();
         } else {

@@ -9,8 +9,6 @@ import { chat, user_avatar, setExtensionPrompt, extension_prompt_types, saveChat
 // Core modules
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     lastActionWasSwipe,
     isPlotProgression,
     isAwaitingNewMessage,
@@ -18,15 +16,13 @@ import {
     setIsPlotProgression,
     setIsGenerating,
     setIsAwaitingNewMessage,
-    updateLastGeneratedData,
-    updateCommittedTrackerData,
     $musicPlayerContainer
 } from '../../core/state.js';
 import { saveChatData, loadChatData, autoSwitchPresetForEntity } from '../../core/persistence.js';
 import { i18n } from '../../core/i18n.js';
 
 // Generation & Parsing
-import { parseResponse, parseUserStats } from '../generation/parser.js';
+import { parseResponse } from '../generation/parser.js';
 import { parseAndStoreSpotifyUrl, convertToEmbedUrl } from '../features/musicPlayer.js';
 import { updateRPGData } from '../generation/apiClient.js';
 import { removeLocks } from '../generation/lockManager.js';
@@ -55,36 +51,13 @@ import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
  * Commits the tracker data from the last assistant message to be used as source for next generation.
  * This should be called when the user has replied to a message, ensuring all swipes of the next
  * response use the same committed context.
+ * 
+ * NOTE: With the new architecture, tracker data is read directly from the swipe store.
+ * This function is kept for backward compatibility but is now a no-op.
  */
 export function commitTrackerData() {
-    const chat = getContext().chat;
-    if (!chat || chat.length === 0) {
-        return;
-    }
-
-    // Find the last assistant message
-    for (let i = chat.length - 1; i >= 0; i--) {
-        const message = chat[i];
-        if (!message.is_user) {
-            // Found last assistant message - commit its tracker data
-            if (message.extra && message.extra.rpg_companion_swipes) {
-                const swipeId = message.swipe_id || 0;
-                const swipeData = message.extra.rpg_companion_swipes[swipeId];
-
-                if (swipeData) {
-                    // console.log('[RPG Companion] Committing tracker data from assistant message at index', i, 'swipe', swipeId);
-                    committedTrackerData.userStats = swipeData.userStats || null;
-                    committedTrackerData.infoBox = swipeData.infoBox || null;
-                    committedTrackerData.characterThoughts = swipeData.characterThoughts || null;
-                } else {
-                    // console.log('[RPG Companion] No swipe data found for swipe', swipeId);
-                }
-            } else {
-                // console.log('[RPG Companion] No RPG data found in last assistant message');
-            }
-            break;
-        }
-    }
+    // Tracker data is now read directly from swipe store via getTrackerDataForContext()
+    // No need to commit to a global variable
 }
 
 /**
@@ -118,17 +91,6 @@ export function onMessageSent() {
     // Note: FAB spinning is NOT shown for together mode since no extra API request is made
     // The RPG data comes embedded in the main response
     // FAB spinning is handled by apiClient.js for separate mode when updateRPGData() is called
-
-    // For separate mode with auto-update disabled, commit displayed tracker
-    if (extensionSettings.generationMode === 'separate' && !extensionSettings.autoUpdate) {
-        if (lastGeneratedData.userStats || lastGeneratedData.infoBox || lastGeneratedData.characterThoughts) {
-            committedTrackerData.userStats = lastGeneratedData.userStats;
-            committedTrackerData.infoBox = lastGeneratedData.infoBox;
-            committedTrackerData.characterThoughts = lastGeneratedData.characterThoughts;
-
-            // console.log('[RPG Companion] 💾 SEPARATE MODE: Committed displayed tracker (auto-update disabled)');
-        }
-    }
 }
 
 /**
@@ -171,20 +133,7 @@ export async function onMessageReceived(data) {
             // Parse and store Spotify URL if feature is enabled
             parseAndStoreSpotifyUrl(responseText);
 
-            // Update display data with newly parsed response
-            // console.log('[RPG Companion] 📝 TOGETHER MODE: Updating lastGeneratedData with parsed response');
-            if (parsedData.userStats) {
-                lastGeneratedData.userStats = parsedData.userStats;
-                parseUserStats(parsedData.userStats);
-            }
-            if (parsedData.infoBox) {
-                lastGeneratedData.infoBox = parsedData.infoBox;
-            }
-            if (parsedData.characterThoughts) {
-                lastGeneratedData.characterThoughts = parsedData.characterThoughts;
-            }
-
-            // Store RPG data for this specific swipe in the message's extra field
+            // Store RPG data for this specific swipe in the message's extra field (authoritative source)
             if (!lastMessage.extra) {
                 lastMessage.extra = {};
             }
@@ -199,7 +148,12 @@ export async function onMessageReceived(data) {
                 characterThoughts: parsedData.characterThoughts
             };
 
-            // console.log('[RPG Companion] Stored RPG data for swipe', currentSwipeId);
+            // Parse user stats to update extensionSettings
+            if (parsedData.userStats) {
+                parseUserStats(parsedData.userStats);
+            }
+
+            // comment.log('[RPG Companion] Stored RPG data for swipe', currentSwipeId);
 
             // Remove the tracker code blocks from the visible message
             let cleanedMessage = responseText;
@@ -323,8 +277,8 @@ export function onCharacterChanged() {
     // Load chat-specific data when switching chats
     loadChatData();
 
-    // Don't call commitTrackerData() here - it would overwrite the loaded committedTrackerData
-    // with data from the last message, which may be null/empty. The loaded committedTrackerData
+    // Don't call commitTrackerData() here - it would overwrite the loaded swipeStore
+    // with data from the last message, which may be null/empty. The loaded swipeStore
     // already contains the committed state from when we last left this chat.
     // commitTrackerData() will be called naturally when new messages arrive.
 
@@ -378,38 +332,20 @@ export function onMessageSwiped(messageIndex) {
         // This is a NEW swipe that will trigger generation
         setLastActionWasSwipe(true);
         setIsAwaitingNewMessage(true);
-        // console.log('[RPG Companion] 🔵 NEW swipe detected - Set lastActionWasSwipe = true');
+        console.log('[RPG Companion] 🔵 NEW swipe detected - Set lastActionWasSwipe = true');
     } else {
         // This is navigating to an EXISTING swipe - don't change the flag
-        // console.log('[RPG Companion] 🔵 EXISTING swipe navigation - lastActionWasSwipe unchanged =', lastActionWasSwipe);
+        console.log('[RPG Companion] 🔵 EXISTING swipe navigation - lastActionWasSwipe unchanged =', lastActionWasSwipe);
     }
 
     // console.log('[RPG Companion] Loading data for swipe', currentSwipeId);
 
     // IMPORTANT: onMessageSwiped is for DISPLAY only!
-    // lastGeneratedData is for DISPLAY, committedTrackerData is for GENERATION
-    // It's safe to load swipe data into lastGeneratedData - it won't be committed due to !lastActionWasSwipe check
+    // Data is read directly from swipe store (message.extra.rpg_companion_swipes)
+    // Render functions now read and parse data internally, no need to parse first
     if (message.extra && message.extra.rpg_companion_swipes && message.extra.rpg_companion_swipes[currentSwipeId]) {
         const swipeData = message.extra.rpg_companion_swipes[currentSwipeId];
-
-        // Load swipe data into lastGeneratedData for display (both modes)
-        lastGeneratedData.userStats = swipeData.userStats || null;
-        lastGeneratedData.infoBox = swipeData.infoBox || null;
-
-        // Normalize characterThoughts to string format (for backward compatibility with old object format)
-        if (swipeData.characterThoughts && typeof swipeData.characterThoughts === 'object') {
-            lastGeneratedData.characterThoughts = JSON.stringify(swipeData.characterThoughts, null, 2);
-        } else {
-            lastGeneratedData.characterThoughts = swipeData.characterThoughts || null;
-        }
-
-        // DON'T parse user stats when loading swipe data
-        // This would overwrite manually edited fields (like Conditions) with old swipe data
-        // The lastGeneratedData is loaded for display purposes only
-        // parseUserStats() updates extensionSettings.userStats which should only be modified
-        // by new generations or manual edits, not by swipe navigation
-
-        // console.log('[RPG Companion] 🔄 Loaded swipe data into lastGeneratedData for display:', currentSwipeId);
+        // console.log('[RPG Companion] Found stored data for swipe:', currentSwipeId, swipeData);
     } else {
         // console.log('[RPG Companion] ℹ️ No stored data for swipe:', currentSwipeId);
     }
@@ -425,6 +361,39 @@ export function onMessageSwiped(messageIndex) {
     // Update chat thought overlays
     updateChatThoughts();
 }
+
+/**
+ * Event handler for when a message is deleted.
+ * Re-syncs swipeStore, swipeStore, and all UI panels to the
+ * new last assistant message's active swipe — or clears everything if no
+ * assistant messages remain.
+ */
+export function onMessageDeleted() {
+    if (!extensionSettings.enabled) return;
+
+    console.log('[RPG Companion] 🗑️ EVENT: onMessageDeleted');
+
+    // Invalidate any pending or in-flight separate-mode generation so
+    // its result is not applied to the (now-changed) chat tail.
+    //incrementSeparateGenerationId();
+
+    // Re-render all panels.
+    // Render functions now read directly from the swipe store, so no state management needed.
+    renderUserStats();
+    renderInfoBox();
+    renderThoughts();
+    renderInventory();
+    renderQuests();
+    renderMusicPlayer($musicPlayerContainer[0]);
+
+    // Update widget strips.
+    updateFabWidgets();
+    updateStripWidgets();
+
+    // Persist updated state.
+    saveChatData();
+}
+
 
 /**
  * Update the persona avatar image when user switches personas

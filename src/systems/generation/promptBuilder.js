@@ -6,7 +6,7 @@
 import { getContext } from '../../../../../../extensions.js';
 import { chat, getCurrentChatDetails, characters, this_chid } from '../../../../../../../script.js';
 import { selected_group, getGroupMembers, getGroupChat, groups } from '../../../../../../group-chats.js';
-import { extensionSettings, committedTrackerData, FEATURE_FLAGS } from '../../core/state.js';
+import { extensionSettings, FEATURE_FLAGS } from '../../core/state.js';
 import {
     buildUserStatsJSONInstruction,
     buildInfoBoxJSONInstruction,
@@ -17,6 +17,64 @@ import { applyLocks } from './lockManager.js';
 
 // Type imports
 /** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
+
+/**
+ * Reads tracker data from a specific swipe in a message.
+ * Checks message.extra first (in-memory), then message.swipe_info (serialized on save).
+ *
+ * @param {Object} message - The chat message object
+ * @param {number} swipeId - The swipe index to read
+ * @returns {Object|null} The rpg_companion_swipes data for this swipe, or null
+ */
+function getSwipeData(message, swipeId) {
+    // Primary: in-memory extra (current session or after recent write)
+    const fromExtra = message.extra?.rpg_companion_swipes?.[swipeId];
+    if (fromExtra) return fromExtra;
+
+    // Fallback: swipe_info (populated by ST when loading from disk)
+    const fromSwipeInfo = message.swipe_info?.[swipeId]?.extra?.rpg_companion_swipes?.[swipeId];
+    if (fromSwipeInfo) return fromSwipeInfo;
+
+    return null;
+}
+
+/**
+ * Reads tracker data from the authoritative swipe store.
+ * Searches backward through chat to find the last assistant message with swipe data.
+ *
+ * @param {string} trackerKey - Which tracker to read: 'userStats', 'infoBox', or 'characterThoughts'
+ * @param {Array} currentChat - The chat array to search (defaults to getContext().chat)
+ * @returns {string|null} The tracker data for this key, or null if not found
+ */
+export function getTrackerDataForContext(trackerKey, currentChat = null) {
+    const chatToSearch = currentChat || getContext().chat;
+    if (!chatToSearch) return null;
+
+    // Reset last tracker message at the beginning of context gathering
+    extensionSettings.lastTrackerMessage = null;
+
+    // Walk backward to find the last assistant message with swipe data
+    for (let i = chatToSearch.length - 1; i >= 0; i--) {
+        const message = chatToSearch[i];
+        // Skip user and system messages
+        if (message.is_user || message.is_system) {
+            continue;
+        }
+
+        // Found an assistant message - try to get its swipe data
+        const swipeId = message.swipe_id || 0;
+        //console.log(`[RPG Companion] Checking message ID ${message.id} for tracker data. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId} | ${message.swipe_id}`);
+        const swipeData = getSwipeData(message, swipeId);
+        if (swipeData && swipeData[trackerKey]) {
+            console.log(`[RPG Companion] Found tracker data for "${trackerKey}" in message ID ${message.id}. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId}`);
+            // Track the message ID of the last message with tracker data
+            extensionSettings.lastTrackerMessage = i;
+            return swipeData[trackerKey];
+        }
+    }
+
+    return null;
+}
 
 /**
  * Default HTML prompt text
@@ -254,52 +312,45 @@ function buildAttributesString() {
 export function generateTrackerExample() {
     let example = '';
 
-    // Use COMMITTED data for generation context, not displayed data
+    // Use authoritative swipe store data for generation context
     // Apply locks before sending to AI (for JSON format only)
     // Build unified JSON structure with proper wrapper keys
     const parts = [];
 
-    // console.log('[RPG Companion] generateTrackerExample - enabled modules:', {
-    //     showUserStats: extensionSettings.showUserStats,
-    //     showInfoBox: extensionSettings.showInfoBox,
-    //     showCharacterThoughts: extensionSettings.showCharacterThoughts
-    // // });
-    // console.log('[RPG Companion] generateTrackerExample - committed data:', {
-    //     hasUserStats: !!committedTrackerData.userStats,
-    //     hasInfoBox: !!committedTrackerData.infoBox,
-    //     hasCharacterThoughts: !!committedTrackerData.characterThoughts
-    // });
+    const userStatsData = getTrackerDataForContext('userStats');
+    const infoBoxData = getTrackerDataForContext('infoBox');
+    const characterThoughtsData = getTrackerDataForContext('characterThoughts');
 
-    if (extensionSettings.showUserStats && committedTrackerData.userStats) {
+    if (extensionSettings.showUserStats && userStatsData) {
         // Try to parse as JSON first, otherwise treat as text
         try {
-            JSON.parse(committedTrackerData.userStats);
+            JSON.parse(userStatsData);
             // It's valid JSON - apply locks
-            const lockedData = applyLocks(committedTrackerData.userStats, 'userStats');
+            const lockedData = applyLocks(userStatsData, 'userStats');
             parts.push(`  "userStats": ${lockedData}`);
         } catch {
             // It's text format - no locks applied
-            example += '```\n' + committedTrackerData.userStats + '\n```\n';
+            example += '```\n' + userStatsData + '\n```\n';
         }
     }
 
-    if (extensionSettings.showInfoBox && committedTrackerData.infoBox) {
+    if (extensionSettings.showInfoBox && infoBoxData) {
         try {
-            JSON.parse(committedTrackerData.infoBox);
-            const lockedData = applyLocks(committedTrackerData.infoBox, 'infoBox');
+            JSON.parse(infoBoxData);
+            const lockedData = applyLocks(infoBoxData, 'infoBox');
             parts.push(`  "infoBox": ${lockedData}`);
         } catch {
-            example += '```\n' + committedTrackerData.infoBox + '\n```\n';
+            example += '```\n' + infoBoxData + '\n```\n';
         }
     }
 
-    if (extensionSettings.showCharacterThoughts && committedTrackerData.characterThoughts) {
+    if (extensionSettings.showCharacterThoughts && characterThoughtsData) {
         try {
-            JSON.parse(committedTrackerData.characterThoughts);
-            const lockedData = applyLocks(committedTrackerData.characterThoughts, 'characters');
+            JSON.parse(characterThoughtsData);
+            const lockedData = applyLocks(characterThoughtsData, 'characters');
             parts.push(`  "characters": ${lockedData}`);
         } catch {
-            example += '```\n' + committedTrackerData.characterThoughts + '\n```';
+            example += '```\n' + characterThoughtsData + '\n```';
         }
     }
 
@@ -307,8 +358,6 @@ export function generateTrackerExample() {
     if (parts.length > 0) {
         example = '{\n' + parts.join(',\n') + '\n}';
     }
-
-    // console.log('[RPG Companion] generateTrackerExample - result length:', example.length, 'parts:', parts.length);
 
     return example.trim();
 }
@@ -1037,38 +1086,47 @@ export function generateContextualSummary() {
     let summary = '';
 
     // Add User Stats tracker data if enabled
-    if (extensionSettings.showUserStats && committedTrackerData.userStats) {
-        try {
-            const formatted = formatTrackerDataForContext(committedTrackerData.userStats, 'userStats', userName);
-            if (formatted) {
-                summary += formatted + '\n';
+    if (extensionSettings.showUserStats) {
+        const userStatsData = getTrackerDataForContext('userStats');
+        if (userStatsData) {
+            try {
+                const formatted = formatTrackerDataForContext(userStatsData, 'userStats', userName);
+                if (formatted) {
+                    summary += formatted + '\n';
+                }
+            } catch (e) {
+                console.warn('[RPG Companion] Failed to format userStats for context:', e);
             }
-        } catch (e) {
-            console.warn('[RPG Companion] Failed to format userStats for context:', e);
         }
     }
 
     // Add Info Box tracker data if enabled
-    if (extensionSettings.showInfoBox && committedTrackerData.infoBox) {
-        try {
-            const formatted = formatTrackerDataForContext(committedTrackerData.infoBox, 'infoBox', userName);
-            if (formatted) {
-                summary += formatted + '\n';
+    if (extensionSettings.showInfoBox) {
+        const infoBoxData = getTrackerDataForContext('infoBox');
+        if (infoBoxData) {
+            try {
+                const formatted = formatTrackerDataForContext(infoBoxData, 'infoBox', userName);
+                if (formatted) {
+                    summary += formatted + '\n';
+                }
+            } catch (e) {
+                console.warn('[RPG Companion] Failed to format infoBox for context:', e);
             }
-        } catch (e) {
-            console.warn('[RPG Companion] Failed to format infoBox for context:', e);
         }
     }
 
     // Add Present Characters tracker data if enabled
-    if (extensionSettings.showCharacterThoughts && committedTrackerData.characterThoughts) {
-        try {
-            const formatted = formatTrackerDataForContext(committedTrackerData.characterThoughts, 'characters', userName);
-            if (formatted) {
-                summary += formatted + '\n';
+    if (extensionSettings.showCharacterThoughts) {
+        const characterThoughtsData = getTrackerDataForContext('characterThoughts');
+        if (characterThoughtsData) {
+            try {
+                const formatted = formatTrackerDataForContext(characterThoughtsData, 'characters', userName);
+                if (formatted) {
+                    summary += formatted + '\n';
+                }
+            } catch (e) {
+                console.warn('[RPG Companion] Failed to format characters for context:', e);
             }
-        } catch (e) {
-            console.warn('[RPG Companion] Failed to format characters for context:', e);
         }
     }
 
@@ -1105,7 +1163,7 @@ export function generateContextualSummary() {
  * @returns {string} Full prompt text for separate tracker generation
  */
 export function generateRPGPromptText() {
-    // Use COMMITTED data for generation context, not displayed data
+    // Use authoritative swipe store data for generation context
     const userName = getContext().name1;
 
     let promptText = '';
@@ -1113,50 +1171,55 @@ export function generateRPGPromptText() {
     promptText += `Here are the previous trackers in the roleplay that you should consider when responding:\n`;
     promptText += `<previous>\n`;
 
+    // Get data from authoritative swipe store
+    const userStatsData = getTrackerDataForContext('userStats');
+    const infoBoxData = getTrackerDataForContext('infoBox');
+    const characterThoughtsData = getTrackerDataForContext('characterThoughts');
+
     // Build unified JSON structure for previous trackers (v3.1 format)
-    const hasAnyPreviousData = committedTrackerData.userStats || committedTrackerData.infoBox || committedTrackerData.characterThoughts;
+    const hasAnyPreviousData = userStatsData || infoBoxData || characterThoughtsData;
 
     if (hasAnyPreviousData) {
         const unifiedPrevious = {};
 
-        if (extensionSettings.showUserStats && committedTrackerData.userStats) {
+        if (extensionSettings.showUserStats && userStatsData) {
             try {
                 // Try to parse as JSON - apply locks before adding to previous
-                const lockedData = applyLocks(committedTrackerData.userStats, 'userStats');
+                const lockedData = applyLocks(userStatsData, 'userStats');
                 const parsed = JSON.parse(lockedData);
                 unifiedPrevious.userStats = parsed;
             } catch {
                 // Old text format - show it separately for backward compat
-                promptText += `${committedTrackerData.userStats}\n\n`;
+                promptText += `${userStatsData}\n\n`;
             }
         }
 
-        if (extensionSettings.showInfoBox && committedTrackerData.infoBox) {
+        if (extensionSettings.showInfoBox && infoBoxData) {
             try {
                 // Try to parse as JSON - apply locks before adding to previous
-                const lockedData = applyLocks(committedTrackerData.infoBox, 'infoBox');
+                const lockedData = applyLocks(infoBoxData, 'infoBox');
                 const parsed = JSON.parse(lockedData);
                 unifiedPrevious.infoBox = parsed;
             } catch {
                 // Old text format - show it separately for backward compat
                 if (!unifiedPrevious.userStats) {
-                    promptText += `${committedTrackerData.infoBox}\n\n`;
+                    promptText += `${infoBoxData}\n\n`;
                 }
             }
         }
 
         // Include Present Characters data if it exists, regardless of current showCharacterThoughts setting
         // This ensures existing character data is preserved in context even if the setting is toggled off
-        if (committedTrackerData.characterThoughts) {
+        if (characterThoughtsData) {
             try {
                 let parsed;
                 // Check if it's already a JavaScript object/array (not a JSON string)
-                if (typeof committedTrackerData.characterThoughts === 'object') {
+                if (typeof characterThoughtsData === 'object') {
                     // Already parsed - apply locks and use directly
-                    parsed = applyLocks(committedTrackerData.characterThoughts, 'characters');
+                    parsed = applyLocks(characterThoughtsData, 'characters');
                 } else {
                     // It's a JSON string - apply locks and parse
-                    const lockedData = applyLocks(committedTrackerData.characterThoughts, 'characters');
+                    const lockedData = applyLocks(characterThoughtsData, 'characters');
                     parsed = JSON.parse(lockedData);
                 }
 
@@ -1166,12 +1229,11 @@ export function generateRPGPromptText() {
                     unifiedPrevious.characters = parsed;
                 }
             } catch (e) {
-                // console.warn('[RPG Companion] Failed to process characters for previous section:', e);
                 // Old text format - show it separately for backward compat
                 if (!unifiedPrevious.userStats && !unifiedPrevious.infoBox) {
-                    const charText = typeof committedTrackerData.characterThoughts === 'string'
-                        ? committedTrackerData.characterThoughts
-                        : JSON.stringify(committedTrackerData.characterThoughts, null, 2);
+                    const charText = typeof characterThoughtsData === 'string'
+                        ? characterThoughtsData
+                        : JSON.stringify(characterThoughtsData, null, 2);
                     promptText += `${charText}\n`;
                 }
             }
@@ -1389,20 +1451,23 @@ export async function generateAvatarPromptGenerationPrompt(characterName) {
     systemMessage += `Current Scene Context (Trackers):\n`;
 
     // Always include environment info (location, weather, time) as it affects the scene/lighting
-    if (committedTrackerData.infoBox) {
-        systemMessage += `[Environment/Info]\n${committedTrackerData.infoBox}\n\n`;
+    const infoBoxData = getTrackerDataForContext('infoBox');
+    if (infoBoxData) {
+        systemMessage += `[Environment/Info]\n${infoBoxData}\n\n`;
     }
 
     const userName = getContext().name1;
     const isUser = characterName.toLowerCase().includes(userName.toLowerCase()) || userName.toLowerCase().includes(characterName.toLowerCase());
 
     if (isUser) {
-        if (committedTrackerData.userStats) {
-            systemMessage += `[User Stats]\n${committedTrackerData.userStats}\n\n`;
+        const userStatsData = getTrackerDataForContext('userStats');
+        if (userStatsData) {
+            systemMessage += `[User Stats]\n${userStatsData}\n\n`;
         }
     } else {
-        if (committedTrackerData.characterThoughts) {
-            const thoughts = committedTrackerData.characterThoughts;
+        const thoughtsData = getTrackerDataForContext('characterThoughts');
+        if (thoughtsData) {
+            const thoughts = thoughtsData;
             const blocks = ('\n' + thoughts).split(/\n- /);
 
             let charBlock = null;

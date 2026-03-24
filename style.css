@@ -535,6 +535,44 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
     transform: scale(0.95);
 }
 
+/* Tracker Message Display */
+.rpg-tracker-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    padding: 0.5em;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5em;
+    border: 2px solid var(--rpg-border);
+    font-size: clamp(0.75rem, 0.9vw, 0.875rem);
+    font-weight: bold;
+    color: var(--rpg-text);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-top: 0.25em;
+}
+
+.rpg-tracker-message:hover {
+    background: var(--rpg-accent);
+    border-color: var(--rpg-highlight);
+}
+
+.rpg-tracker-message.rpg-tracker-outdated {
+    border-color: #ff9800;
+    color: #ff9800;
+}
+
+.rpg-tracker-message i {
+    color: var(--rpg-highlight);
+    font-size: clamp(0.875rem, 1.1vw, 1rem);
+}
+
+.rpg-tracker-message.rpg-tracker-outdated i {
+    color: #ff9800;
+}
+
 /* Unified Content Box - Contains all sections, scales to fit viewport */
 .rpg-content-box {
     background: linear-gradient(135deg, var(--rpg-accent) 0%, var(--rpg-bg) 100%);

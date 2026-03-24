@@ -12,8 +12,6 @@ import { getContext } from '../../../../../../extensions.js';
 export const RPG_COMPANION_UPDATE_COMPLETE = 'rpg_companion_update_complete';
 import {
     extensionSettings,
-    lastGeneratedData,
-    committedTrackerData,
     isGenerating,
     lastActionWasSwipe,
     setIsGenerating,
@@ -22,7 +20,8 @@ import {
 } from '../../core/state.js';
 import { saveChatData } from '../../core/persistence.js';
 import {
-    generateSeparateUpdatePrompt
+    generateSeparateUpdatePrompt,
+    getTrackerDataForContext
 } from './promptBuilder.js';
 import { parseResponse, parseUserStats } from './parser.js';
 import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
@@ -215,27 +214,16 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
             // console.log('[RPG Companion] Parsed data:', parsedData);
             // console.log('[RPG Companion] parsedData.userStats:', parsedData.userStats ? parsedData.userStats.substring(0, 100) + '...' : 'null');
 
-            // DON'T update lastGeneratedData here - it should only reflect the data
-            // from the assistant message the user replied to, not auto-generated updates
-            // This ensures swipes/regenerations use consistent source data
-
             // Store RPG data for the last assistant message (separate mode)
             const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
             // console.log('[RPG Companion] Last message is_user:', lastMessage ? lastMessage.is_user : 'no message');
 
-            // Update lastGeneratedData for display (regardless of message type)
+            // Update extensionSettings from parsed data for display
             if (parsedData.userStats) {
-                lastGeneratedData.userStats = parsedData.userStats;
                 parseUserStats(parsedData.userStats);
             }
-            if (parsedData.infoBox) {
-                lastGeneratedData.infoBox = parsedData.infoBox;
-            }
-            if (parsedData.characterThoughts) {
-                lastGeneratedData.characterThoughts = parsedData.characterThoughts;
-            }
 
-            // Also store on assistant message if present (existing behavior)
+            // Store on assistant message's swipe (authoritative source)
             if (lastMessage && !lastMessage.is_user) {
                 if (!lastMessage.extra) {
                     lastMessage.extra = {};
@@ -252,22 +240,6 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
                 };
 
                 // console.log('[RPG Companion] Stored separate mode RPG data for message swipe', currentSwipeId);
-            }
-
-            // Only commit on TRULY first generation (no committed data exists at all)
-            // This prevents auto-commit after refresh when we have saved committed data
-            const hasAnyCommittedContent = (
-                (committedTrackerData.userStats && committedTrackerData.userStats.trim() !== '') ||
-                (committedTrackerData.infoBox && committedTrackerData.infoBox.trim() !== '' && committedTrackerData.infoBox !== 'Info Box\n---\n') ||
-                (committedTrackerData.characterThoughts && committedTrackerData.characterThoughts.trim() !== '' && committedTrackerData.characterThoughts !== 'Present Characters\n---\n')
-            );
-
-            // Only commit if we have NO committed content at all (truly first time ever)
-            if (!hasAnyCommittedContent) {
-                committedTrackerData.userStats = parsedData.userStats;
-                committedTrackerData.infoBox = parsedData.infoBox;
-                committedTrackerData.characterThoughts = parsedData.characterThoughts;
-                // console.log('[RPG Companion] 🔆 FIRST TIME: Auto-committed tracker data');
             }
 
             // Render the updated data

@@ -3,8 +3,9 @@
  * Creates weather effects based on the Info Box weather field
  */
 
-import { extensionSettings, lastGeneratedData, committedTrackerData } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 
 let weatherContainer = null;
 let currentWeatherType = null;
@@ -74,7 +75,7 @@ function getTimeOfDay(hour) {
  * Extract time from Info Box data
  */
 function getCurrentTime() {
-    const infoBoxData = lastGeneratedData.infoBox || committedTrackerData.infoBox || '';
+    const infoBoxData = getTrackerDataForContext('infoBox') || '';
 
     // Try to parse as JSON first (new format)
     try {
@@ -211,7 +212,7 @@ function parseWeatherType(weatherText) {
  * Extract weather from Info Box data
  */
 function getCurrentWeather() {
-    const infoBoxData = lastGeneratedData.infoBox || committedTrackerData.infoBox || '';
+    const infoBoxData = getTrackerDataForContext('infoBox') || '';
 
     // Try to parse as JSON first (new format)
     try {
