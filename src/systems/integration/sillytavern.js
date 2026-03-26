@@ -16,17 +16,17 @@ import {
     setIsPlotProgression,
     setIsGenerating,
     setIsAwaitingNewMessage,
+    abortCurrentGeneration,
     $musicPlayerContainer
 } from '../../core/state.js';
 import { saveChatData, loadChatData, autoSwitchPresetForEntity } from '../../core/persistence.js';
-import { i18n } from '../../core/i18n.js';
 
 // Generation & Parsing
 import { parseResponse } from '../generation/parser.js';
 import { parseAndStoreSpotifyUrl, convertToEmbedUrl } from '../features/musicPlayer.js';
 import { updateRPGData } from '../generation/apiClient.js';
 import { removeLocks } from '../generation/lockManager.js';
-import { onGenerationStarted, initHistoryInjectionListeners } from '../generation/injector.js';
+import { initHistoryInjectionListeners } from '../generation/injector.js';
 
 // Rendering
 import { renderUserStats } from '../rendering/userStats.js';
@@ -46,19 +46,6 @@ import { updateStripWidgets } from '../ui/desktop.js';
 // Chapter checkpoint
 import { updateAllCheckpointIndicators } from '../ui/checkpointUI.js';
 import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
-
-/**
- * Commits the tracker data from the last assistant message to be used as source for next generation.
- * This should be called when the user has replied to a message, ensuring all swipes of the next
- * response use the same committed context.
- * 
- * NOTE: With the new architecture, tracker data is read directly from the swipe store.
- * This function is kept for backward compatibility but is now a no-op.
- */
-export function commitTrackerData() {
-    // Tracker data is now read directly from swipe store via getTrackerDataForContext()
-    // No need to commit to a global variable
-}
 
 /**
  * Event handler for when the user sends a message.
@@ -261,6 +248,10 @@ export async function onMessageReceived(data) {
  * Event handler for character change.
  */
 export function onCharacterChanged() {
+    // Abort any pending or in-flight separate-mode generation so
+    // its result is not applied to the (now-changed) chat tail.
+    abortCurrentGeneration();
+    
     // Remove thought panel and icon when changing characters
     $('#rpg-thought-panel').remove();
     $('#rpg-thought-icon').remove();
@@ -276,11 +267,6 @@ export function onCharacterChanged() {
 
     // Load chat-specific data when switching chats
     loadChatData();
-
-    // Don't call commitTrackerData() here - it would overwrite the loaded swipeStore
-    // with data from the last message, which may be null/empty. The loaded swipeStore
-    // already contains the committed state from when we last left this chat.
-    // commitTrackerData() will be called naturally when new messages arrive.
 
     // Re-render with the loaded data
     renderUserStats();
@@ -312,6 +298,10 @@ export function onMessageSwiped(messageIndex) {
 
     // console.log('[RPG Companion] 🔵 EVENT: onMessageSwiped at index:', messageIndex);
 
+    // Abort any pending or in-flight separate-mode generation so
+    // its result is not applied to the (now-changed) chat tail.
+    abortCurrentGeneration();
+
     // Get the message that was swiped
     const message = chat[messageIndex];
     if (!message || message.is_user) {
@@ -338,18 +328,6 @@ export function onMessageSwiped(messageIndex) {
         console.log('[RPG Companion] 🔵 EXISTING swipe navigation - lastActionWasSwipe unchanged =', lastActionWasSwipe);
     }
 
-    // console.log('[RPG Companion] Loading data for swipe', currentSwipeId);
-
-    // IMPORTANT: onMessageSwiped is for DISPLAY only!
-    // Data is read directly from swipe store (message.extra.rpg_companion_swipes)
-    // Render functions now read and parse data internally, no need to parse first
-    if (message.extra && message.extra.rpg_companion_swipes && message.extra.rpg_companion_swipes[currentSwipeId]) {
-        const swipeData = message.extra.rpg_companion_swipes[currentSwipeId];
-        // console.log('[RPG Companion] Found stored data for swipe:', currentSwipeId, swipeData);
-    } else {
-        // console.log('[RPG Companion] ℹ️ No stored data for swipe:', currentSwipeId);
-    }
-
     // Re-render the panels
     renderUserStats();
     renderInfoBox();
@@ -373,9 +351,9 @@ export function onMessageDeleted() {
 
     console.log('[RPG Companion] 🗑️ EVENT: onMessageDeleted');
 
-    // Invalidate any pending or in-flight separate-mode generation so
+    // Abort any pending or in-flight separate-mode generation so
     // its result is not applied to the (now-changed) chat tail.
-    //incrementSeparateGenerationId();
+    abortCurrentGeneration();
 
     // Re-render all panels.
     // Render functions now read directly from the swipe store, so no state management needed.

@@ -18,7 +18,8 @@ import {
     setInventoryContainer,
     setQuestsContainer,
     setMusicPlayerContainer,
-    clearSessionAvatarPrompts
+    clearSessionAvatarPrompts,
+    abortCurrentGeneration
 } from './src/core/state.js';
 import { loadSettings, saveSettings, saveChatData, loadChatData, updateMessageSwipeData } from './src/core/persistence.js';
 import { registerAllEvents } from './src/core/events.js';
@@ -777,12 +778,24 @@ async function initUI() {
         await updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory);
     });
 
+    // Cancel generation button
+    $('#rpg-cancel-generation').on('click', function() {
+        console.log('[RPG Companion] Cancel generation button clicked');
+        abortCurrentGeneration();
+    });
+
     // Strip widget refresh button - same functionality as main refresh button
     $('#rpg-strip-refresh').on('click', async function() {
         if (!extensionSettings.enabled) {
             return;
         }
         await updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory);
+    });
+
+    // Strip cancel button
+    $('#rpg-strip-cancel').on('click', function() {
+        console.log('[RPG Companion] Strip cancel button clicked');
+        abortCurrentGeneration();
     });
 
     $('#rpg-stat-bar-color-low').on('change', function() {

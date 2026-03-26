@@ -4142,6 +4142,38 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
+/* Cancel Generation Button */
+.rpg-btn-cancel {
+    width: 100%;
+    margin-top: 0.5em;
+    padding: 0.375em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375em;
+    font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+    background: #dc3545;
+    border: 2px solid #dc3545;
+    border-radius: 0.5em;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.rpg-btn-cancel:hover {
+    background: #c82333;
+    border-color: #c82333;
+    transform: translateY(-0.125rem);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.rpg-btn-cancel:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
 /* ============================================
    SETTINGS BUTTON
    ============================================ */
@@ -11663,6 +11695,35 @@ body:has(.rpg-panel[data-theme="light"]) .rpg-fab-widget:hover {
 
 .rpg-strip-refresh-btn i.fa-spin {
     animation: fa-spin 1s linear infinite;
+}
+
+/* Strip Cancel Button */
+.rpg-strip-cancel-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--rpg-accent);
+    border: 2px solid #dc3545;
+    border-radius: 0.5em;
+    color: #dc3545;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpg-strip-cancel-btn:hover {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    transform: scale(1.05);
+}
+
+.rpg-strip-cancel-btn:active {
+    transform: scale(0.95);
 }
 
 /* ============================================

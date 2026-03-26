@@ -1641,3 +1641,18 @@ export function setFabLoadingState(loading) {
     }
 }
 
+/**
+ * Shows or hides the cancel generation button on mobile.
+ * @param {boolean} show - Whether to show the cancel button
+ */
+export function setFabCancelState(show) {
+    const $cancelBtn = $('#rpg-cancel-generation');
+    if ($cancelBtn.length === 0) return;
+
+    if (show) {
+        $cancelBtn.show();
+    } else {
+        $cancelBtn.hide();
+    }
+}
+

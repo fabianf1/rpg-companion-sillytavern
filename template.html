@@ -42,6 +42,10 @@
         <button id="rpg-strip-refresh" class="rpg-strip-refresh-btn" title="Refresh RPG Info">
             <i class="fa-solid fa-sync"></i>
         </button>
+        <!-- Cancel Generation Button (hidden by default) -->
+        <button id="rpg-strip-cancel" class="rpg-strip-cancel-btn" style="display: none;" title="Cancel Generation">
+            <i class="fa-solid fa-stop"></i>
+        </button>
     </div>
 
     <!-- Main Game Panel -->
@@ -201,6 +205,10 @@
             <button id="rpg-manual-update" class="rpg-btn-primary rpg-manual-update-btn">
                 <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.mainPanel.refreshRpgInfo">Refresh RPG
                     Info</span>
+            </button>
+            <!-- Cancel Generation Button (hidden by default) -->
+            <button id="rpg-cancel-generation" class="rpg-btn-cancel rpg-btn-primary" style="display: none;">
+                <i class="fa-solid fa-stop"></i> <span data-i18n-key="template.mainPanel.cancelGeneration">Cancel</span>
             </button>
 
             <!-- Settings and Edit Trackers Buttons Row -->

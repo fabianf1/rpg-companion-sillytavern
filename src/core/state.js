@@ -360,6 +360,38 @@ export let isAwaitingNewMessage = false;
 export let pendingDiceRoll = null;
 
 /**
+ * AbortController for canceling in-flight generation
+ */
+export let currentGenerationAbortController = null;
+
+/**
+ * Sets the abort controller for current generation
+ * @param {AbortController|null} controller - AbortController instance or null to clear
+ */
+export function setGenerationAbortController(controller) {
+    currentGenerationAbortController = controller;
+}
+
+/**
+ * Gets the current abort controller
+ * @returns {AbortController|null} Current abort controller or null
+ */
+export function getGenerationAbortController() {
+    return currentGenerationAbortController;
+}
+
+/**
+ * Aborts the current generation if one is in progress
+ */
+export function abortCurrentGeneration() {
+    if (currentGenerationAbortController) {
+        console.log('[RPG Companion] Aborting current generation...');
+        currentGenerationAbortController.abort();
+        currentGenerationAbortController = null;
+    }
+}
+
+/**
  * Debug logs array for troubleshooting
  */
 export let debugLogs = [];

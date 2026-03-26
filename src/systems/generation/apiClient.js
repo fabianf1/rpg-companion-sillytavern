@@ -13,9 +13,9 @@ export const RPG_COMPANION_UPDATE_COMPLETE = 'rpg_companion_update_complete';
 import {
     extensionSettings,
     isGenerating,
-    lastActionWasSwipe,
     setIsGenerating,
     setLastActionWasSwipe,
+    setGenerationAbortController,
     $musicPlayerContainer
 } from '../../core/state.js';
 import { saveChatData } from '../../core/persistence.js';
@@ -34,8 +34,8 @@ import { renderQuests } from '../rendering/quests.js';
 import { renderMusicPlayer } from '../rendering/musicPlayer.js';
 import { i18n } from '../../core/i18n.js';
 import { generateAvatarsForCharacters } from '../features/avatarGenerator.js';
-import { setFabLoadingState, updateFabWidgets } from '../ui/mobile.js';
-import { updateStripWidgets } from '../ui/desktop.js';
+import { setFabLoadingState, setFabCancelState, updateFabWidgets } from '../ui/mobile.js';
+import { setStripCancelState, updateStripWidgets } from '../ui/desktop.js';
 
 // Store the original preset name to restore after tracker generation
 let originalPresetName = null;
@@ -156,8 +156,9 @@ export function getCurrentProfile() {
  * @param {Function} renderInfoBox - UI function to render info box
  * @param {Function} renderThoughts - UI function to render character thoughts
  * @param {Function} renderInventory - UI function to render inventory
+ * @param {AbortSignal} [abortSignal] - Optional abort signal to cancel the generation
  */
-export async function updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory) {
+export async function updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory, abortSignal) {
     if (isGenerating) {
         // console.log('[RPG Companion] Already generating, skipping...');
         return;
@@ -175,6 +176,8 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
     try {
         setIsGenerating(true);
         setFabLoadingState(true); // Show spinning FAB on mobile
+        setFabCancelState(true); // Show cancel button on mobile
+        setStripCancelState(true); // Show cancel button on desktop
 
         // Update button to show "Updating..." state
         const $updateBtn = $('#rpg-manual-update');
@@ -187,7 +190,27 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
 
         // Generate response in separate mode
         let profile = getCurrentProfile();
-        let response = await getContext().ConnectionManagerRequestService.sendRequest(profile, prompt)
+        
+        // Create abort controller if not provided
+        const controller = abortSignal ? null : new AbortController();
+        const signal = abortSignal || controller?.signal;
+        
+        // Store controller for potential cancellation
+        if (!abortSignal) {
+            setGenerationAbortController(controller);
+        }
+        
+        let response;
+        try {
+            response = await getContext().ConnectionManagerRequestService.sendRequest(profile, prompt, 0, { signal });
+        } catch (error) {
+            // Check if this was an abort
+            if (error.name === 'AbortError') {
+                console.log('[RPG Companion] Generation aborted by user or message deletion');
+                return;
+            }
+            throw error;
+        }
 
         if (response) {
             // console.log('[RPG Companion] Raw AI response:', response);
@@ -217,6 +240,12 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
             // Store RPG data for the last assistant message (separate mode)
             const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
             // console.log('[RPG Companion] Last message is_user:', lastMessage ? lastMessage.is_user : 'no message');
+
+            // Double-check message still exists and hasn't changed (defensive)
+            if (!lastMessage || lastMessage.is_user) {
+                console.log('[RPG Companion] Message deleted during generation, discarding stale result');
+                return;
+            }
 
             // Update extensionSettings from parsed data for display
             if (parsedData.userStats) {
@@ -275,9 +304,15 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
         }
 
     } catch (error) {
-        console.error('[RPG Companion] Error updating RPG data:', error);
+        // Don't show error for user-initiated aborts
+        if (error.name === 'AbortError') {
+            console.log('[RPG Companion] Generation aborted, no error shown');
+        } else {
+            console.error('[RPG Companion] Error updating RPG data:', error);
+        }
     } finally {
         setIsGenerating(false);
+        setGenerationAbortController(null); // Clear abort controller
         setFabLoadingState(false); // Stop spinning FAB on mobile
         updateFabWidgets(); // Update FAB widgets with new data
         updateStripWidgets(); // Update strip widgets with new data

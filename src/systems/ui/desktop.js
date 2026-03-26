@@ -276,6 +276,21 @@ function hexToRgb(hex) {
 }
 
 /**
+ * Shows or hides the cancel generation button on desktop strip.
+ * @param {boolean} show - Whether to show the cancel button
+ */
+export function setStripCancelState(show) {
+    const $cancelBtn = $('#rpg-strip-cancel');
+    if ($cancelBtn.length === 0) return;
+
+    if (show) {
+        $cancelBtn.show();
+    } else {
+        $cancelBtn.hide();
+    }
+}
+
+/**
  * Sets up desktop tab navigation for organizing content.
  * Only runs on desktop viewports (>1000px).
  * Creates two tabs: Status (Stats/Info/Thoughts) and Inventory.

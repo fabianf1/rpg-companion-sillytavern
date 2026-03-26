@@ -105,7 +105,9 @@ export function renderUserStats() {
     
     if (!trackerData || !extensionSettings.userStats) {
         // Always render to the #rpg-user-stats container
-        $userStatsContainer.html('<div class="rpg-inventory-empty">No statuses generated yet</div>');
+        $userStatsContainer.html('<div class="rpg-inventory-empty">No statuses generated yet</div>')
+        // Clear the tracker message display
+        $('#rpg-tracker-message').hide();   
         return;
     }
 

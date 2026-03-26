@@ -164,6 +164,7 @@
     "template.mainPanel.dynamicWeatherEffects": "Dynamic Weather",
     "template.mainPanel.narratorMode": "Narrator Mode",
     "template.mainPanel.refreshRpgInfo": "Refresh RPG Info",
+    "template.mainPanel.cancelGeneration": "Cancel",
     "template.mainPanel.updating": "Updating...",
     "template.mainPanel.editTrackersButton": "Edit Trackers",
     "template.mainPanel.settingsButton": "Settings",
