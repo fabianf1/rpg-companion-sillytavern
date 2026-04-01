@@ -21,7 +21,6 @@ import {
 import { saveChatData } from '../../core/persistence.js';
 import {
     generateSeparateUpdatePrompt,
-    getTrackerDataForContext
 } from './promptBuilder.js';
 import { parseResponse, parseUserStats } from './parser.js';
 import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
@@ -36,11 +35,6 @@ import { i18n } from '../../core/i18n.js';
 import { generateAvatarsForCharacters } from '../features/avatarGenerator.js';
 import { setFabLoadingState, setFabCancelState, updateFabWidgets } from '../ui/mobile.js';
 import { setStripCancelState, updateStripWidgets } from '../ui/desktop.js';
-
-// Store the original preset name to restore after tracker generation
-let originalPresetName = null;
-
-
 
 /**
  * Gets the current preset name using the /preset command
@@ -151,14 +145,8 @@ export function getCurrentProfile() {
  * Updates RPG tracker data using separate API call (separate mode only).
  * Makes a dedicated API call to generate tracker data, then stores it
  * in the last assistant message's swipe data.
- *
- * @param {Function} renderUserStats - UI function to render user stats
- * @param {Function} renderInfoBox - UI function to render info box
- * @param {Function} renderThoughts - UI function to render character thoughts
- * @param {Function} renderInventory - UI function to render inventory
- * @param {AbortSignal} [abortSignal] - Optional abort signal to cancel the generation
  */
-export async function updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory, abortSignal) {
+export async function updateRPGData() {
     if (isGenerating) {
         // console.log('[RPG Companion] Already generating, skipping...');
         return;
@@ -191,14 +179,9 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
         // Generate response in separate mode
         let profile = getCurrentProfile();
         
-        // Create abort controller if not provided
-        const controller = abortSignal ? null : new AbortController();
-        const signal = abortSignal || controller?.signal;
-        
-        // Store controller for potential cancellation
-        if (!abortSignal) {
-            setGenerationAbortController(controller);
-        }
+        const controller = new AbortController();
+        const signal = controller.signal;
+        setGenerationAbortController(controller);
         
         let response;
         try {
@@ -314,6 +297,8 @@ export async function updateRPGData(renderUserStats, renderInfoBox, renderThough
         setIsGenerating(false);
         setGenerationAbortController(null); // Clear abort controller
         setFabLoadingState(false); // Stop spinning FAB on mobile
+        setFabCancelState(false); // Hide cancel button on mobile
+        setStripCancelState(false); // Hide cancel button on desktop
         updateFabWidgets(); // Update FAB widgets with new data
         updateStripWidgets(); // Update strip widgets with new data
 

@@ -14,7 +14,6 @@ import {
     isAwaitingNewMessage,
     setLastActionWasSwipe,
     setIsPlotProgression,
-    setIsGenerating,
     setIsAwaitingNewMessage,
     abortCurrentGeneration,
     $musicPlayerContainer
@@ -23,7 +22,7 @@ import { saveChatData, loadChatData, autoSwitchPresetForEntity } from '../../cor
 
 // Generation & Parsing
 import { parseResponse } from '../generation/parser.js';
-import { parseAndStoreSpotifyUrl, convertToEmbedUrl } from '../features/musicPlayer.js';
+import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { updateRPGData } from '../generation/apiClient.js';
 import { removeLocks } from '../generation/lockManager.js';
 import { initHistoryInjectionListeners } from '../generation/injector.js';
@@ -208,11 +207,7 @@ export async function onMessageReceived(data) {
         // Only trigger if this is a newly generated message, not loading chat history
         if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
             setTimeout(async () => {
-                await updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory);
-                // Update FAB widgets and strip widgets after separate/external mode update completes
-                setFabLoadingState(false);
-                updateFabWidgets();
-                updateStripWidgets();
+                await updateRPGData();
             }, 500);
         }
     }
@@ -223,10 +218,7 @@ export async function onMessageReceived(data) {
     // Reset the swipe flag after generation completes
     // This ensures that if the user swiped → auto-reply generated → flag is now cleared
     // so the next user message will be treated as a new message (not a swipe)
-    if (lastActionWasSwipe) {
-        // console.log('[RPG Companion] 🔄 Generation complete after swipe - resetting lastActionWasSwipe to false');
-        setLastActionWasSwipe(false);
-    }
+    setLastActionWasSwipe(false);
 
     // Clear plot progression flag if this was a plot progression generation
     // Note: No need to clear extension prompt since we used quiet_prompt option
@@ -234,11 +226,6 @@ export async function onMessageReceived(data) {
         setIsPlotProgression(false);
         // console.log('[RPG Companion] Plot progression generation completed');
     }
-
-    // Stop FAB loading state and update widgets
-    setFabLoadingState(false);
-    updateFabWidgets();
-    updateStripWidgets();
 
     // Re-apply checkpoint in case SillyTavern unhid messages during generation
     await restoreCheckpointOnLoad();

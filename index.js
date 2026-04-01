@@ -33,10 +33,7 @@ import { renderUserStats } from './src/systems/rendering/userStats.js';
 import { renderInfoBox} from './src/systems/rendering/infoBox.js';
 import {
     renderThoughts,
-    updateCharacterField,
-    removeCharacter,
     updateChatThoughts,
-    createThoughtPanel
 } from './src/systems/rendering/thoughts.js';
 import { renderInventory } from './src/systems/rendering/inventory.js';
 import { renderQuests } from './src/systems/rendering/quests.js';
@@ -57,8 +54,6 @@ import {
     updateSettingsPopupTheme,
 } from './src/systems/ui/theme.js';
 import {
-    DiceModal,
-    SettingsModal,
     setupDiceRoller,
     setupSettingsPopup,
     updateDiceDisplay,
@@ -97,7 +92,6 @@ import {
 } from './src/systems/ui/mobile.js';
 import {
     setupDesktopTabs,
-    removeDesktopTabs,
     updateStripWidgets
 } from './src/systems/ui/desktop.js';
 
@@ -775,7 +769,7 @@ async function initUI() {
             // console.log('[RPG Companion] Extension is disabled. Please enable it in the Extensions tab.');
             return;
         }
-        await updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory);
+        await updateRPGData();
     });
 
     // Cancel generation button
@@ -789,7 +783,7 @@ async function initUI() {
         if (!extensionSettings.enabled) {
             return;
         }
-        await updateRPGData(renderUserStats, renderInfoBox, renderThoughts, renderInventory);
+        await updateRPGData();
     });
 
     // Strip cancel button
