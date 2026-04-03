@@ -9,6 +9,7 @@ import { getInventoryRenderOptions, restoreFormStates } from '../interaction/inv
 import { updateInventoryItem } from '../interaction/inventoryEdit.js';
 import { parseItems } from '../../utils/itemParser.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
+import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { parseUserStats } from '../generation/parser.js';
 
 // Type imports
