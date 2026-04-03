@@ -543,294 +543,124 @@ export function parseUserStats(statsText) {
     try {
         // Check if this is v3 JSON format - try to parse it first
         let statsData = null;
-        const trimmed = statsText.trim();
-        if (trimmed && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
-            statsData = repairJSON(statsText);
-            if (statsData) {
-                debugLog('[RPG Parser] ✓ Parsed as v3 JSON format');
+        statsData = repairJSON(statsText);
+        if (statsData) {
+            debugLog('[RPG Parser] ✓ Parsed as v3 JSON format');
 
-                // Extract stats from v3 JSON structure
-                if (statsData.stats && Array.isArray(statsData.stats)) {
-                    // console.log('[RPG Parser] ✓ Extracting stats array, count:', statsData.stats.length);
-                    statsData.stats.forEach(stat => {
-                        if (stat.id && typeof stat.value !== 'undefined') {
-                            extensionSettings.userStats[stat.id] = stat.value;
-                            // console.log(`[RPG Parser] ✓ Set ${stat.id} = ${stat.value}`);
-                        }
-                    });
-                }
-
-                // Extract status
-                if (statsData.status) {
-                    // console.log('[RPG Parser] ✓ Extracting status:', statsData.status);
-                    if (statsData.status.mood) {
-                        extensionSettings.userStats.mood = statsData.status.mood;
-                        // console.log('[RPG Parser] ✓ Set mood =', statsData.status.mood);
+            // Extract stats from v3 JSON structure
+            if (statsData.stats && Array.isArray(statsData.stats)) {
+                // console.log('[RPG Parser] ✓ Extracting stats array, count:', statsData.stats.length);
+                statsData.stats.forEach(stat => {
+                    if (stat.id && typeof stat.value !== 'undefined') {
+                        extensionSettings.userStats[stat.id] = stat.value;
+                        // console.log(`[RPG Parser] ✓ Set ${stat.id} = ${stat.value}`);
                     }
-                    // Extract all custom status fields
-                    const trackerConfig = extensionSettings.trackerConfig;
-                    const customFields = trackerConfig?.userStats?.statusSection?.customFields || [];
-                    for (const fieldName of customFields) {
-                        const fieldKey = toFieldKey(fieldName);
-                        // Try the base key first (e.g., "conditions"), then fall back to full lowercase name
-                        const value = statsData.status[fieldKey] || statsData.status[fieldName.toLowerCase()];
-                        if (value) {
-                            extensionSettings.userStats[fieldKey] = value;
-                            // console.log(`[RPG Parser] ✓ Set ${fieldKey} =`, value);
-                        }
+                });
+            }
+
+            // Extract status
+            if (statsData.status) {
+                // console.log('[RPG Parser] ✓ Extracting status:', statsData.status);
+                if (statsData.status.mood) {
+                    extensionSettings.userStats.mood = statsData.status.mood;
+                    // console.log('[RPG Parser] ✓ Set mood =', statsData.status.mood);
+                }
+                // Extract all custom status fields
+                const trackerConfig = extensionSettings.trackerConfig;
+                const customFields = trackerConfig?.userStats?.statusSection?.customFields || [];
+                for (const fieldName of customFields) {
+                    const fieldKey = toFieldKey(fieldName);
+                    // Try the base key first (e.g., "conditions"), then fall back to full lowercase name
+                    const value = statsData.status[fieldKey] || statsData.status[fieldName.toLowerCase()];
+                    if (value) {
+                        extensionSettings.userStats[fieldKey] = value;
+                        // console.log(`[RPG Parser] ✓ Set ${fieldKey} =`, value);
                     }
                 }
-
-                // Extract inventory (convert v3 array format to v2 string format)
-                if (statsData.inventory) {
-                    const inv = statsData.inventory;
-
-                    // Convert arrays of {name, quantity} objects to comma-separated strings
-                    const convertItems = (items) => {
-                        if (!items || !Array.isArray(items)) return '';
-                        return items.map(item => {
-                            if (typeof item === 'object' && item.name) {
-                                // Include quantity if > 1
-                                return item.quantity && item.quantity > 1
-                                    ? `${item.quantity}x ${item.name}`
-                                    : item.name;
-                            }
-                            return String(item);
-                        }).join(', ');
-                    };
-
-                    // Convert stored object {location: [items]} to {location: "item1, item2"}
-                    const convertStoredInventory = (stored) => {
-                        if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
-                        const result = {};
-                        for (const [location, items] of Object.entries(stored)) {
-                            if (Array.isArray(items)) {
-                                result[location] = convertItems(items);
-                            } else if (typeof items === 'string') {
-                                result[location] = items;
-                            } else {
-                                result[location] = '';
-                            }
-                        }
-                        return result;
-                    };
-
-                    extensionSettings.userStats.inventory = {
-                        onPerson: convertItems(inv.onPerson),
-                        clothing: convertItems(inv.clothing),
-                        stored: convertStoredInventory(inv.stored),
-                        assets: convertItems(inv.assets)
-                    };
-                    // console.log('[RPG Parser] ✓ Converted v3 inventory:', extensionSettings.userStats.inventory);
-                }
-
-                // Extract quests (convert v3 object format to v2 string format)
-                if (statsData.quests) {
-                    // Convert quest objects to strings
-                    const convertQuest = (quest) => {
-                        if (!quest) return '';
-                        if (typeof quest === 'string') return quest;
-                        if (typeof quest === 'object') {
-                            // Check for locked format: {value, locked}
-                            // Recursively extract value if it's nested
-                            let extracted = quest;
-                            while (typeof extracted === 'object' && extracted.value !== undefined) {
-                                extracted = extracted.value;
-                            }
-                            if (typeof extracted === 'string') return extracted;
-                            // v3 format: {title, description, status}
-                            return quest.title || quest.description || JSON.stringify(quest);
-                        }
-                        return String(quest);
-                    };
-
-                    extensionSettings.quests = {
-                        main: convertQuest(statsData.quests.main),
-                        optional: Array.isArray(statsData.quests.optional)
-                            ? statsData.quests.optional.map(convertQuest)
-                            : []
-                    };
-                    // console.log('[RPG Parser] ✓ Converted v3 quests:', extensionSettings.quests);
-                }
-
-                // Extract skills if present (store as object, not JSON string)
-                if (statsData.skills && Array.isArray(statsData.skills)) {
-                    extensionSettings.userStats.skills = statsData.skills;
-                    // console.log('[RPG Parser] ✓ Set skills:', extensionSettings.userStats.skills);
-                }
-
-                debugLog('[RPG Parser] ✓ Successfully extracted v3 JSON data');
-                saveSettings();
-                return; // Done processing v3 format
             }
-        }
 
-        // Fall back to v2 text format parsing if JSON parsing failed
-        debugLog('[RPG Parser] Falling back to v2 text format parsing');
+            // Extract inventory (convert v3 array format to v2 string format)
+            if (statsData.inventory) {
+                const inv = statsData.inventory;
 
-        // Get custom stat configuration
-        const trackerConfig = extensionSettings.trackerConfig;
-        const customStats = trackerConfig?.userStats?.customStats || [];
-        const enabledStats = customStats.filter(s => s && s.enabled && s.name && s.id);
-
-        debugLog('[RPG Parser] Enabled custom stats:', enabledStats.map(s => s.name));
-
-        // Dynamically parse custom stats
-        for (const stat of enabledStats) {
-            const statRegex = new RegExp(`${stat.name}:\\s*(\\d+)%`, 'i');
-            const match = statsText.match(statRegex);
-            if (match) {
-                // Store using the stat ID (lowercase normalized name)
-                const statId = stat.id;
-                extensionSettings.userStats[statId] = parseInt(match[1]);
-                debugLog(`[RPG Parser] Parsed ${stat.name}:`, match[1]);
-            } else {
-                debugLog(`[RPG Parser] ${stat.name} NOT FOUND`);
-            }
-        }
-
-        // Parse RPG attributes if enabled
-        if (trackerConfig?.userStats?.showRPGAttributes) {
-            const strMatch = statsText.match(/STR:\s*(\d+)/i);
-            const dexMatch = statsText.match(/DEX:\s*(\d+)/i);
-            const conMatch = statsText.match(/CON:\s*(\d+)/i);
-            const intMatch = statsText.match(/INT:\s*(\d+)/i);
-            const wisMatch = statsText.match(/WIS:\s*(\d+)/i);
-            const chaMatch = statsText.match(/CHA:\s*(\d+)/i);
-            const lvlMatch = statsText.match(/LVL:\s*(\d+)/i);
-
-            if (strMatch) extensionSettings.classicStats.str = parseInt(strMatch[1]);
-            if (dexMatch) extensionSettings.classicStats.dex = parseInt(dexMatch[1]);
-            if (conMatch) extensionSettings.classicStats.con = parseInt(conMatch[1]);
-            if (intMatch) extensionSettings.classicStats.int = parseInt(intMatch[1]);
-            if (wisMatch) extensionSettings.classicStats.wis = parseInt(wisMatch[1]);
-            if (chaMatch) extensionSettings.classicStats.cha = parseInt(chaMatch[1]);
-            if (lvlMatch) extensionSettings.level = parseInt(lvlMatch[1]);
-
-            debugLog('[RPG Parser] RPG Attributes parsed');
-        }
-
-        // Match status section if enabled
-        const statusConfig = trackerConfig?.userStats?.statusSection;
-        if (statusConfig?.enabled) {
-            let moodMatch = null;
-            const customFields = statusConfig.customFields || [];
-
-            // Try Status: format
-            const statusMatch = statsText.match(/Status:\s*(.+)/i);
-            if (statusMatch) {
-                const statusContent = statusMatch[1].trim();
-
-                // Extract mood emoji if enabled
-                if (statusConfig.showMoodEmoji) {
-                    const { emoji, text } = separateEmojiFromText(statusContent);
-                    if (emoji) {
-                        extensionSettings.userStats.mood = emoji;
-                        // Remaining text contains custom status fields
-                        if (text && customFields.length > 0) {
-                            // For first custom field, use the remaining text
-                            const firstFieldKey = customFields[0].toLowerCase();
-                            extensionSettings.userStats[firstFieldKey] = text;
+                // Convert arrays of {name, quantity} objects to comma-separated strings
+                const convertItems = (items) => {
+                    if (!items || !Array.isArray(items)) return '';
+                    return items.map(item => {
+                        if (typeof item === 'object' && item.name) {
+                            // Include quantity if > 1
+                            return item.quantity && item.quantity > 1
+                                ? `${item.quantity}x ${item.name}`
+                                : item.name;
                         }
-                        moodMatch = true;
+                        return String(item);
+                    }).join(', ');
+                };
+
+                // Convert stored object {location: [items]} to {location: "item1, item2"}
+                const convertStoredInventory = (stored) => {
+                    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+                    const result = {};
+                    for (const [location, items] of Object.entries(stored)) {
+                        if (Array.isArray(items)) {
+                            result[location] = convertItems(items);
+                        } else if (typeof items === 'string') {
+                            result[location] = items;
+                        } else {
+                            result[location] = '';
+                        }
                     }
-                } else {
-                    // No mood emoji, whole status goes to first custom field
-                    if (customFields.length > 0) {
-                        const firstFieldKey = customFields[0].toLowerCase();
-                        extensionSettings.userStats[firstFieldKey] = statusContent;
+                    return result;
+                };
+
+                extensionSettings.userStats.inventory = {
+                    onPerson: convertItems(inv.onPerson),
+                    clothing: convertItems(inv.clothing),
+                    stored: convertStoredInventory(inv.stored),
+                    assets: convertItems(inv.assets)
+                };
+                // console.log('[RPG Parser] ✓ Converted v3 inventory:', extensionSettings.userStats.inventory);
+            }
+
+            // Extract quests (convert v3 object format to v2 string format)
+            if (statsData.quests) {
+                // Convert quest objects to strings
+                const convertQuest = (quest) => {
+                    if (!quest) return '';
+                    if (typeof quest === 'string') return quest;
+                    if (typeof quest === 'object') {
+                        // Check for locked format: {value, locked}
+                        // Recursively extract value if it's nested
+                        let extracted = quest;
+                        while (typeof extracted === 'object' && extracted.value !== undefined) {
+                            extracted = extracted.value;
+                        }
+                        if (typeof extracted === 'string') return extracted;
+                        // v3 format: {title, description, status}
+                        return quest.title || quest.description || JSON.stringify(quest);
                     }
-                    moodMatch = true;
-                }
+                    return String(quest);
+                };
+
+                extensionSettings.quests = {
+                    main: convertQuest(statsData.quests.main),
+                    optional: Array.isArray(statsData.quests.optional)
+                        ? statsData.quests.optional.map(convertQuest)
+                        : []
+                };
+                // console.log('[RPG Parser] ✓ Converted v3 quests:', extensionSettings.quests);
             }
 
-            // Try to extract individual custom status fields by name
-            for (const fieldName of customFields) {
-                const fieldKey = fieldName.toLowerCase();
-                const fieldRegex = new RegExp(`${fieldName}:\\s*(.+?)(?:,|$)`, 'i');
-                const fieldMatch = statsText.match(fieldRegex);
-                if (fieldMatch) {
-                    extensionSettings.userStats[fieldKey] = fieldMatch[1].trim();
-                    moodMatch = true;
-                }
+            // Extract skills if present (store as object, not JSON string)
+            if (statsData.skills && Array.isArray(statsData.skills)) {
+                extensionSettings.userStats.skills = statsData.skills;
+                // console.log('[RPG Parser] ✓ Set skills:', extensionSettings.userStats.skills);
             }
 
-            debugLog('[RPG Parser] Status match:', {
-                found: !!moodMatch,
-                mood: extensionSettings.userStats.mood,
-                customFields: customFields.map(f => ({
-                    name: f,
-                    value: extensionSettings.userStats[f.toLowerCase()]
-                }))
-            });
+            debugLog('[RPG Parser] ✓ Successfully extracted v3 JSON data');
+            saveSettings();
+            return; // Done processing v3 format
         }
-
-        // Parse skills section if enabled
-        const skillsConfig = trackerConfig?.userStats?.skillsSection;
-        if (skillsConfig?.enabled) {
-            const skillsMatch = statsText.match(/Skills:\s*(.+)/i);
-            if (skillsMatch) {
-                extensionSettings.userStats.skills = skillsMatch[1].trim();
-                debugLog('[RPG Parser] Skills extracted:', skillsMatch[1].trim());
-            }
-        }
-
-        // Extract inventory - use v2 parser if feature flag enabled, otherwise fallback to v1
-        if (FEATURE_FLAGS.useNewInventory) {
-            const inventoryData = extractInventory(statsText);
-            if (inventoryData) {
-                extensionSettings.userStats.inventory = inventoryData;
-                debugLog('[RPG Parser] Inventory v2 extracted:', inventoryData);
-            } else {
-                debugLog('[RPG Parser] Inventory v2 extraction failed');
-            }
-        } else {
-            // Legacy v1 parsing for backward compatibility
-            const inventoryMatch = statsText.match(/Inventory:\s*(.+)/i);
-            if (inventoryMatch) {
-                extensionSettings.userStats.inventory = inventoryMatch[1].trim();
-                debugLog('[RPG Parser] Inventory v1 extracted:', inventoryMatch[1].trim());
-            } else {
-                debugLog('[RPG Parser] Inventory v1 not found');
-            }
-        }
-
-        // Extract quests
-        const mainQuestMatch = statsText.match(/Main Quests?:\s*(.+)/i);
-        if (mainQuestMatch) {
-            extensionSettings.quests.main = mainQuestMatch[1].trim();
-            debugLog('[RPG Parser] Main quests extracted:', mainQuestMatch[1].trim());
-        }
-
-        const optionalQuestsMatch = statsText.match(/Optional Quests:\s*(.+)/i);
-        if (optionalQuestsMatch) {
-            const questsText = optionalQuestsMatch[1].trim();
-            if (questsText && questsText !== 'None') {
-                // Split by comma and clean up
-                extensionSettings.quests.optional = questsText
-                    .split(',')
-                    .map(q => q.trim())
-                    .filter(q => q && q !== 'None');
-            } else {
-                extensionSettings.quests.optional = [];
-            }
-            debugLog('[RPG Parser] Optional quests extracted:', extensionSettings.quests.optional);
-        }
-
-        debugLog('[RPG Parser] Final userStats after parsing:', {
-            health: extensionSettings.userStats.health,
-            satiety: extensionSettings.userStats.satiety,
-            energy: extensionSettings.userStats.energy,
-            hygiene: extensionSettings.userStats.hygiene,
-            arousal: extensionSettings.userStats.arousal,
-            mood: extensionSettings.userStats.mood,
-            conditions: extensionSettings.userStats.conditions,
-            inventory: FEATURE_FLAGS.useNewInventory ? 'v2 object' : extensionSettings.userStats.inventory
-        });
-
-        saveSettings();
-        debugLog('[RPG Parser] Settings saved successfully');
-        debugLog('[RPG Parser] =======================================================');
     } catch (error) {
         console.error('[RPG Companion] Error parsing user stats:', error);
         console.error('[RPG Companion] Stack trace:', error.stack);

@@ -7610,6 +7610,7 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
     display: flex;
     gap: 0.5rem;
     align-items: flex-start;
+    margin-bottom: 2rem;
 }
 
 .rpg-quest-hint i {

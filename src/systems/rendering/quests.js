@@ -7,6 +7,7 @@ import { extensionSettings, $questsContainer } from '../../core/state.js';
 import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
+import { parseUserStats } from '../generation/parser.js';
 
 /**
  * Syncs the current extensionSettings.quests to the swipe store
@@ -210,8 +211,22 @@ export function renderQuests() {
         return;
     }
 
+    // Check if tracker data exists (from swipe store or extensionSettings)
+    const trackerData = getTrackerDataForContext('userStats');
+    
+    // Parse the trackerData. It's kinda... weird that we have to parse it. Espcially because it is also used in the inventory...
+    if (trackerData) {
+        parseUserStats(trackerData);
+    }
+    
+    if (!trackerData || !extensionSettings.userStats) {
+        // Always render to the #rpg-user-stats container
+        $questsContainer.html('<div class="rpg-inventory-empty">No quests generated yet</div>')
+        return;
+    }
+
     // Get current sub-tab from container or default to 'main'
-    const activeSubTab = $questsContainer.data('active-subtab') || 'main';
+    // const activeSubTab = $questsContainer.data('active-subtab') || 'main';
 
     // Get quests data - extract value if it's a locked object
     let mainQuest = extensionSettings.quests.main || 'None';
@@ -223,15 +238,15 @@ export function renderQuests() {
 
     // Build HTML
     let html = '<div class="rpg-quests-wrapper">';
-    html += renderQuestsSubTabs(activeSubTab);
+    //html += renderQuestsSubTabs(activeSubTab);
 
     // Render active sub-tab
     html += '<div class="rpg-quests-panels">';
-    if (activeSubTab === 'main') {
+    //if (activeSubTab === 'main') {
         html += renderMainQuestView(mainQuest);
-    } else {
+    //} else {
         html += renderOptionalQuestsView(optionalQuests);
-    }
+    //}
     html += '</div></div>';
 
     $questsContainer.html(html);

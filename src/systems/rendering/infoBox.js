@@ -688,6 +688,7 @@ export function updateInfoBoxField(field, value) {
     // Check if data is in v3 JSON format
     const trimmed = infoBoxData.trim();
     if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        console.log('[RPG Companion] Updating info box field (v3 JSON):', { field, value });
         // Handle v3 JSON format
         const jsonData = repairJSON(infoBoxData);
         if (jsonData) {
@@ -734,258 +735,12 @@ export function updateInfoBoxField(field, value) {
 
             // Save back as JSON and persist to swipe store
             const updatedData = JSON.stringify(jsonData, null, 2);
-            updateMessageSwipeData('infoBox', updatedData);
+            extensionSettings.infoBox = updatedData; // Update settings cache
+            updateMessageSwipeData();
             saveChatData();
             renderInfoBox();
-            // console.log('[RPG Companion] Updated info box field (v3 JSON):', { field, value });
             return;
         }
-    }
-
-    // Fall back to text format handling
-    // Reconstruct the Info Box text with updated field
-    const lines = infoBoxData.split('\n');
-    let dateLineFound = false;
-    let dateLineIndex = -1;
-    let weatherLineIndex = -1;
-
-    // Find the date line
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('🗓️:') || lines[i].startsWith('Date:')) {
-            dateLineFound = true;
-            dateLineIndex = i;
-            break;
-        }
-    }
-
-    // Find the weather line (look for a line that's not date/temp/time/location)
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.match(/^[^:]+:\s*.+$/) &&
-            !line.includes('🗓️') &&
-            !line.startsWith('Date:') &&
-            !line.includes('🌡️') &&
-            !line.startsWith('Temperature:') &&
-            !line.includes('🕒') &&
-            !line.startsWith('Time:') &&
-            !line.includes('🗺️') &&
-            !line.startsWith('Location:') &&
-            !line.includes('Info Box') &&
-            !line.includes('---')) {
-            weatherLineIndex = i;
-            break;
-        }
-    }
-
-    const updatedLines = lines.map((line, index) => {
-        if (field === 'month' && (line.includes('🗓️:') || line.startsWith('Date:'))) {
-            const parts = line.split(',');
-            if (parts.length >= 2) {
-                // parts[0] = "Date: Weekday" or "🗓️: Weekday", parts[1] = " Month", parts[2] = " Year"
-                parts[1] = ' ' + value;
-                return parts.join(',');
-            } else if (parts.length === 1) {
-                // No existing month/year, add them
-                return `${parts[0]}, ${value}, YEAR`;
-            }
-        } else if (field === 'weekday' && (line.includes('🗓️:') || line.startsWith('Date:'))) {
-            const parts = line.split(',');
-            // Keep the format (text or emoji), just update the weekday
-            const month = parts[1] ? parts[1].trim() : 'Month';
-            const year = parts[2] ? parts[2].trim() : 'YEAR';
-            if (line.startsWith('Date:')) {
-                return `Date: ${value}, ${month}, ${year}`;
-            } else {
-                return `🗓️: ${value}, ${month}, ${year}`;
-            }
-        } else if (field === 'year' && (line.includes('🗓️:') || line.startsWith('Date:'))) {
-            const parts = line.split(',');
-            if (parts.length >= 3) {
-                parts[2] = ' ' + value;
-                return parts.join(',');
-            } else if (parts.length === 2) {
-                // No existing year, add it
-                return `${parts[0]}, ${parts[1]}, ${value}`;
-            } else if (parts.length === 1) {
-                // No existing month/year, add them
-                return `${parts[0]}, Month, ${value}`;
-            }
-        } else if (field === 'weatherEmoji' && index === weatherLineIndex) {
-            // Only update the specific weather line we found
-            if (line.startsWith('Weather:')) {
-                // New format: Weather: emoji, forecast
-                const weatherContent = line.replace('Weather:', '').trim();
-                // Split only on first comma to get emoji and rest
-                const firstCommaIndex = weatherContent.indexOf(',');
-                const forecast = firstCommaIndex > 0 ? weatherContent.substring(firstCommaIndex + 1).trim() : 'Weather';
-                return `Weather: ${value}, ${forecast}`;
-            } else {
-                // Legacy format: emoji: forecast
-                const firstColonIndex = line.indexOf(':');
-                if (firstColonIndex >= 0) {
-                    const forecast = line.substring(firstColonIndex + 1).trim();
-                    return `${value}: ${forecast}`;
-                }
-            }
-        } else if (field === 'weatherForecast' && index === weatherLineIndex) {
-            // Only update the specific weather line we found
-            if (line.startsWith('Weather:')) {
-                // New format: Weather: emoji, forecast
-                const weatherContent = line.replace('Weather:', '').trim();
-                // Split only on first comma to get emoji and rest
-                const firstCommaIndex = weatherContent.indexOf(',');
-                const emoji = firstCommaIndex > 0 ? weatherContent.substring(0, firstCommaIndex).trim() : '🌤️';
-                return `Weather: ${emoji}, ${value}`;
-            } else {
-                // Legacy format: emoji: forecast
-                const firstColonIndex = line.indexOf(':');
-                if (firstColonIndex >= 0) {
-                    const emoji = line.substring(0, firstColonIndex).trim();
-                    return `${emoji}: ${value}`;
-                }
-            }
-        } else if (field === 'temperature' && (line.includes('🌡️:') || line.startsWith('Temperature:'))) {
-            // Support both emoji and text formats
-            if (line.startsWith('Temperature:')) {
-                return `Temperature: ${value}`;
-            } else {
-                return `🌡️: ${value}`;
-            }
-        } else if (field === 'timeStart' && (line.includes('🕒:') || line.startsWith('Time:'))) {
-            // Update time format: "HH:MM → HH:MM"
-            // When user edits, set both start and end time to the new value
-            if (line.startsWith('Time:')) {
-                return `Time: ${value} → ${value}`;
-            } else {
-                return `🕒: ${value} → ${value}`;
-            }
-        } else if (field === 'location' && (line.includes('🗺️:') || line.startsWith('Location:'))) {
-            // Support both emoji and text formats
-            if (line.startsWith('Location:')) {
-                return `Location: ${value}`;
-            } else {
-                return `🗺️: ${value}`;
-            }
-        }
-        return line;
-    });
-
-    // If editing a date field but no date line exists, create one after the divider
-    if ((field === 'month' || field === 'weekday' || field === 'year') && !dateLineFound) {
-        // Find the divider line
-        const dividerIndex = updatedLines.findIndex(line => line.includes('---'));
-        if (dividerIndex >= 0) {
-            // Create initial date line with the edited field (use text format to match current standard)
-            let newDateLine = '';
-            if (field === 'weekday') {
-                newDateLine = `Date: ${value}, Month, YEAR`;
-            } else if (field === 'month') {
-                newDateLine = `Date: Weekday, ${value}, YEAR`;
-            } else if (field === 'year') {
-                newDateLine = `Date: Weekday, Month, ${value}`;
-            }
-            // Insert after the divider
-            updatedLines.splice(dividerIndex + 1, 0, newDateLine);
-        }
-    }
-
-    // If editing weather but no weather line exists, create one
-    if ((field === 'weatherEmoji' || field === 'weatherForecast')) {
-        let weatherLineFound = false;
-        for (const line of updatedLines) {
-            // Check if this is a weather line (has emoji and forecast, not one of the special fields)
-            if (line.match(/^[^:]+:\s*.+$/) && !line.includes('🗓️') && !line.startsWith('Date:') && !line.includes('🌡️') && !line.startsWith('Temperature:') && !line.includes('🕒') && !line.startsWith('Time:') && !line.includes('🗺️') && !line.startsWith('Location:') && !line.includes('Info Box') && !line.includes('---')) {
-                weatherLineFound = true;
-                break;
-            }
-        }
-
-        if (!weatherLineFound) {
-            const dividerIndex = updatedLines.findIndex(line => line.includes('---'));
-            if (dividerIndex >= 0) {
-                let newWeatherLine = '';
-                if (field === 'weatherEmoji') {
-                    newWeatherLine = `Weather: ${value}, Weather`;
-                } else if (field === 'weatherForecast') {
-                    newWeatherLine = `Weather: 🌤️, ${value}`;
-                }
-                // Insert after date line if it exists, otherwise after divider
-                const dateIndex = updatedLines.findIndex(line => line.includes('🗓️:') || line.startsWith('Date:'));
-                const insertIndex = dateIndex >= 0 ? dateIndex + 1 : dividerIndex + 1;
-                updatedLines.splice(insertIndex, 0, newWeatherLine);
-            }
-        }
-    }
-
-    // If editing temperature but no temperature line exists, create one
-    if (field === 'temperature') {
-        const tempLineFound = updatedLines.some(line => line.includes('🌡️:') || line.startsWith('Temperature:'));
-        if (!tempLineFound) {
-            const dividerIndex = updatedLines.findIndex(line => line.includes('---'));
-            if (dividerIndex >= 0) {
-                const newTempLine = `Temperature: ${value}`;
-                // Find last non-empty line before creating position
-                let insertIndex = dividerIndex + 1;
-                for (let i = 0; i < updatedLines.length; i++) {
-                    if (updatedLines[i].includes('🗓️:') || updatedLines[i].startsWith('Date:') || updatedLines[i].match(/^[^:]+:\s*.+$/)) {
-                        insertIndex = i + 1;
-                    }
-                }
-                updatedLines.splice(insertIndex, 0, newTempLine);
-            }
-        }
-    }
-
-    // If editing time but no time line exists, create one
-    if (field === 'timeStart') {
-        const timeLineFound = updatedLines.some(line => line.includes('🕒:') || line.startsWith('Time:'));
-        if (!timeLineFound) {
-            const dividerIndex = updatedLines.findIndex(line => line.includes('---'));
-            if (dividerIndex >= 0) {
-                const newTimeLine = `Time: ${value} → ${value}`;
-                // Find last non-empty line before creating position
-                let insertIndex = dividerIndex + 1;
-                for (let i = 0; i < updatedLines.length; i++) {
-                    if (updatedLines[i].includes('🗓️:') || updatedLines[i].startsWith('Date:') || updatedLines[i].includes('🌡️:') || updatedLines[i].startsWith('Temperature:') || updatedLines[i].match(/^[^:]+:\s*.+$/)) {
-                        insertIndex = i + 1;
-                    }
-                }
-                updatedLines.splice(insertIndex, 0, newTimeLine);
-            }
-        }
-    }
-
-    // If editing location but no location line exists, create one
-    if (field === 'location') {
-        const locationLineFound = updatedLines.some(line => line.includes('🗺️:') || line.startsWith('Location:'));
-        if (!locationLineFound) {
-            const dividerIndex = updatedLines.findIndex(line => line.includes('---'));
-            if (dividerIndex >= 0) {
-                const newLocationLine = `Location: ${value}`;
-                // Insert at the end (before any empty lines)
-                let insertIndex = updatedLines.length;
-                for (let i = updatedLines.length - 1; i >= 0; i--) {
-                    if (updatedLines[i].trim() !== '') {
-                        insertIndex = i + 1;
-                        break;
-                    }
-                }
-                updatedLines.splice(insertIndex, 0, newLocationLine);
-            }
-        }
-    }
-
-    const updatedData = updatedLines.join('\n');
-    // Persist updated info box to swipe store
-    updateMessageSwipeData('infoBox', updatedData);
-    saveChatData();
-    renderInfoBox();
-    // console.log('[RPG Companion] Updated info box field (text format):', { field, value });
-
-    // Only re-render if NOT editing date fields
-    // Date fields will update on next tracker generation to avoid losing user input
-    if (field !== 'month' && field !== 'weekday' && field !== 'year') {
-        renderInfoBox();
     }
 }
 
@@ -995,66 +750,37 @@ export function updateInfoBoxField(field, value) {
  * @param {string} value - New event text
  */
 function updateRecentEvent(field, value) {
-    // Map field to index
     const eventIndex = {
         'event1': 0,
         'event2': 1,
         'event3': 2
     }[field];
 
-    if (eventIndex !== undefined) {
-        // Read current infoBox from swipe store
-        const infoBoxData = getTrackerDataForContext('infoBox') || '';
-        const lines = infoBoxData.split('\n');
-        let recentEvents = [];
+    if (eventIndex === undefined) return;
 
-        // Find existing Recent Events line
-        const recentEventsLine = lines.find(line => line.startsWith('Recent Events:'));
-        if (recentEventsLine) {
-            const eventsString = recentEventsLine.replace('Recent Events:', '').trim();
-            if (eventsString) {
-                recentEvents = eventsString.split(',').map(e => e.trim()).filter(e => e);
-            }
+    // Read current info box from swipe store
+    let infoBoxData = getTrackerDataForContext('infoBox');
+    if (!infoBoxData) {
+        infoBoxData = 'Info Box\n---\n';
+    }
+
+    // Handle v3 JSON format
+    const jsonData = repairJSON(infoBoxData);
+    if (jsonData) {
+        if (!jsonData.recentEvents) {
+            jsonData.recentEvents = [];
         }
-
         // Ensure array has enough slots
-        while (recentEvents.length <= eventIndex) {
-            recentEvents.push('');
+        while (jsonData.recentEvents.length <= eventIndex) {
+            jsonData.recentEvents.push('');
         }
+        jsonData.recentEvents[eventIndex] = value;
 
-        // Update the specific event
-        recentEvents[eventIndex] = value;
-
-        // Filter out empty events and rebuild the line
-        const validEvents = recentEvents.filter(e => e && e.trim());
-        const newRecentEventsLine = validEvents.length > 0
-            ? `Recent Events: ${validEvents.join(', ')}`
-            : '';
-
-        // Update infoBox with new Recent Events line
-        const updatedLines = lines.filter(line => !line.startsWith('Recent Events:'));
-        if (newRecentEventsLine) {
-            // Add Recent Events line at the end (before any empty lines)
-            let insertIndex = updatedLines.length;
-            for (let i = updatedLines.length - 1; i >= 0; i--) {
-                if (updatedLines[i].trim() !== '') {
-                    insertIndex = i + 1;
-                    break;
-                }
-            }
-            updatedLines.splice(insertIndex, 0, newRecentEventsLine);
-        }
-
-        // Persist to swipe store
-        updateMessageSwipeData('infoBox', updatedLines.join('\n'));
+        // Save back as JSON and persist
+        const updatedData = JSON.stringify(jsonData, null, 2);
+        extensionSettings.infoBox = updatedData;
+        updateMessageSwipeData();
         saveChatData();
         renderInfoBox();
-
-        // Update weather effect after rendering
-        if (window.RPGCompanion?.updateWeatherEffect) {
-            window.RPGCompanion.updateWeatherEffect();
-        }
-
-        // console.log(`[RPG Companion] Updated recent event ${field}:`, value);
     }
 }

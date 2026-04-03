@@ -222,6 +222,7 @@ export function saveChatData() {
 export function updateMessageSwipeData() {
     const chat = getContext().chat;
     if (!chat || chat.length === 0) {
+        console.warn('[RPG Companion] No chat messages found, cannot update swipe data');
         return;
     }
 
@@ -240,6 +241,7 @@ export function updateMessageSwipeData() {
 
             const swipeId = message.swipe_id || 0;
             const currentSwipeData = message.extra.rpg_companion_swipes[swipeId] || {};
+            console.log(`[RPG Companion] Updating message:`, i, 'Swipe:', swipeId);
             
             // Build updated user stats data
             // If previous data was JSON, maintain JSON format; otherwise use text
@@ -293,6 +295,10 @@ export function updateMessageSwipeData() {
                         // Fall through to text format
                     }
                 }
+            }
+            // Infobox
+            if (currentSwipeData.infoBox) {
+                currentSwipeData.infoBox = extensionSettings.infoBox;
             }
             
             // Update swipe data with current tracker information

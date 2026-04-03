@@ -9,6 +9,7 @@ import { getInventoryRenderOptions, restoreFormStates } from '../interaction/inv
 import { updateInventoryItem } from '../interaction/inventoryEdit.js';
 import { parseItems } from '../../utils/itemParser.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
+import { parseUserStats } from '../generation/parser.js';
 
 // Type imports
 /** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
@@ -579,6 +580,14 @@ export function renderInventory() {
     // Early return if container doesn't exist or section is hidden
     if (!$inventoryContainer || !extensionSettings.showInventory) {
         return;
+    }
+
+    // Check if tracker data exists (from swipe store or extensionSettings)
+    const trackerData = getTrackerDataForContext('userStats');
+
+    // Parse the trackerData.
+    if (trackerData) {
+        parseUserStats(trackerData);
     }
 
     // Get inventory data from settings
