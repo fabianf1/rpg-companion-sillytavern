@@ -129,7 +129,7 @@ export const DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT = `The context above is informa
  * Gets character card information for current chat (handles both single and group chats)
  * @returns {string} Formatted character information
  */
-async function getCharacterCardsInfo() {
+function getCharacterCardsInfo() {
     let characterInfo = '';
 
     // Narrator mode: use character card as narrator context, infer characters from story context
@@ -1261,7 +1261,7 @@ export function generateRPGPromptText() {
  *
  * @returns {Array<{role: string, content: string}>} Array of message objects for API
  */
-export async function generateSeparateUpdatePrompt() {
+export function generateSeparateUpdatePrompt() {
     const depth = extensionSettings.updateDepth;
     const userName = getContext().name1;
     const trackerConfig = extensionSettings.trackerConfig;
@@ -1274,7 +1274,7 @@ export async function generateSeparateUpdatePrompt() {
     systemMessage += `You should maintain an objective tone.\n\n`;
 
     // Add character card information
-    const characterInfo = await getCharacterCardsInfo();
+    const characterInfo = getCharacterCardsInfo();
     if (characterInfo) {
         systemMessage += characterInfo;
     }
@@ -1293,7 +1293,6 @@ export async function generateSeparateUpdatePrompt() {
     // /hide command automatically handles checkpoint filtering
     // Add chat history as separate user/assistant messages with per-message historical context
     const recentMessages = chat.slice(-depth);
-    const startIndex = chat.length - depth;
     const position = historyPersistence?.injectionPosition || 'assistant_message_end';
 
     // Build a map of which messages should get context based on position setting

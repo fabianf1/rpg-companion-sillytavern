@@ -10,31 +10,6 @@ import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 import { parseUserStats } from '../generation/parser.js';
 
 /**
- * Syncs the current extensionSettings.quests to the swipe store
- * This ensures quest changes made via UI are reflected in the data sent to AI
- */
-function syncQuestsToSwipeStore() {
-    const currentData = getTrackerDataForContext('userStats');
-    if (!currentData) return;
-
-    const trimmed = currentData.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        try {
-            const jsonData = JSON.parse(currentData);
-            if (jsonData && typeof jsonData === 'object') {
-                // Update quests in the JSON data
-                jsonData.quests = extensionSettings.quests || { main: 'None', optional: [] };
-                const updatedJSON = JSON.stringify(jsonData, null, 2);
-                // Persist to swipe store
-                updateMessageSwipeData('userStats', updatedJSON);
-            }
-        } catch (e) {
-            console.warn('[RPG Quests] Failed to sync quests to swipe store:', e);
-        }
-    }
-}
-
-/**
  * Helper to generate lock icon HTML if setting is enabled
  * @param {string} tracker - Tracker name
  * @param {string} path - Item path
@@ -259,13 +234,6 @@ export function renderQuests() {
  * Attach event handlers for quest interactions
  */
 function attachQuestEventHandlers() {
-    // Sub-tab switching
-    $questsContainer.find('.rpg-quests-subtab').on('click', function() {
-        const tab = $(this).data('tab');
-        $questsContainer.data('active-subtab', tab);
-        renderQuests();
-    });
-
     // Add quest button
     $questsContainer.find('[data-action="add-quest"]').on('click', function() {
         const field = $(this).data('field');
@@ -296,7 +264,7 @@ function attachQuestEventHandlers() {
                 extensionSettings.quests.optional.push(questTitle);
             }
             // Sync quest changes to swipeStore so AI sees the addition
-            syncQuestsToSwipeStore();
+            updateMessageSwipeData();
             saveSettings();
             saveChatData();
             renderQuests();
@@ -327,7 +295,7 @@ function attachQuestEventHandlers() {
         if (questTitle) {
             extensionSettings.quests.main = questTitle;
             // Sync quest changes to swipeStore so AI sees the edit
-            syncQuestsToSwipeStore();
+            updateMessageSwipeData();
             saveSettings();
             saveChatData();
             renderQuests();
@@ -345,7 +313,7 @@ function attachQuestEventHandlers() {
             extensionSettings.quests.optional.splice(index, 1);
         }
         // Sync quest changes to swipeStore so AI sees the removal
-        syncQuestsToSwipeStore();
+        updateMessageSwipeData();
         saveSettings();
         saveChatData();
         renderQuests();
@@ -361,7 +329,7 @@ function attachQuestEventHandlers() {
         if (newTitle && field === 'optional' && index !== undefined) {
             extensionSettings.quests.optional[index] = newTitle;
             // Sync quest changes to swipeStore so AI sees the edit
-            syncQuestsToSwipeStore();
+            updateMessageSwipeData();
             saveSettings();
             saveChatData();
         }

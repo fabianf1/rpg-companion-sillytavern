@@ -201,14 +201,14 @@
                     </label>
                 </div>            </div>
 
-            <!-- Manual Update Button -->
+            <!-- Manual Update Button - Single button that shows cancel on hover during update -->
             <button id="rpg-manual-update" class="rpg-btn-primary rpg-manual-update-btn">
-                <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.mainPanel.refreshRpgInfo">Refresh RPG
-                    Info</span>
-            </button>
-            <!-- Cancel Generation Button (hidden by default) -->
-            <button id="rpg-cancel-generation" class="rpg-btn-cancel rpg-btn-primary" style="display: none;">
-                <i class="fa-solid fa-stop"></i> <span data-i18n-key="template.mainPanel.cancelGeneration">Cancel</span>
+                <span class="rpg-btn-refresh-content">
+                    <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.mainPanel.refreshRpgInfo">Refresh RPG Info</span>
+                </span>
+                <span class="rpg-btn-cancel-content">
+                    <i class="fa-solid fa-stop"></i> <span data-i18n-key="template.mainPanel.cancelGeneration">Cancel</span>
+                </span>
             </button>
 
             <!-- Settings and Edit Trackers Buttons Row -->
@@ -1155,96 +1155,6 @@
                     <i class="fa-solid fa-save"></i> Save Changes
                 </button>
             </div>
-        </footer>
-    </div>
-</div>
-
-<!-- Welcome Modal for v3.0 -->
-<div id="rpg-welcome-modal" class="rpg-settings-popup" role="dialog" aria-modal="true"
-    aria-labelledby="rpg-welcome-title" style="display: none;">
-    <div class="rpg-settings-popup-content" style="max-width: 600px;">
-        <header class="rpg-settings-popup-header">
-            <h3 id="rpg-welcome-title">
-                <i class="fa-solid fa-stars"></i>
-                Welcome to RPG Companion v.3.2.0!
-            </h3>
-            <button id="rpg-welcome-close" class="rpg-popup-close" type="button"
-                aria-label="Close Welcome">
-                <i class="fa-solid fa-times"></i>
-            </button>
-        </header>
-        <div class="rpg-settings-popup-body" style="max-height: 500px; overflow-y: auto; padding: 20px;">
-            <div style="background: rgba(255, 165, 0, 0.1); border-left: 3px solid orange; padding: 12px; margin-bottom: 20px;">
-                <strong style="color: orange;">⚠️ Important:</strong> Due to a change in the tracker format, we recommend that you use <strong>Clear Extension Cache</strong> in the Settings before you start using this version!
-            </div>
-
-            <h4 style="margin-top: 20px; margin-bottom: 10px;"><strong>What's new?</strong></h4>
-            <ul style="line-height: 1.6; margin-left: 20px;">
-                <li>Switched to the JSON format for the trackers.</li>
-                <li>You can now lock/unlock trackers that you don't want the model to change between generations.</li>
-                <li>Removed features that were half-baked or didn't work.</li>
-                <li>Organized Settings and Edit Trackers windows.</li>
-                <li>All features of the extension are now accessible from the main panel view.</li>
-                <li>Added Colored Dialogues option that makes the model color dialogue lines differently depending on the speaker.</li>
-                <li>Introduced Dynamic Weather Effects that add visual effects to your SillyTavern window depending on the current weather from the trackers.</li>
-                <li>All prompts used for the extension's features are now editable.</li>
-                <li>Made the user's level optional in the Edit Trackers.</li>
-            </ul>
-
-            <h4 style="margin-top: 20px; margin-bottom: 10px;"><strong>Bug Fixes:</strong></h4>
-            <ul style="line-height: 1.6; margin-left: 20px;">
-                <li>Fixed tracker logic in Together generation mode.</li>
-                <li>Fixed various UI bugs (too many to count).</li>
-                <li>Upgraded mobile view.</li>
-                <li>Spotify Music widget is more visible now, plus it works in the mobile view.</li>
-                <li>Auto-update after messages option is now available for External API generation mode.</li>
-                <li>Fixed the display of the thoughts window and its mobile display.</li>
-                <li>Mobile UI fixes (panel viewport and z-index issues).</li>
-                <li>Fixed the regex issue in Together mode (JSON blocks now hidden from display).</li>
-                <li>Fixed parsing error appearing when loading or switching chats.</li>
-                <li>Fixed adding new relationships in Edit Trackers (unique naming).</li>
-                <li>Added migration support for importing older tracker presets.</li>
-                <li>Lifted attributes cap from 100 to 999.</li>
-                <li>Fixed lock icon positioning on mobile devices.</li>
-                <li>Fixed smaller bugs.</li>
-            </ul>
-
-            <h4 style="margin-top: 20px; margin-bottom: 10px;"><strong data-i18n="settings.recommendedModels.title">Recommended Models:</strong></h4>
-            <p style="margin-left: 20px; line-height: 1.6;" data-i18n="settings.recommendedModels.description">
-                For the extension to work properly, **it is not recommended to use any models below 20B, especially if they're old.** It works best with the SOTA models such as Deepseek, Claude, GPT, or Gemini.
-            </p>
-
-            <h4 style="margin-top: 20px; margin-bottom: 10px;"><strong>Special thanks to all the contributors for this project:</strong></h4>
-            <p style="margin-left: 20px; line-height: 1.6;">
-                Paperboygold, Munimunigamer, Subarashimo, Lilminzyu, Claude (???), IDeathByte, Chungchandev, Joenunezb, Amauragis, Tomt610, and Olaroll.
-            </p>
-
-            <div style="margin-top: 20px; text-align: center;">
-                <p style="margin-bottom: 10px;">Join our Discord server to share your feedback, report bugs, or request new features!</p>
-                <a href="https://discord.com/invite/KdAkTg94ME" target="_blank" class="menu_button" style="display: inline-block; margin: 5px;">
-                    <i class="fa-brands fa-discord"></i> Discord Server
-                </a>
-            </div>
-
-            <div style="margin-top: 20px; text-align: center;">
-                <p style="margin-bottom: 10px;">And don't forget to consider supporting me if you enjoy my work. Thank you!</p>
-                <a href="https://ko-fi.com/marinara_spaghetti" target="_blank" class="menu_button" style="display: inline-block; margin: 5px;">
-                    <i class="fa-solid fa-heart"></i> Support on Ko-fi
-                </a>
-            </div>
-
-            <div style="margin-top: 30px; text-align: center; font-size: 18px; font-style: italic;">
-                <strong>Happy gooning!</strong>
-            </div>
-
-            <div style="margin-top: 10px; text-align: right; color: #888; font-style: italic;">
-                ~ Marinara
-            </div>
-        </div>
-        <footer class="rpg-settings-popup-footer">
-            <button id="rpg-welcome-got-it" class="rpg-btn-primary" type="button" style="width: 100%;">
-                <i class="fa-solid fa-check"></i> Got it!
-            </button>
         </footer>
     </div>
 </div>

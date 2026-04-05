@@ -167,14 +167,19 @@ export async function updateRPGData() {
         setFabCancelState(true); // Show cancel button on mobile
         setStripCancelState(true); // Show cancel button on desktop
 
-        // Update button to show "Updating..." state
+        // Update button to show "Updating..." state with spinner
         const $updateBtn = $('#rpg-manual-update');
         const $stripRefreshBtn = $('#rpg-strip-refresh');
         const updatingText = i18n.getTranslation('template.mainPanel.updating') || 'Updating...';
-        $updateBtn.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`).prop('disabled', true);
+        
+        // Add updating class and update refresh content with spinner (button remains clickable)
+        $updateBtn.addClass('is-updating');
+        $updateBtn.find('.rpg-btn-refresh-content').html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
+        
+        // Strip button stays as is (separate behavior for mobile)
         $stripRefreshBtn.html('<i class="fa-solid fa-spinner fa-spin"></i>').prop('disabled', true);
 
-        const prompt = await generateSeparateUpdatePrompt();
+        const prompt = generateSeparateUpdatePrompt();
 
         // Generate response in separate mode
         let profile = getCurrentProfile();
@@ -301,12 +306,18 @@ export async function updateRPGData() {
         setStripCancelState(false); // Hide cancel button on desktop
         updateFabWidgets(); // Update FAB widgets with new data
         updateStripWidgets(); // Update strip widgets with new data
+        renderUserStats(); // To show the outdated message
 
         // Restore button to original state
         const $updateBtn = $('#rpg-manual-update');
         const $stripRefreshBtn = $('#rpg-strip-refresh');
         const refreshText = i18n.getTranslation('template.mainPanel.refreshRpgInfo') || 'Refresh RPG Info';
-        $updateBtn.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`).prop('disabled', false);
+        
+        // Remove updating class and restore refresh content
+        $updateBtn.removeClass('is-updating');
+        $updateBtn.find('.rpg-btn-refresh-content').html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
+        
+        // Strip button restore
         $stripRefreshBtn.html('<i class="fa-solid fa-sync"></i>').prop('disabled', false);
 
         // Reset the flag after tracker generation completes

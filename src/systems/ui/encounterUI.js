@@ -9,7 +9,6 @@ import { selected_group, getGroupMembers, groups } from '../../../../../../group
 import { executeSlashCommandsOnChatInput } from '../../../../../../../scripts/slash-commands.js';
 import { extensionSettings } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
-import { i18n } from '../../core/i18n.js';
 import { getSafeThumbnailUrl } from '../../utils/avatars.js';
 import {
     currentEncounter,

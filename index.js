@@ -21,7 +21,7 @@ import {
     clearSessionAvatarPrompts,
     abortCurrentGeneration
 } from './src/core/state.js';
-import { loadSettings, saveSettings, saveChatData, loadChatData, updateMessageSwipeData } from './src/core/persistence.js';
+import { loadSettings, saveSettings } from './src/core/persistence.js';
 import { registerAllEvents } from './src/core/events.js';
 
 // Generation & Parsing modules
@@ -59,7 +59,6 @@ import {
     updateDiceDisplay,
     addDiceQuickReply,
     getSettingsModal,
-    showWelcomeModalIfNeeded
 } from './src/systems/ui/modals.js';
 import {
     initTrackerEditor
@@ -119,11 +118,14 @@ import {
  * Updates UI elements that are dynamically generated and not covered by data-i18n-key.
  */
 function updateDynamicLabels() {
-    // Update "Refresh RPG Info" button, but only if it's not disabled
+    // Update "Refresh RPG Info" button refresh content, but only if it's not disabled
     const refreshBtn = document.getElementById('rpg-manual-update');
     if (refreshBtn && !refreshBtn.disabled) {
         const refreshText = i18n.getTranslation('template.mainPanel.refreshRpgInfo') || 'Refresh RPG Info';
-        refreshBtn.innerHTML = `<i class="fa-solid fa-sync"></i> ${refreshText}`;
+        const $refreshContent = $(refreshBtn).find('.rpg-btn-refresh-content');
+        if ($refreshContent.length) {
+            $refreshContent.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
+        }
     }
 
     // Update "Last Roll" label
@@ -164,7 +166,6 @@ async function addExtensionSettings() {
         } else if (extensionSettings.enabled && !wasEnabled) {
             // Enabling extension - initialize UI
             await initUI();
-            loadChatData(); // Load chat data for current chat
             updateChatThoughts(); // Create thought bubbles if data exists
             injectCheckpointButton(); // Re-add checkpoint buttons
             updateAllCheckpointIndicators(); // Update button states
@@ -764,18 +765,23 @@ async function initUI() {
         updateStripWidgets();
     });
 
-    $('#rpg-manual-update').on('click', async function() {
+    $('#rpg-manual-update').on('click', async function(e) {
+        // Check if user is trying to cancel (button is updating and clicked on/near cancel content)
+        if ($(this).hasClass('is-updating')) {
+            const $cancelContent = $(this).find('.rpg-btn-cancel-content');
+            // If cancel content is visible (hover state), treat as cancel click
+            if ($cancelContent.css('opacity') !== '0') {
+                console.log('[RPG Companion] Cancel button clicked (hover state)');
+                abortCurrentGeneration();
+                return;
+            }
+        }
+        
+        // Normal refresh click
         if (!extensionSettings.enabled) {
-            // console.log('[RPG Companion] Extension is disabled. Please enable it in the Extensions tab.');
             return;
         }
         await updateRPGData();
-    });
-
-    // Cancel generation button
-    $('#rpg-cancel-generation').on('click', function() {
-        console.log('[RPG Companion] Cancel generation button clicked');
-        abortCurrentGeneration();
     });
 
     // Strip widget refresh button - same functionality as main refresh button
@@ -1073,6 +1079,8 @@ async function initUI() {
     renderQuests();
     renderMusicPlayer($musicPlayerContainer[0]);
     updateDiceDisplay();
+    updateFabWidgets();
+    updateStripWidgets();
     setupDiceRoller();
     setupClassicStatsButtons();
     setupSettingsPopup();
@@ -1143,16 +1151,6 @@ jQuery(async () => {
         } catch (error) {
             console.error('[RPG Companion] UI initialization failed:', error);
             throw error; // This is critical - can't continue without UI
-        }
-
-        // Load chat-specific data for current chat
-        try {
-            loadChatData();
-            // Initialize FAB widgets and strip widgets with any loaded data
-            updateFabWidgets();
-            updateStripWidgets();
-        } catch (error) {
-            console.error('[RPG Companion] Chat data load failed, using defaults:', error);
         }
 
         // Import the HTML cleaning regex if needed
@@ -1240,14 +1238,6 @@ jQuery(async () => {
             initSnowflakes();
         } catch (error) {
             console.error('[RPG Companion] Snowflakes initialization failed:', error);
-            // Non-critical - continue without it
-        }
-
-        // Show welcome modal for v3.0 on first launch
-        try {
-            showWelcomeModalIfNeeded();
-        } catch (error) {
-            console.error('[RPG Companion] Welcome modal failed:', error);
             // Non-critical - continue without it
         }
 

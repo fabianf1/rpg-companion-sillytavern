@@ -10,9 +10,7 @@ import {
     updateExtensionSettings,
     FEATURE_FLAGS
 } from './state.js';
-import { migrateInventory } from '../utils/migration.js';
 import { validateStoredInventory, cleanItemString } from '../utils/security.js';
-import { migrateToV3JSON } from '../utils/jsonMigration.js';
 
 const extensionName = 'third-party/rpg-companion-sillytavern';
 
@@ -79,54 +77,9 @@ export function loadSettings() {
             const currentVersion = extensionSettings.settingsVersion || 1;
             let settingsChanged = false;
 
-            // Migration to version 2: Enable dynamic weather for existing users
-            if (currentVersion < 2) {
-                // console.log('[RPG Companion] Migrating settings to version 2 (enabling dynamic weather)');
-                extensionSettings.enableDynamicWeather = true;
-                extensionSettings.settingsVersion = 2;
-                settingsChanged = true;
-            }
-
-            // Migration to version 3: Convert text trackers to JSON format
-            if (currentVersion < 3) {
-                // console.log('[RPG Companion] Migrating settings to version 3 (JSON tracker format)');
-                migrateToV3JSON();
-                extensionSettings.settingsVersion = 3;
-                settingsChanged = true;
-            }
-
-            // Migration to version 4: Enable FAB widgets by default
-            if (currentVersion < 4) {
-                // console.log('[RPG Companion] Migrating settings to version 4 (enabling FAB widgets)');
-                if (!extensionSettings.mobileFabWidgets) {
-                    extensionSettings.mobileFabWidgets = {};
-                }
-                extensionSettings.mobileFabWidgets.enabled = true;
-                extensionSettings.mobileFabWidgets.weatherIcon = { enabled: true };
-                extensionSettings.mobileFabWidgets.weatherDesc = { enabled: true };
-                extensionSettings.mobileFabWidgets.clock = { enabled: true };
-                extensionSettings.mobileFabWidgets.date = { enabled: true };
-                extensionSettings.mobileFabWidgets.location = { enabled: true };
-                extensionSettings.mobileFabWidgets.stats = { enabled: true };
-                extensionSettings.mobileFabWidgets.attributes = { enabled: true };
-                extensionSettings.settingsVersion = 4;
-                settingsChanged = true;
-            }
-
             // Migration to version 5: Add opacity properties for all colors
             if (currentVersion < 5) {
-                // console.log('[RPG Companion] Migrating settings to version 5 (adding color opacity)');
-                if (!extensionSettings.customColors) {
-                    extensionSettings.customColors = {};
-                }
-                if (extensionSettings.customColors.bgOpacity === undefined) extensionSettings.customColors.bgOpacity = 100;
-                if (extensionSettings.customColors.accentOpacity === undefined) extensionSettings.customColors.accentOpacity = 100;
-                if (extensionSettings.customColors.textOpacity === undefined) extensionSettings.customColors.textOpacity = 100;
-                if (extensionSettings.customColors.highlightOpacity === undefined) extensionSettings.customColors.highlightOpacity = 100;
-                if (extensionSettings.statBarColorLowOpacity === undefined) extensionSettings.statBarColorLowOpacity = 100;
-                if (extensionSettings.statBarColorHighOpacity === undefined) extensionSettings.statBarColorHighOpacity = 100;
-                extensionSettings.settingsVersion = 5;
-                settingsChanged = true;
+                console.error('[RPG Companion] Below version 6 not supported. Some settings may not be migrated correctly. Please update to the latest version to ensure all features work properly.');
             }
 
             // Migration to version 6
@@ -149,16 +102,6 @@ export function loadSettings() {
             // console.log('[RPG Companion] Settings loaded:', extensionSettings);
         } else {
             // console.log('[RPG Companion] No saved settings found, using defaults');
-        }
-
-        // Migrate inventory if feature flag enabled
-        if (FEATURE_FLAGS.useNewInventory) {
-            const migrationResult = migrateInventory(extensionSettings.userStats.inventory);
-            if (migrationResult.migrated) {
-                // console.log(`[RPG Companion] Inventory migrated from ${migrationResult.source} to v2 format`);
-                extensionSettings.userStats.inventory = migrationResult.inventory;
-                saveSettings(); // Persist migrated inventory
-            }
         }
 
         // Migrate to trackerConfig if it doesn't exist
@@ -312,79 +255,6 @@ export function updateMessageSwipeData() {
             break;
         }
     }
-}
-
-/**
- * Loads RPG data from the current chat's metadata.
- * Automatically migrates v1 inventory to v2 format if needed.
- */
-export function loadChatData() {
-    // if (!chat_metadata || !chat_metadata.rpg_companion) {
-    //     console.log('[RPG Companion] No chat metadata found, using default chat data');
-    //     // Reset to defaults if no data exists
-    //     updateExtensionSettings({
-    //         userStats: {
-    //             health: 100,
-    //             satiety: 100,
-    //             energy: 100,
-    //             hygiene: 100,
-    //             arousal: 0,
-    //             mood: '😐',
-    //             conditions: 'None',
-    //             // Use v2 inventory format for defaults
-    //             inventory: {
-    //                 version: 2,
-    //                 onPerson: "None",
-    //                 stored: {},
-    //                 assets: "None"
-    //             }
-    //         },
-    //         quests: {
-    //             main: "None",
-    //             optional: []
-    //         }
-    //     });
-    //     return;
-    // }
-    // console.log('[RPG Companion] Loading chat data from metadata');
-
-    // const savedData = chat_metadata.rpg_companion;
-
-    // // Restore stats
-    // if (savedData.userStats) {
-    //     extensionSettings.userStats = { ...savedData.userStats };
-    // }
-
-    // // Restore classic stats
-    // if (savedData.classicStats) {
-    //     extensionSettings.classicStats = { ...savedData.classicStats };
-    // }
-
-    // // Restore quests
-    // if (savedData.quests) {
-    //     extensionSettings.quests = { ...savedData.quests };
-    // } else {
-    //     // Initialize with defaults if not present
-    //     extensionSettings.quests = {
-    //         main: "None",
-    //         optional: []
-    //     };
-    // }
-
-    // // Migrate inventory in chat data if feature flag enabled
-    // if (FEATURE_FLAGS.useNewInventory && extensionSettings.userStats.inventory) {
-    //     const migrationResult = migrateInventory(extensionSettings.userStats.inventory);
-    //     if (migrationResult.migrated) {
-    //         // console.log(`[RPG Companion] Chat inventory migrated from ${migrationResult.source} to v2 format`);
-    //         extensionSettings.userStats.inventory = migrationResult.inventory;
-    //         saveChatData(); // Persist migrated inventory to chat metadata
-    //     }
-    // }
-
-    // // Validate inventory structure (Bug #3 fix)
-    // validateInventoryStructure(extensionSettings.userStats.inventory, 'chat');
-
-    // // console.log('[RPG Companion] Loaded chat data:', savedData);
 }
 
 /**

@@ -15,7 +15,6 @@ import {
     createPreset,
     saveToPreset,
     loadPreset,
-    renamePreset,
     deletePreset,
     associatePresetWithCurrentEntity,
     removePresetAssociationForCurrentEntity,
@@ -24,8 +23,6 @@ import {
     isAssociatedWithCurrentPreset,
     getCurrentEntityKey,
     getCurrentEntityName,
-    exportPresets,
-    importPresets
 } from '../../core/persistence.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
@@ -36,7 +33,6 @@ let $editorModal = null;
 let activeTab = 'userStats';
 let tempConfig = null; // Temporary config for cancel functionality
 let tempAssociation = null; // Temporary association state: { presetId: string|null, entityKey: string|null }
-let originalAssociation = null; // Original association when editor opened
 
 /**
  * Initialize the tracker editor modal

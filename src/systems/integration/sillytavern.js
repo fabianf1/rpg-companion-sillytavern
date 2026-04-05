@@ -18,7 +18,7 @@ import {
     abortCurrentGeneration,
     $musicPlayerContainer
 } from '../../core/state.js';
-import { saveChatData, loadChatData, autoSwitchPresetForEntity } from '../../core/persistence.js';
+import { saveChatData, autoSwitchPresetForEntity } from '../../core/persistence.js';
 
 // Generation & Parsing
 import { parseResponse } from '../generation/parser.js';
@@ -251,9 +251,6 @@ export function onCharacterChanged() {
     // if (presetSwitched) {
     //     console.log('[RPG Companion] Auto-switched preset for character');
     // }
-
-    // Load chat-specific data when switching chats
-    loadChatData();
 
     // Re-render with the loaded data
     renderUserStats();
