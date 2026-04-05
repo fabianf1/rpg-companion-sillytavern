@@ -10,7 +10,7 @@ import {
     updateExtensionSettings,
     FEATURE_FLAGS
 } from './state.js';
-import { validateStoredInventory, cleanItemString } from '../utils/security.js';
+import { validateStoredInventory } from '../utils/security.js';
 
 const extensionName = 'third-party/rpg-companion-sillytavern';
 
@@ -173,13 +173,12 @@ export function updateMessageSwipeData() {
     console.log(`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}`);
     for (let i = chat.length - 1; i >= 0; i--) {
         const message = chat[i];
-        if (!message.is_user) {
-            // Found last assistant message - update its swipe data
+        if (!message.is_user && !message.is_system) {
             if (!message.extra) {
-                message.extra = {};
+                continue; // No extra field, skip this message
             }
             if (!message.extra.rpg_companion_swipes) {
-                message.extra.rpg_companion_swipes = {};
+                continue; // No extra field, skip this message
             }
 
             const swipeId = message.swipe_id || 0;
@@ -248,7 +247,12 @@ export function updateMessageSwipeData() {
             message.extra.rpg_companion_swipes[swipeId] = {
                 userStats: userStatsData !== null ? userStatsData : currentSwipeData.userStats,
                 infoBox: currentSwipeData.infoBox,
-                characterThoughts: currentSwipeData.characterThoughts
+                characterThoughts: currentSwipeData.characterThoughts,
+                lockedItems: {
+                    userStats: extensionSettings.lockedItems.userStats,
+                    infoBox: extensionSettings.lockedItems.infoBox,
+                    characters: extensionSettings.lockedItems.characters
+                }
             };
 
             // console.log('[RPG Companion] Updated message swipe data after user edit');
@@ -271,9 +275,9 @@ function validateInventoryStructure(inventory, source) {
         console.error(`[RPG Companion] Invalid inventory from ${source}, resetting to defaults`);
         extensionSettings.userStats.inventory = {
             version: 2,
-            onPerson: "None",
+            onPerson: [],
             stored: {},
-            assets: "None"
+            assets: []
         };
         saveSettings();
         return;
@@ -288,19 +292,11 @@ function validateInventoryStructure(inventory, source) {
         needsSave = true;
     }
 
-    // Validate onPerson field
-    if (typeof inventory.onPerson !== 'string') {
-        console.warn(`[RPG Companion] Invalid onPerson from ${source}, resetting to "None"`);
-        inventory.onPerson = "None";
+    // Validate onPerson field - should be an array
+    if (!Array.isArray(inventory.onPerson)) {
+        console.warn(`[RPG Companion] Invalid onPerson from ${source}, resetting to empty array`);
+        inventory.onPerson = [];
         needsSave = true;
-    } else {
-        // Clean items in onPerson (removes corrupted/dangerous items)
-        const cleanedOnPerson = cleanItemString(inventory.onPerson);
-        if (cleanedOnPerson !== inventory.onPerson) {
-            console.warn(`[RPG Companion] Cleaned corrupted items from onPerson inventory (${source})`);
-            inventory.onPerson = cleanedOnPerson;
-            needsSave = true;
-        }
     }
 
     // Validate stored field (CRITICAL for Bug #3)
@@ -309,28 +305,19 @@ function validateInventoryStructure(inventory, source) {
         inventory.stored = {};
         needsSave = true;
     } else {
-        // Validate stored object keys/values
-        const cleanedStored = validateStoredInventory(inventory.stored);
-        if (JSON.stringify(cleanedStored) !== JSON.stringify(inventory.stored)) {
-            console.warn(`[RPG Companion] Cleaned dangerous/invalid stored locations from ${source}`);
-            inventory.stored = cleanedStored;
+        // Validate stored object keys/values - each should be an array
+        const storedNeedsSave = validateStoredInventoryStructure(inventory.stored);
+        if (storedNeedsSave) {
+            console.warn(`[RPG Companion] Cleaned stored inventory from ${source}`);
             needsSave = true;
         }
     }
 
-    // Validate assets field
-    if (typeof inventory.assets !== 'string') {
-        console.warn(`[RPG Companion] Invalid assets from ${source}, resetting to "None"`);
-        inventory.assets = "None";
+    // Validate assets field - should be an array
+    if (!Array.isArray(inventory.assets)) {
+        console.warn(`[RPG Companion] Invalid assets from ${source}, resetting to empty array`);
+        inventory.assets = [];
         needsSave = true;
-    } else {
-        // Clean items in assets (removes corrupted/dangerous items)
-        const cleanedAssets = cleanItemString(inventory.assets);
-        if (cleanedAssets !== inventory.assets) {
-            console.warn(`[RPG Companion] Cleaned corrupted items from assets inventory (${source})`);
-            inventory.assets = cleanedAssets;
-            needsSave = true;
-        }
     }
 
     // Persist repairs if needed
@@ -341,6 +328,32 @@ function validateInventoryStructure(inventory, source) {
             saveChatData();
         }
     }
+}
+
+/**
+ * Validates stored inventory structure - ensures each location contains an array
+ * @param {Object} stored - Stored inventory object
+ * @returns {boolean} True if validation failed and needs save
+ */
+function validateStoredInventoryStructure(stored) {
+    let needsSave = false;
+    
+    for (const location in stored) {
+        if (!Array.isArray(stored[location])) {
+            console.warn(`[RPG Companion] Stored location "${location}" is not an array, converting to array`);
+            // Convert string to array
+            if (typeof stored[location] === 'string') {
+                const items = stored[location].split(',').map(s => s.trim()).filter(s => s);
+                // Convert to object format
+                stored[location] = items.map(item => ({ name: item, quantity: 1 }));
+            } else {
+                stored[location] = [];
+            }
+            needsSave = true;
+        }
+    }
+    
+    return needsSave;
 }
 
 /**

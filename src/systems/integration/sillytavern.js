@@ -24,7 +24,7 @@ import { saveChatData, autoSwitchPresetForEntity } from '../../core/persistence.
 import { parseResponse } from '../generation/parser.js';
 import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { updateRPGData } from '../generation/apiClient.js';
-import { removeLocks } from '../generation/lockManager.js';
+import { removeLocks, restoreLockedContent, getLockedItemsFromSwipeStore } from '../generation/lockManager.js';
 import { initHistoryInjectionListeners } from '../generation/injector.js';
 
 // Rendering
@@ -45,6 +45,26 @@ import { updateStripWidgets } from '../ui/desktop.js';
 // Chapter checkpoint
 import { updateAllCheckpointIndicators } from '../ui/checkpointUI.js';
 import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
+
+/**
+ * Reload lock settings from the current message's swipeStore
+ * This ensures locks are message-specific and persist across swipes
+ */
+function reloadLocksFromSwipeStore() {
+    console.log('[RPG Companion] Reloading locks from swipeStore...');
+    
+    // Get locks from swipeStore for each tracker type
+    const userStatsLocks = getLockedItemsFromSwipeStore('userStats');
+    const infoBoxLocks = getLockedItemsFromSwipeStore('infoBox');
+    const charactersLocks = getLockedItemsFromSwipeStore('characters');
+    
+    // Update extensionSettings with locks from swipeStore
+    extensionSettings.lockedItems = {
+        userStats: userStatsLocks,
+        infoBox: infoBoxLocks,
+        characters: charactersLocks
+    };
+}
 
 /**
  * Event handler for when the user sends a message.
@@ -114,6 +134,31 @@ export async function onMessageReceived(data) {
             }
             if (parsedData.characterThoughts) {
                 parsedData.characterThoughts = removeLocks(parsedData.characterThoughts);
+            }
+
+            // Restore locked content that was removed or modified by the AI
+            // Get previous data from the last message's swipe (with locks still applied)
+            const previousSwipeData = lastMessage?.extra?.rpg_companion_swipes?.[currentSwipeId] || {};
+            
+            if (previousSwipeData) {
+                if (parsedData.userStats) {
+                    const previousUserStats = previousSwipeData.userStats;
+                    if (previousUserStats) {
+                        parsedData.userStats = restoreLockedContent(parsedData.userStats, previousUserStats, 'userStats');
+                    }
+                }
+                if (parsedData.infoBox) {
+                    const previousInfoBox = previousSwipeData.infoBox;
+                    if (previousInfoBox) {
+                        parsedData.infoBox = restoreLockedContent(parsedData.infoBox, previousInfoBox, 'infoBox');
+                    }
+                }
+                if (parsedData.characterThoughts) {
+                    const previousCharacterThoughts = previousSwipeData.characterThoughts;
+                    if (previousCharacterThoughts) {
+                        parsedData.characterThoughts = restoreLockedContent(parsedData.characterThoughts, previousCharacterThoughts, 'characters');
+                    }
+                }
             }
 
             // Parse and store Spotify URL if feature is enabled
@@ -252,6 +297,10 @@ export function onCharacterChanged() {
     //     console.log('[RPG Companion] Auto-switched preset for character');
     // }
 
+    // Reload lock settings from the current message's swipeStore
+    reloadLocksFromSwipeStore();
+
+
     // Re-render with the loaded data
     renderUserStats();
     renderInfoBox();
@@ -319,6 +368,9 @@ export function onMessageSwiped(messageIndex) {
     renderInventory();
     renderQuests();
     renderMusicPlayer($musicPlayerContainer[0]);
+
+    // Reload lock settings from the current message's swipeStore
+    reloadLocksFromSwipeStore();
 
     // Update chat thought overlays
     updateChatThoughts();

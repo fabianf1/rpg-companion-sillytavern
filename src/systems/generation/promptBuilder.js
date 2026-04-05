@@ -4,9 +4,9 @@
  */
 
 import { getContext } from '../../../../../../extensions.js';
-import { chat, getCurrentChatDetails, characters, this_chid } from '../../../../../../../script.js';
+import { chat, characters, this_chid } from '../../../../../../../script.js';
 import { selected_group, getGroupMembers, getGroupChat, groups } from '../../../../../../group-chats.js';
-import { extensionSettings, FEATURE_FLAGS } from '../../core/state.js';
+import { extensionSettings } from '../../core/state.js';
 import {
     buildUserStatsJSONInstruction,
     buildInfoBoxJSONInstruction,
@@ -14,9 +14,6 @@ import {
     addLockInstruction
 } from './jsonPromptHelpers.js';
 import { applyLocks } from './lockManager.js';
-
-// Type imports
-/** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
 
 /**
  * Reads tracker data from a specific swipe in a message.
@@ -215,13 +212,38 @@ function getCharacterCardsInfo() {
 }
 
 /**
+ * Converts an inventory item object to a display string
+ * @param {Object} item - Inventory item object with name and optional quantity
+ * @returns {string} Formatted item string (e.g., "Sword" or "3x Potions")
+ */
+function inventoryItemToString(item) {
+    if (!item?.name) return '';
+    if (item.quantity && item.quantity > 1) {
+        return `${item.quantity}x ${item.name}`;
+    }
+    return item.name;
+}
+
+/**
+ * Converts an array of inventory items to a comma-separated string
+ * @param {Array} items - Array of inventory item objects
+ * @returns {string} Comma-separated string of items, or 'None' if empty
+ */
+function inventoryArrayToString(items) {
+    if (!Array.isArray(items) || items.length === 0) {
+        return 'None';
+    }
+    return items.map(inventoryItemToString).join(', ');
+}
+
+/**
  * Builds a formatted inventory summary for AI context injection.
  * Converts v2 inventory structure to multi-line plaintext format.
  *
  * @param {InventoryV2|string} inventory - Current inventory (v2 or legacy string)
  * @returns {string} Formatted inventory summary for prompt injection
  * @example
- * // v2 input: { onPerson: "Sword", stored: { Home: "Gold" }, assets: "Horse", version: 2 }
+ * // v2 input: { onPerson: [{name: "Sword"}], stored: { Home: [{name: "Gold"}] }, assets: [{name: "Horse"}], version: 2 }
  * // Returns: "On Person: Sword\nStored - Home: Gold\nAssets: Horse"
  */
 export function buildInventorySummary(inventory) {
@@ -230,39 +252,46 @@ export function buildInventorySummary(inventory) {
         return inventory;
     }
 
-    // Handle v2 object format
-    if (inventory && typeof inventory === 'object' && inventory.version === 2) {
-        let summary = '';
+    // Handle v2 object format (array-based)
+    let summary = '';
 
-        // Add On Person section
-        if (inventory.onPerson && inventory.onPerson !== 'None') {
-            summary += `On Person: ${inventory.onPerson}\n`;
+    // Add On Person section
+    if (inventory.onPerson) {
+        const onPersonStr = inventoryArrayToString(inventory.onPerson);
+        if (onPersonStr !== 'None') {
+            summary += `On Person: ${onPersonStr}\n`;
         }
+    }
 
-        // Add Clothing section
-        if (inventory.clothing && inventory.clothing !== 'None') {
-            summary += `Clothing: ${inventory.clothing}\n`;
+    // Add Clothing section
+    if (inventory.clothing) {
+        const clothingStr = inventoryArrayToString(inventory.clothing);
+        if (clothingStr !== 'None') {
+            summary += `Clothing: ${clothingStr}\n`;
         }
+    }
 
-        // Add Stored sections for each location
-        if (inventory.stored && Object.keys(inventory.stored).length > 0) {
-            for (const [location, items] of Object.entries(inventory.stored)) {
-                if (items && items !== 'None') {
-                    summary += `Stored - ${location}: ${items}\n`;
+    // Add Stored sections for each location
+    if (inventory.stored && Object.keys(inventory.stored).length > 0) {
+        for (const [location, items] of Object.entries(inventory.stored)) {
+            if (Array.isArray(items)) {
+                const itemsStr = inventoryArrayToString(items);
+                if (itemsStr !== 'None') {
+                    summary += `Stored - ${location}: ${itemsStr}\n`;
                 }
             }
         }
-
-        // Add Assets section
-        if (inventory.assets && inventory.assets !== 'None') {
-            summary += `Assets: ${inventory.assets}`;
-        }
-
-        return summary.trim();
     }
 
-    // Fallback for unknown format
-    return 'None';
+    // Add Assets section
+    if (inventory.assets) {
+        const assetsStr = inventoryArrayToString(inventory.assets);
+        if (assetsStr !== 'None') {
+            summary += `Assets: ${assetsStr}`;
+        }
+    }
+
+    return summary.trim();
 }
 
 /**

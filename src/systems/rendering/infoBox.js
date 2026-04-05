@@ -8,7 +8,7 @@ import {
     extensionSettings,
     $infoBoxContainer
 } from '../../core/state.js';
-import { saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import { saveChatData, updateMessageSwipeData, saveSettings } from '../../core/persistence.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { i18n } from '../../core/i18n.js';
 import { isItemLocked } from '../generation/lockManager.js';
@@ -120,209 +120,28 @@ export function renderInfoBox() {
     };
 
     // Check if data is v3 JSON format
-    const trimmed = infoBoxData.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        const jsonData = repairJSON(infoBoxData);
-        if (jsonData) {
-            // Extract from v3 JSON structure
-            data.weatherEmoji = jsonData.weather?.emoji || '';
-            data.weatherForecast = jsonData.weather?.forecast || '';
-            data.temperature = jsonData.temperature ? `${jsonData.temperature.value}°${jsonData.temperature.unit}` : '';
-            data.tempValue = jsonData.temperature?.value || 0;
-            data.timeStart = jsonData.time?.start || '';
-            data.timeEnd = jsonData.time?.end || '';
-            data.location = jsonData.location?.value || '';
+    const jsonData = repairJSON(infoBoxData);
+    if (jsonData) {
+        // Extract from v3 JSON structure
+        data.weatherEmoji = jsonData.weather?.emoji || '';
+        data.weatherForecast = jsonData.weather?.forecast || '';
+        data.temperature = jsonData.temperature ? `${jsonData.temperature.value}°${jsonData.temperature.unit}` : '';
+        data.tempValue = jsonData.temperature?.value || 0;
+        data.timeStart = jsonData.time?.start || '';
+        data.timeEnd = jsonData.time?.end || '';
+        data.location = jsonData.location?.value || '';
 
-            // Parse date string to extract weekday, month, year
-            if (jsonData.date?.value) {
-                data.date = jsonData.date.value;
-                // Expected format: "Tuesday, October 17th, 2023"
-                const dateParts = data.date.split(',').map(p => p.trim());
-                data.weekday = dateParts[0] || '';
-                data.month = dateParts[1] || '';
-                data.year = dateParts[2] || '';
-            }
-
-            // Skip to rendering
-        } else {
-            // JSON parsing failed, fall back to text parsing
-            parseTextFormat();
+        // Parse date string to extract weekday, month, year
+        if (jsonData.date?.value) {
+            data.date = jsonData.date.value;
+            // Expected format: "Tuesday, October 17th, 2023"
+            const dateParts = data.date.split(',').map(p => p.trim());
+            data.weekday = dateParts[0] || '';
+            data.month = dateParts[1] || '';
+            data.year = dateParts[2] || '';
         }
     } else {
-        // Text format
-        parseTextFormat();
-    }
-
-    function parseTextFormat() {
-        // Parse the info box data
-        const lines = infoBoxData.split('\n');
-        // console.log('[RPG Companion] Info Box split into lines:', lines);
-
-        // Track which fields we've already parsed to avoid duplicates from mixed formats
-        const parsedFields = {
-            date: false,
-            temperature: false,
-            time: false,
-            location: false,
-            weather: false
-        };
-
-        for (const line of lines) {
-            // console.log('[RPG Companion] Processing line:', line);
-
-            // Support both new text format (Date:) and legacy emoji format (🗓️:)
-            // Prioritize text format over emoji format
-            if (line.startsWith('Date:')) {
-                if (!parsedFields.date) {
-                    // console.log('[RPG Companion] → Matched DATE (text format)');
-                    const dateStr = line.replace('Date:', '').trim();
-                    const dateParts = dateStr.split(',').map(p => p.trim());
-                    data.weekday = dateParts[0] || '';
-                    data.month = dateParts[1] || '';
-                    data.year = dateParts[2] || '';
-                    data.date = dateStr;
-                    parsedFields.date = true;
-                }
-            } else if (line.includes('🗓️:')) {
-                if (!parsedFields.date) {
-                    // console.log('[RPG Companion] → Matched DATE (emoji format)');
-                    const dateStr = line.replace('🗓️:', '').trim();
-                    const dateParts = dateStr.split(',').map(p => p.trim());
-                    data.weekday = dateParts[0] || '';
-                    data.month = dateParts[1] || '';
-                    data.year = dateParts[2] || '';
-                    data.date = dateStr;
-                    parsedFields.date = true;
-                }
-            } else if (line.startsWith('Temperature:')) {
-                if (!parsedFields.temperature) {
-                    // console.log('[RPG Companion] → Matched TEMPERATURE (text format)');
-                    const tempStr = line.replace('Temperature:', '').trim();
-                    data.temperature = tempStr;
-                    const tempMatch = tempStr.match(/(-?\d+)/);
-                    if (tempMatch) {
-                        data.tempValue = parseInt(tempMatch[1]);
-                    }
-                    parsedFields.temperature = true;
-                }
-            } else if (line.includes('🌡️:')) {
-                if (!parsedFields.temperature) {
-                    // console.log('[RPG Companion] → Matched TEMPERATURE (emoji format)');
-                    const tempStr = line.replace('🌡️:', '').trim();
-                    data.temperature = tempStr;
-                    const tempMatch = tempStr.match(/(-?\d+)/);
-                    if (tempMatch) {
-                        data.tempValue = parseInt(tempMatch[1]);
-                    }
-                    parsedFields.temperature = true;
-                }
-            } else if (line.startsWith('Time:')) {
-                if (!parsedFields.time) {
-                    // console.log('[RPG Companion] → Matched TIME (text format)');
-                    const timeStr = line.replace('Time:', '').trim();
-                    data.time = timeStr;
-                    const timeParts = timeStr.split('→').map(t => t.trim());
-                    data.timeStart = timeParts[0] || '';
-                    data.timeEnd = timeParts[1] || '';
-                    parsedFields.time = true;
-                }
-            } else if (line.includes('🕒:')) {
-                if (!parsedFields.time) {
-                    // console.log('[RPG Companion] → Matched TIME (emoji format)');
-                    const timeStr = line.replace('🕒:', '').trim();
-                    data.time = timeStr;
-                    const timeParts = timeStr.split('→').map(t => t.trim());
-                    data.timeStart = timeParts[0] || '';
-                    data.timeEnd = timeParts[1] || '';
-                    parsedFields.time = true;
-                }
-            } else if (line.startsWith('Location:')) {
-                if (!parsedFields.location) {
-                    // console.log('[RPG Companion] → Matched LOCATION (text format)');
-                    data.location = line.replace('Location:', '').trim();
-                    parsedFields.location = true;
-                }
-            } else if (line.includes('🗺️:')) {
-                if (!parsedFields.location) {
-                    // console.log('[RPG Companion] → Matched LOCATION (emoji format)');
-                    data.location = line.replace('🗺️:', '').trim();
-                    parsedFields.location = true;
-                }
-            } else if (line.startsWith('Weather:')) {
-                if (!parsedFields.weather) {
-                    // New text format: Weather: [Emoji], [Forecast] OR Weather: [Emoji][Forecast] (no separator - FIXED)
-                    const weatherStr = line.replace('Weather:', '').trim();
-                    const { emoji, text } = separateEmojiFromText(weatherStr);
-
-                    if (emoji && text) {
-                        data.weatherEmoji = emoji;
-                        data.weatherForecast = text;
-                    } else if (weatherStr.includes(',')) {
-                        // Fallback to comma split if emoji detection failed - split only on FIRST comma
-                        const firstCommaIndex = weatherStr.indexOf(',');
-                        data.weatherEmoji = weatherStr.substring(0, firstCommaIndex).trim();
-                        data.weatherForecast = weatherStr.substring(firstCommaIndex + 1).trim();
-                    } else {
-                        // No clear separation - assume it's all forecast text
-                        data.weatherEmoji = '🌤️'; // Default emoji
-                        data.weatherForecast = weatherStr;
-                    }
-
-                    parsedFields.weather = true;
-                }
-            } else {
-                // Check if it's a legacy weather line (emoji format)
-                // Only parse if we haven't already found weather in text format
-                if (!parsedFields.weather) {
-                    // Since \p{Emoji} doesn't work reliably, use a simpler approach
-                    const hasColon = line.includes(':');
-                    const notInfoBox = !line.includes('Info Box');
-                    const notDivider = !line.includes('---');
-                    const notCodeFence = !line.trim().startsWith('```');
-
-                    // console.log('[RPG Companion] → Checking weather conditions:', {
-                    //     line: line,
-                    //     hasColon: hasColon,
-                    //     notInfoBox: notInfoBox,
-                    //     notDivider: notDivider
-                    // });
-
-                    if (hasColon && notInfoBox && notDivider && notCodeFence && line.trim().length > 0) {
-                        // Match format: [Weather Emoji]: [Forecast]
-                        // Capture everything before colon as emoji, everything after as forecast
-                        // console.log('[RPG Companion] → Testing WEATHER match for:', line);
-                        const weatherMatch = line.match(/^\s*([^:]+):\s*(.+)$/);
-                        if (weatherMatch) {
-                            const potentialEmoji = weatherMatch[1].trim();
-                            const forecast = weatherMatch[2].trim();
-
-                            // If the first part is short (likely emoji), treat as weather
-                            if (potentialEmoji.length <= 5) {
-                                data.weatherEmoji = potentialEmoji;
-                                data.weatherForecast = forecast;
-                                parsedFields.weather = true;
-                                // console.log('[RPG Companion] ✓ Weather parsed:', data.weatherEmoji, data.weatherForecast);
-                            } else {
-                                // console.log('[RPG Companion] ✗ First part too long for emoji:', potentialEmoji);
-                            }
-                        } else {
-                            // console.log('[RPG Companion] ✗ Weather regex did not match');
-                        }
-                    } else {
-                        // console.log('[RPG Companion] → No match for this line');
-                    }
-                }
-            }
-        }
-
-        // console.log('[RPG Companion] Parsed Info Box data:', {
-        //     date: data.date,
-        //     weatherEmoji: data.weatherEmoji,
-        //     weatherForecast: data.weatherForecast,
-        //     temperature: data.temperature,
-        //     timeStart: data.timeStart,
-        //     location: data.location
-        // });
+        return;
     }
 
     // Get tracker configuration

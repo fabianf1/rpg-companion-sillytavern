@@ -6,7 +6,6 @@
 
 import { extensionSettings, FEATURE_FLAGS, addDebugLog } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
-import { extractInventory } from './inventoryParser.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
 
 /**
@@ -254,25 +253,33 @@ export function parseUserStats(statsText) {
                 }
             }
 
-            // Extract inventory (convert v3 array format to v2 string format)
+            // Extract inventory (keep as arrays)
             if (statsData.inventory) {
                 const inv = statsData.inventory;
 
-                // Convert arrays of {name, quantity} objects to comma-separated strings
+                // Helper to convert items to array format
                 const convertItems = (items) => {
-                    if (!items || !Array.isArray(items)) return '';
+                    if (!items || !Array.isArray(items)) return [];
                     return items.map(item => {
-                        if (typeof item === 'object' && item.name) {
-                            // Include quantity if > 1
-                            return item.quantity && item.quantity > 1
-                                ? `${item.quantity}x ${item.name}`
-                                : item.name;
+                        if (typeof item === 'object') {
+                            // Already in object format
+                            return {
+                                name: item.name || item.item || '',
+                                quantity: item.quantity || 1
+                            };
+                        } else if (typeof item === 'string') {
+                            // String format - parse quantity if present
+                            const qtyMatch = item.match(/^(\d+)x\s+(.+)$/);
+                            if (qtyMatch) {
+                                return { name: qtyMatch[2].trim(), quantity: parseInt(qtyMatch[1]) };
+                            }
+                            return { name: item.trim(), quantity: 1 };
                         }
-                        return String(item);
-                    }).join(', ');
+                        return { name: String(item), quantity: 1 };
+                    }).filter(item => item.name);
                 };
 
-                // Convert stored object {location: [items]} to {location: "item1, item2"}
+                // Convert stored object {location: [items]} to keep arrays
                 const convertStoredInventory = (stored) => {
                     if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
                     const result = {};
@@ -280,9 +287,11 @@ export function parseUserStats(statsText) {
                         if (Array.isArray(items)) {
                             result[location] = convertItems(items);
                         } else if (typeof items === 'string') {
-                            result[location] = items;
+                            // Convert string to array
+                            const itemsArray = items.split(',').map(s => s.trim()).filter(s => s);
+                            result[location] = itemsArray.map(item => ({ name: item, quantity: 1 }));
                         } else {
-                            result[location] = '';
+                            result[location] = [];
                         }
                     }
                     return result;
@@ -294,7 +303,7 @@ export function parseUserStats(statsText) {
                     stored: convertStoredInventory(inv.stored),
                     assets: convertItems(inv.assets)
                 };
-                // console.log('[RPG Parser] ✓ Converted v3 inventory:', extensionSettings.userStats.inventory);
+                // console.log('[RPG Parser] ✓ Inventory kept as arrays:', extensionSettings.userStats.inventory);
             }
 
             // Extract quests (convert v3 object format to v2 string format)

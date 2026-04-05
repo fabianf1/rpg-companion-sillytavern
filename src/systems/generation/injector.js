@@ -33,9 +33,6 @@ import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
 // Track suppression state for event handler
 let currentSuppressionState = false;
 
-// Type imports
-/** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
-
 // Track last chat length we committed at to prevent duplicate commits from streaming
 let lastCommittedChatLength = -1;
 

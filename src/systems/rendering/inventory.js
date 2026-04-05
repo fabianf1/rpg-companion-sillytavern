@@ -7,13 +7,10 @@ import { extensionSettings, $inventoryContainer } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
 import { getInventoryRenderOptions, restoreFormStates } from '../interaction/inventoryActions.js';
 import { updateInventoryItem } from '../interaction/inventoryEdit.js';
-import { parseItems } from '../../utils/itemParser.js';
+// parseItems is no longer imported - arrays are used directly
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { parseUserStats } from '../generation/parser.js';
-
-// Type imports
-/** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
@@ -69,21 +66,25 @@ export function renderInventorySubTabs(activeTab = 'onPerson') {
 
 /**
  * Renders the "On Person" inventory view with list or grid display
- * @param {string} onPersonItems - Current on-person items (comma-separated string)
+ * @param {Array<{name: string, quantity?: number}>} onPersonItems - Current on-person items as array of objects
  * @param {string} viewMode - View mode ('list' or 'grid')
  * @returns {string} HTML for on-person view with items and add button
  */
 export function renderOnPersonView(onPersonItems, viewMode = 'list') {
-    const items = parseItems(onPersonItems);
+    // Convert array to display strings for UI
+    const displayItems = Array.isArray(onPersonItems) 
+        ? onPersonItems.map(item => typeof item === 'object' ? item.name : item)
+        : [];
 
     let itemsHtml = '';
-    if (items.length === 0) {
+    if (displayItems.length === 0) {
         itemsHtml = '<div class="rpg-inventory-empty">No items carried</div>';
     } else {
         if (viewMode === 'grid') {
             // Grid view: card-style items
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.onPerson.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(onPersonItems) ? onPersonItems[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.onPerson.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-card" data-field="onPerson" data-index="${index}">
                     ${lockIconHtml}
@@ -95,8 +96,9 @@ export function renderOnPersonView(onPersonItems, viewMode = 'list') {
             `}).join('');
         } else {
             // List view: full-width rows
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.onPerson.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(onPersonItems) ? onPersonItems[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.onPerson.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-row" data-field="onPerson" data-index="${index}">
                     ${lockIconHtml}
@@ -151,21 +153,25 @@ export function renderOnPersonView(onPersonItems, viewMode = 'list') {
 
 /**
  * Renders the "Clothing" inventory view with list or grid display
- * @param {string} clothingItems - Current clothing items (comma-separated string)
+ * @param {Array<{name: string, quantity?: number}>} clothingItems - Current clothing items as array of objects
  * @param {string} viewMode - View mode ('list' or 'grid')
  * @returns {string} HTML for clothing view with items and add button
  */
 export function renderClothingView(clothingItems, viewMode = 'list') {
-    const items = parseItems(clothingItems);
+    // Convert array to display strings for UI
+    const displayItems = Array.isArray(clothingItems) 
+        ? clothingItems.map(item => typeof item === 'object' ? item.name : item)
+        : [];
 
     let itemsHtml = '';
-    if (items.length === 0) {
+    if (displayItems.length === 0) {
         itemsHtml = '<div class="rpg-inventory-empty">No clothing worn</div>';
     } else {
         if (viewMode === 'grid') {
             // Grid view: card-style items
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(clothingItems) ? clothingItems[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-card" data-field="clothing" data-index="${index}">
                     ${lockIconHtml}
@@ -177,8 +183,9 @@ export function renderClothingView(clothingItems, viewMode = 'list') {
             `}).join('');
         } else {
             // List view: full-width rows
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(clothingItems) ? clothingItems[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-row" data-field="clothing" data-index="${index}">
                     ${lockIconHtml}
@@ -233,7 +240,7 @@ export function renderClothingView(clothingItems, viewMode = 'list') {
 
 /**
  * Renders the "Stored" inventory view with collapsible locations and list/grid views
- * @param {Object.<string, string>} stored - Stored items by location
+ * @param {Object.<string, Array<{name: string, quantity?: number}>>} stored - Stored items by location (arrays of objects)
  * @param {string[]} collapsedLocations - Array of collapsed location names
  * @param {string} viewMode - View mode ('list' or 'grid')
  * @returns {string} HTML for stored inventory with all locations
@@ -281,19 +288,23 @@ export function renderStoredView(stored, collapsedLocations = [], viewMode = 'li
         `;
     } else {
         for (const location of locations) {
-            const itemString = stored[location];
-            const items = parseItems(itemString);
+            const locationItems = stored[location] || [];
+            // Convert array to display strings for UI
+            const displayItems = Array.isArray(locationItems) 
+                ? locationItems.map(item => typeof item === 'object' ? item.name : item)
+                : [];
             const isCollapsed = collapsedLocations.includes(location);
             const locationId = getLocationId(location);
 
             let itemsHtml = '';
-            if (items.length === 0) {
+            if (displayItems.length === 0) {
                 itemsHtml = '<div class="rpg-inventory-empty">No items stored here</div>';
             } else {
                 if (viewMode === 'grid') {
                     // Grid view: card-style items
-                    itemsHtml = items.map((item, index) => {
-                        const lockIconHtml = getLockIconHtml('userStats', `inventory.stored.${location}.${item}`);
+                    itemsHtml = displayItems.map((item, index) => {
+                        const originalItem = Array.isArray(locationItems) ? locationItems[index] : null;
+                        const lockIconHtml = getLockIconHtml('userStats', `inventory.stored.${location}.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                         return `
                         <div class="rpg-item-card" data-field="stored" data-location="${escapeHtml(location)}" data-index="${index}">
                             ${lockIconHtml}
@@ -305,8 +316,9 @@ export function renderStoredView(stored, collapsedLocations = [], viewMode = 'li
                     `}).join('');
                 } else {
                     // List view: full-width rows
-                    itemsHtml = items.map((item, index) => {
-                        const lockIconHtml = getLockIconHtml('userStats', `inventory.stored.${location}.${item}`);
+                    itemsHtml = displayItems.map((item, index) => {
+                        const originalItem = Array.isArray(locationItems) ? locationItems[index] : null;
+                        const lockIconHtml = getLockIconHtml('userStats', `inventory.stored.${location}.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                         return `
                         <div class="rpg-item-row" data-field="stored" data-location="${escapeHtml(location)}" data-index="${index}">
                             ${lockIconHtml}
@@ -381,21 +393,25 @@ export function renderStoredView(stored, collapsedLocations = [], viewMode = 'li
 
 /**
  * Renders the "Assets" inventory view with list or grid display
- * @param {string} assets - Current assets (vehicles, property, equipment)
+ * @param {Array<{name: string, quantity?: number}>} assets - Current assets (vehicles, property, equipment) as array of objects
  * @param {string} viewMode - View mode ('list' or 'grid')
  * @returns {string} HTML for assets view with items and add button
  */
 export function renderAssetsView(assets, viewMode = 'list') {
-    const items = parseItems(assets);
+    // Convert array to display strings for UI
+    const displayItems = Array.isArray(assets) 
+        ? assets.map(item => typeof item === 'object' ? item.name : item)
+        : [];
 
     let itemsHtml = '';
-    if (items.length === 0) {
+    if (displayItems.length === 0) {
         itemsHtml = '<div class="rpg-inventory-empty">No assets owned</div>';
     } else {
         if (viewMode === 'grid') {
             // Grid view: card-style items
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.assets.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(assets) ? assets[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.assets.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-card" data-field="assets" data-index="${index}">
                     ${lockIconHtml}
@@ -407,8 +423,9 @@ export function renderAssetsView(assets, viewMode = 'list') {
             `}).join('');
         } else {
             // List view: full-width rows
-            itemsHtml = items.map((item, index) => {
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.assets.${item}`);
+            itemsHtml = displayItems.map((item, index) => {
+                const originalItem = Array.isArray(assets) ? assets[index] : null;
+                const lockIconHtml = getLockIconHtml('userStats', `inventory.assets.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
                 return `
                 <div class="rpg-item-row" data-field="assets" data-index="${index}">
                     ${lockIconHtml}
@@ -481,10 +498,9 @@ function generateInventoryHTML(inventory, options = {}) {
     } = options;
 
     // Handle legacy v1 format - convert to v2 for display
-    let v2Inventory = inventory;
+    // let inventory = inventory;
     if (typeof inventory === 'string') {
-        v2Inventory = {
-            version: 2,
+        inventory = {
             onPerson: inventory,
             stored: {},
             assets: 'None'
@@ -492,24 +508,38 @@ function generateInventoryHTML(inventory, options = {}) {
     }
 
     // Ensure v2 structure has all required fields
-    if (!v2Inventory || typeof v2Inventory !== 'object') {
-        v2Inventory = {
-            version: 2,
-            onPerson: 'None',
+    if (!inventory || typeof inventory !== 'object') {
+        inventory = {
+            onPerson: [],
             stored: {},
-            assets: 'None'
+            assets: []
         };
     }
 
-    // Additional safety check: ensure required properties exist and are correct type
-    if (!v2Inventory.onPerson || typeof v2Inventory.onPerson !== 'string') {
-        v2Inventory.onPerson = 'None';
+    // Additional safety check: ensure required properties exist and are correct type (arrays now)
+    if (!inventory.onPerson || !Array.isArray(inventory.onPerson)) {
+        inventory.onPerson = [];
     }
-    if (!v2Inventory.stored || typeof v2Inventory.stored !== 'object' || Array.isArray(v2Inventory.stored)) {
-        v2Inventory.stored = {};
+    if (!inventory.clothing || !Array.isArray(inventory.clothing)) {
+        inventory.clothing = [];
     }
-    if (!v2Inventory.assets || typeof v2Inventory.assets !== 'string') {
-        v2Inventory.assets = 'None';
+    if (!inventory.stored || typeof inventory.stored !== 'object' || Array.isArray(inventory.stored)) {
+        inventory.stored = {};
+    }
+    // Convert stored location strings to arrays
+    if (inventory.stored) {
+        for (const location of Object.keys(inventory.stored)) {
+            const locationItems = inventory.stored[location];
+            if (typeof locationItems === 'string') {
+                // Convert string to array for backward compatibility
+                inventory.stored[location] = locationItems === 'None' || locationItems === '' ? [] : [locationItems];
+            } else if (!Array.isArray(locationItems)) {
+                inventory.stored[location] = [];
+            }
+        }
+    }
+    if (!inventory.assets || !Array.isArray(inventory.assets)) {
+        inventory.assets = [];
     }
 
     let html = `
@@ -529,19 +559,19 @@ function generateInventoryHTML(inventory, options = {}) {
     // Render the active view
     switch (activeSubTab) {
         case 'onPerson':
-            html += renderOnPersonView(v2Inventory.onPerson, viewModes.onPerson);
+            html += renderOnPersonView(inventory.onPerson, viewModes.onPerson);
             break;
         case 'clothing':
-            html += renderClothingView(v2Inventory.clothing, viewModes.clothing);
+            html += renderClothingView(inventory.clothing, viewModes.clothing);
             break;
         case 'stored':
-            html += renderStoredView(v2Inventory.stored, collapsedLocations, viewModes.stored);
+            html += renderStoredView(inventory.stored, collapsedLocations, viewModes.stored);
             break;
         case 'assets':
-            html += renderAssetsView(v2Inventory.assets, viewModes.assets);
+            html += renderAssetsView(inventory.assets, viewModes.assets);
             break;
         default:
-            html += renderOnPersonView(v2Inventory.onPerson, viewModes.onPerson);
+            html += renderOnPersonView(inventory.onPerson, viewModes.onPerson);
     }
 
     html += `
@@ -565,6 +595,7 @@ export function updateInventoryDisplay(containerId, options = {}) {
     }
 
     const inventory = extensionSettings.userStats.inventory;
+    console.log('[RPG Companion] Updating inventory display with data:', inventory, 'and options:', options);
     const html = generateInventoryHTML(inventory, options);
     container.innerHTML = html;
 
@@ -591,7 +622,11 @@ export function renderInventory() {
         parseUserStats(trackerData);
     }
 
-    // Get inventory data from settings
+    if(!trackerData || !extensionSettings.userStats || !extensionSettings.userStats.inventory) {
+        console.warn('[RPG Companion] No inventory data found in tracker for userStats context.');
+        $inventoryContainer.html('<div class="rpg-inventory-empty">No inventory generated yet</div>')
+        return;
+    }
     const inventory = extensionSettings.userStats.inventory;
 
     // Get current render options (active tab, collapsed locations)

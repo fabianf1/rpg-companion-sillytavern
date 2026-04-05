@@ -33,6 +33,7 @@ let $editorModal = null;
 let activeTab = 'userStats';
 let tempConfig = null; // Temporary config for cancel functionality
 let tempAssociation = null; // Temporary association state: { presetId: string|null, entityKey: string|null }
+let originalAssociation = null; // Original association when editor opened
 
 /**
  * Initialize the tracker editor modal

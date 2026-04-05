@@ -455,7 +455,7 @@ export function renderUserStats() {
     });
 
     // Add event listener for section lock icon clicks (support both click and touch)
-    $('.rpg-section-lock-icon').on('click touchend', function (e) {
+    $userStatsContainer.find('.rpg-section-lock-icon').on('click touchend', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const $icon = $(this);

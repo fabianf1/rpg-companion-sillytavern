@@ -3,13 +3,11 @@
  * Handles inline editing of inventory item names
  */
 
-import { getContext } from '../../../../../../extensions.js';
 import { extensionSettings } from '../../core/state.js';
-import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import { saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
 import { buildInventorySummary } from '../generation/promptBuilder.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { renderInventory } from '../rendering/inventory.js';
-import { parseItems, serializeItems } from '../../utils/itemParser.js';
 import { sanitizeItemName } from '../../utils/security.js';
 
 /**
@@ -33,45 +31,46 @@ export function updateInventoryItem(field, index, newName, location) {
         return;
     }
 
-    // Get current items for the field
-    let currentString;
+    // Get current items for the field as array
+    let currentItems;
     if (field === 'stored') {
         if (!location) {
             console.error('[RPG Companion] Location required for stored items');
             return;
         }
-        currentString = inventory.stored[location] || 'None';
+        currentItems = inventory.stored[location] || [];
     } else {
-        currentString = inventory[field] || 'None';
+        currentItems = inventory[field] || [];
     }
 
-    // Parse current items
-    const items = parseItems(currentString);
+    // Ensure we have an array
+    if (!Array.isArray(currentItems)) {
+        currentItems = [];
+    }
 
     // Validate index
-    if (index < 0 || index >= items.length) {
+    if (index < 0 || index >= currentItems.length) {
         console.error(`[RPG Companion] Invalid item index: ${index}`);
         return;
     }
 
-    // Update the item at this index
-    items[index] = sanitizedName;
-
-    // Serialize back to string
-    const newItemString = serializeItems(items);
-
-    // Update the inventory
-    if (field === 'stored') {
-        inventory.stored[location] = newItemString;
+    // Update the item at this index (preserve quantity if it exists)
+    const currentItem = currentItems[index];
+    if (typeof currentItem === 'object' && currentItem !== null) {
+        currentItems[index] = { name: sanitizedName, quantity: currentItem.quantity || 1 };
     } else {
-        inventory[field] = newItemString;
+        currentItems[index] = { name: sanitizedName, quantity: 1 };
     }
 
-    // Update swipe store with new inventory
-    updateSwipeStoreInventory();
+    // Update the inventory with array
+    if (field === 'stored') {
+        inventory.stored[location] = currentItems;
+    } else {
+        inventory[field] = currentItems;
+    }
 
-    // Save changes
-    saveSettings();
+    // Save to swipe store directly
+    updateMessageSwipeData();
     saveChatData();
 
     // Re-render inventory

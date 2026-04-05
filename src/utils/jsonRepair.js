@@ -13,6 +13,7 @@
 export function repairJSON(jsonString) {
     if (typeof jsonString !== 'string') {
         console.warn('[RPG JSON Repair] Invalid input type:', typeof jsonString);
+        console.log('[RPG JSON Repair] Input value:', jsonString);
         return null;
     }
 

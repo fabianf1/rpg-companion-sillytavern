@@ -3,7 +3,7 @@
  * Handles input sanitization and validation to prevent security vulnerabilities
  */
 
-import { parseItems, serializeItems } from './itemParser.js';
+import { parseItems } from './itemParser.js';
 
 /**
  * List of dangerous property names that could cause prototype pollution
@@ -100,29 +100,30 @@ export function sanitizeItemName(name) {
 
 /**
  * Validates and cleans a stored inventory object.
- * Ensures all keys are safe property names and all values are strings.
+ * Ensures all keys are safe property names and all values are arrays (new format).
  * Cleans items within each location (removes corrupted/dangerous items).
- * Preserves empty locations (with "None") so users can add items later.
+ * Preserves empty locations (with empty arrays) so users can add items later.
  * Prevents prototype pollution attacks via object keys.
+ * Handles both legacy string format and new array format.
  *
  * @param {Object} stored - Raw stored inventory object
  * @returns {Object} Cleaned stored inventory object (always a plain object)
  *
  * @example
  * validateStoredInventory({ "Home": "Sword, Shield" })
- * // → { "Home": "Sword, Shield" }
+ * // → { "Home": [{name: "Sword"}, {name: "Shield"}] }
  *
- * validateStoredInventory({ "Home": "Sword, __proto__, Shield" })
- * // → { "Home": "Sword, Shield" } (dangerous item removed, logged)
+ * validateStoredInventory({ "Home": [{name: "Sword"}] })
+ * // → { "Home": [{name: "Sword"}] }
  *
- * validateStoredInventory({ "Home": "None" })
- * // → { "Home": "None" } (empty location preserved)
+ * validateStoredInventory({ "Home": [{name: "Sword"}, {name: "__proto__"}] })
+ * // → { "Home": [{name: "Sword"}] } (dangerous item removed, logged)
+ *
+ * validateStoredInventory({ "Home": [] })
+ * // → { "Home": [] } (empty location preserved)
  *
  * validateStoredInventory({ "__proto__": "malicious" })
  * // → {} (dangerous key removed, logged)
- *
- * validateStoredInventory({ "BadLocation": "__proto__, constructor" })
- * // → { "BadLocation": "None" } (all items removed, location kept empty)
  *
  * validateStoredInventory(null)
  * // → {} (invalid input, returns empty object)
@@ -149,23 +150,51 @@ export function validateStoredInventory(stored) {
             continue;
         }
 
-        // Ensure value is a string
         const value = stored[key];
-        if (typeof value !== 'string') {
+        let cleanedValue;
+
+        // Handle both string format (legacy) and array format (new)
+        if (typeof value === 'string') {
+            // Legacy string format - parse and convert to array
+            const items = parseItems(value);
+            cleanedValue = items.map(item => ({ name: item, quantity: 1 }));
+        } else if (Array.isArray(value)) {
+            // New array format - validate each item
+            cleanedValue = value.filter(item => {
+                if (!item || typeof item !== 'object') {
+                    console.warn(`[RPG Companion] Invalid item in stored inventory "${sanitizedKey}", skipping`);
+                    return false;
+                }
+                if (!item.name || typeof item.name !== 'string') {
+                    console.warn(`[RPG Companion] Item missing name in stored inventory "${sanitizedKey}", skipping`);
+                    return false;
+                }
+                // Validate and sanitize item name
+                const sanitizedItemName = sanitizeItemName(item.name);
+                if (!sanitizedItemName) {
+                    console.warn(`[RPG Companion] Invalid item name in stored inventory "${sanitizedKey}", skipping`);
+                    return false;
+                }
+                // Create clean item object
+                const cleanItem = { name: sanitizedItemName };
+                if (item.quantity && typeof item.quantity === 'number') {
+                    cleanItem.quantity = item.quantity;
+                }
+                return true;
+            });
+        } else {
             console.warn(`[RPG Companion] Invalid stored inventory value for location "${sanitizedKey}", skipping`);
             continue;
         }
 
-        // Clean items within this location (removes corrupted/dangerous items)
-        const cleanedValue = cleanItemString(value);
-
-        // Always keep the location (even if empty/"None")
-        // "None" is a valid state - it means the location exists but has no items yet
+        // Always keep the location (even if empty)
         cleaned[sanitizedKey] = cleanedValue;
 
-        // Warn if we had to clean corrupted items (but only if original wasn't just "None")
-        if (value !== cleanedValue && value.toLowerCase() !== 'none') {
-            console.warn(`[RPG Companion] Cleaned corrupted items from location "${sanitizedKey}": "${value}" → "${cleanedValue}"`);
+        // Warn if we had to clean corrupted items
+        const originalCount = typeof value === 'string' ? parseItems(value).length : (Array.isArray(value) ? value.length : 0);
+        const cleanedCount = cleanedValue.length;
+        if (cleanedCount < originalCount && originalCount > 0) {
+            console.warn(`[RPG Companion] Cleaned corrupted items from location "${sanitizedKey}": ${originalCount} items → ${cleanedCount} items`);
         }
     }
 
@@ -178,35 +207,3 @@ export function validateStoredInventory(stored) {
  * @constant {number}
  */
 export const MAX_ITEMS_PER_SECTION = 500;
-
-/**
- * Cleans an item string by parsing and re-serializing.
- * Removes corrupted, dangerous, or invalid items while preserving valid ones.
- * Applies ALL parsing rules: markdown stripping, sanitization, length limits, etc.
- *
- * This is used at LOAD time to clean persisted data immediately, not just at render time.
- *
- * @param {string} itemString - Raw item string (possibly corrupted)
- * @returns {string} Clean item string with only valid items, or "None" if no valid items
- *
- * @example
- * cleanItemString("Sword, Shield") // "Sword, Shield" (unchanged)
- * cleanItemString("Sword, __proto__, Shield") // "Sword, Shield" (dangerous item removed)
- * cleanItemString("A".repeat(600) + ", Sword") // "AAA... (truncated), Sword"
- * cleanItemString("**Sword**, *Shield*") // "Sword, Shield" (markdown stripped)
- * cleanItemString("__proto__, constructor") // "None" (all items invalid)
- */
-export function cleanItemString(itemString) {
-    // Parse using robust parser (handles all edge cases, sanitizes each item)
-    // This applies: newlines→commas, markdown stripping, parenthesis-aware splitting,
-    // sanitizeItemName() validation, length limits, max items limit
-    const items = parseItems(itemString);
-
-    // If no valid items remain after parsing/sanitization, return "None"
-    if (items.length === 0) {
-        return "None";
-    }
-
-    // Re-serialize clean items back to string format
-    return serializeItems(items);
-}

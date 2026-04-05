@@ -4,8 +4,70 @@
  * Locks prevent AI from modifying specific values
  */
 
-import { extensionSettings } from '../../core/state.js';
+import { extensionSettings, isGenerating } from '../../core/state.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
+import { getContext } from '../../../../../../extensions.js';
+import { saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
+import {getTrackerDataForContext} from './promptBuilder.js';
+
+/**
+ * Get the current swipe ID from the active message
+ * @returns {number} The current swipe ID
+ */
+function getCurrentSwipeId() {
+    const context = getContext();
+    const chat = context.chat;
+    if (!chat || chat.length === 0) {
+        return 0;
+    }
+    
+    // Find the last assistant message
+    for (let i = chat.length - 1; i >= 0; i--) {
+        const message = chat[i];
+        if (!message.is_user && !message.is_system) {
+            return message.swipe_id || 0;
+        }
+    }
+    return 0;
+}
+
+/**
+ * Get lock settings from swipeStore for current message/swipe
+ * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
+ * @returns {Object} The locked items configuration for this tracker type
+ */
+export function getLockedItemsFromSwipeStore(trackerType) {
+    const lockedItems = getTrackerDataForContext('lockedItems');
+    if (lockedItems && lockedItems[trackerType]) {
+        return lockedItems[trackerType];
+    }
+    else{
+        return {};
+    }
+}
+
+/**
+ * Set lock settings in swipeStore for current message/swipe
+ * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
+ * @param {Object} lockedItems - The locked items configuration to save
+ */
+function setLockedItemsInSwipeStore(trackerType, lockedItems) {
+    if(isGenerating){
+        console.warn('[RPG Lock Manager] Attempted to set locked items while generation is in progress.');
+        return;
+    }
+
+    if (!extensionSettings.lockedItems) {
+        extensionSettings.lockedItems = {
+            userStats: {},
+            infoBox: {},
+            characters: {}
+        };
+    }
+    extensionSettings.lockedItems[trackerType] = lockedItems;
+    updateMessageSwipeData(); // Update swipe data to trigger re-render of lock icons in UI
+    saveChatData(); // Save changes to persistence
+}
 
 /**
  * Apply locks to tracker data before sending to AI.
@@ -25,8 +87,8 @@ export function applyLocks(trackerData, trackerType) {
         return trackerData;
     }
 
-    // Get locked items for this tracker type
-    const lockedItems = extensionSettings.lockedItems?.[trackerType] || {};
+    // Get locked items from swipeStore
+    const lockedItems = getLockedItemsFromSwipeStore(trackerType);
 
     // Apply locks based on tracker type
     switch (trackerType) {
@@ -106,14 +168,12 @@ function applyUserStatsLocks(data, lockedItems) {
             if (!lockedItems.inventory[category]) return items;
 
             return items.map((item) => {
-                // Get item name (handle both string and object formats)
-                const itemName = typeof item === 'string' ? item : (item.item || item.name || '');
+                // Get item name from object format (name property)
+                const itemName = item?.name || '';
 
                 // Check if this specific item name is locked
                 if (lockedItems.inventory[category][itemName]) {
-                    return typeof item === 'string'
-                        ? { item, locked: true }
-                        : { ...item, locked: true };
+                    return { ...item, locked: true };
                 }
                 return item;
             });
@@ -139,11 +199,9 @@ function applyUserStatsLocks(data, lockedItems) {
             for (const location in data.inventory.stored) {
                 if (Array.isArray(data.inventory.stored[location]) && lockedItems.inventory.stored[location]) {
                     data.inventory.stored[location] = data.inventory.stored[location].map((item) => {
-                        const itemName = typeof item === 'string' ? item : (item.item || item.name || '');
+                        const itemName = item?.name || '';
                         if (lockedItems.inventory.stored[location][itemName]) {
-                            return typeof item === 'string'
-                                ? { item, locked: true }
-                                : { ...item, locked: true };
+                            return { ...item, locked: true };
                         }
                         return item;
                     });
@@ -217,9 +275,9 @@ function applyInfoBoxLocks(data, lockedItems) {
  * @returns {string} JSON string with locks applied
  */
 function applyCharactersLocks(data, lockedItems) {
-    // console.log('[Lock Manager] applyCharactersLocks called');
-    // console.log('[Lock Manager] Locked items:', JSON.stringify(lockedItems, null, 2));
-    // console.log('[Lock Manager] Input data:', JSON.stringify(data, null, 2));
+    // console.log('[RPG Lock Manager] applyCharactersLocks called');
+    // console.log('[RPG Lock Manager] Locked items:', JSON.stringify(lockedItems, null, 2));
+    // console.log('[RPG Lock Manager] Input data:', JSON.stringify(data, null, 2));
 
     // Handle both array format and object format
     let characters = Array.isArray(data) ? data : (data.characters || []);
@@ -229,7 +287,7 @@ function applyCharactersLocks(data, lockedItems) {
 
         // Check if entire character is locked (index-based)
         if (lockedItems[index] === true) {
-            // console.log('[Lock Manager] Locking entire character by index:', index);
+            // console.log('[RPG Lock Manager] Locking entire character by index:', index);
             return { ...char, locked: true };
         }
 
@@ -238,7 +296,7 @@ function applyCharactersLocks(data, lockedItems) {
 
         if (charLocks === true) {
             // Entire character is locked
-            // console.log('[Lock Manager] Locking entire character:', charName);
+            // console.log('[RPG Lock Manager] Locking entire character:', charName);
             return { ...char, locked: true };
         } else if (charLocks && typeof charLocks === 'object') {
             // Character has field-level locks
@@ -258,14 +316,14 @@ function applyCharactersLocks(data, lockedItems) {
 
                     // Check at root level first (backward compatibility)
                     if (modifiedChar[fieldName] !== undefined) {
-                        // console.log('[Lock Manager] Applying lock to field:', `${charName}.${fieldName}`);
+                        // console.log('[RPG Lock Manager] Applying lock to field:', `${charName}.${fieldName}`);
                         modifiedChar[fieldName] = {
                             value: modifiedChar[fieldName],
                             locked: true
                         };
                         locked = true;
                     } else if (modifiedChar[snakeCaseFieldName] !== undefined) {
-                        // console.log('[Lock Manager] Applying lock to snake_case field:', `${charName}.${snakeCaseFieldName} (from ${fieldName})`);
+                        // console.log('[RPG Lock Manager] Applying lock to snake_case field:', `${charName}.${snakeCaseFieldName} (from ${fieldName})`);
                         modifiedChar[snakeCaseFieldName] = {
                             value: modifiedChar[snakeCaseFieldName],
                             locked: true
@@ -276,7 +334,7 @@ function applyCharactersLocks(data, lockedItems) {
                     // Check in nested objects (details, relationship, thoughts)
                     if (!locked && modifiedChar.details) {
                         if (modifiedChar.details[fieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to details field:', `${charName}.details.${fieldName}`);
+                            // console.log('[RPG Lock Manager] Applying lock to details field:', `${charName}.details.${fieldName}`);
                             if (!modifiedChar.details || typeof modifiedChar.details !== 'object') {
                                 modifiedChar.details = {};
                             } else {
@@ -288,7 +346,7 @@ function applyCharactersLocks(data, lockedItems) {
                             };
                             locked = true;
                         } else if (modifiedChar.details[snakeCaseFieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to details snake_case field:', `${charName}.details.${snakeCaseFieldName} (from ${fieldName})`);
+                            // console.log('[RPG Lock Manager] Applying lock to details snake_case field:', `${charName}.details.${snakeCaseFieldName} (from ${fieldName})`);
                             if (!modifiedChar.details || typeof modifiedChar.details !== 'object') {
                                 modifiedChar.details = {};
                             } else {
@@ -305,7 +363,7 @@ function applyCharactersLocks(data, lockedItems) {
                     // Check in relationship object
                     if (!locked && modifiedChar.relationship) {
                         if (modifiedChar.relationship[fieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to relationship field:', `${charName}.relationship.${fieldName}`);
+                            // console.log('[RPG Lock Manager] Applying lock to relationship field:', `${charName}.relationship.${fieldName}`);
                             modifiedChar.relationship = { ...modifiedChar.relationship };
                             modifiedChar.relationship[fieldName] = {
                                 value: modifiedChar.relationship[fieldName],
@@ -313,7 +371,7 @@ function applyCharactersLocks(data, lockedItems) {
                             };
                             locked = true;
                         } else if (modifiedChar.relationship[snakeCaseFieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to relationship snake_case field:', `${charName}.relationship.${snakeCaseFieldName} (from ${fieldName})`);
+                            // console.log('[RPG Lock Manager] Applying lock to relationship snake_case field:', `${charName}.relationship.${snakeCaseFieldName} (from ${fieldName})`);
                             modifiedChar.relationship = { ...modifiedChar.relationship };
                             modifiedChar.relationship[snakeCaseFieldName] = {
                                 value: modifiedChar.relationship[snakeCaseFieldName],
@@ -326,7 +384,7 @@ function applyCharactersLocks(data, lockedItems) {
                     // Check in thoughts object
                     if (!locked && modifiedChar.thoughts) {
                         if (modifiedChar.thoughts[fieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to thoughts field:', `${charName}.thoughts.${fieldName}`);
+                            // console.log('[RPG Lock Manager] Applying lock to thoughts field:', `${charName}.thoughts.${fieldName}`);
                             modifiedChar.thoughts = { ...modifiedChar.thoughts };
                             modifiedChar.thoughts[fieldName] = {
                                 value: modifiedChar.thoughts[fieldName],
@@ -334,7 +392,7 @@ function applyCharactersLocks(data, lockedItems) {
                             };
                             locked = true;
                         } else if (modifiedChar.thoughts[snakeCaseFieldName] !== undefined) {
-                            // console.log('[Lock Manager] Applying lock to thoughts snake_case field:', `${charName}.thoughts.${snakeCaseFieldName} (from ${fieldName})`);
+                            // console.log('[RPG Lock Manager] Applying lock to thoughts snake_case field:', `${charName}.thoughts.${snakeCaseFieldName} (from ${fieldName})`);
                             modifiedChar.thoughts = { ...modifiedChar.thoughts };
                             modifiedChar.thoughts[snakeCaseFieldName] = {
                                 value: modifiedChar.thoughts[snakeCaseFieldName],
@@ -357,7 +415,7 @@ function applyCharactersLocks(data, lockedItems) {
         ? JSON.stringify(characters, null, 2)
         : JSON.stringify({ ...data, characters }, null, 2);
 
-    // console.log('[Lock Manager] Output data:', result);
+    // console.log('[RPG Lock Manager] Output data:', result);
     return result;
 }
 
@@ -411,7 +469,7 @@ function removeLockedProperties(obj) {
  * @returns {boolean} Whether the item is locked
  */
 export function isItemLocked(trackerType, itemPath) {
-    const lockedItems = extensionSettings.lockedItems?.[trackerType];
+    const lockedItems = getLockedItemsFromSwipeStore(trackerType);
     if (!lockedItems) return false;
 
     const parts = itemPath.split('.');
@@ -432,18 +490,16 @@ export function isItemLocked(trackerType, itemPath) {
  * @param {boolean} locked - New lock state
  */
 export function setItemLock(trackerType, itemPath, locked) {
-    // console.log('[Lock Manager] setItemLock called:', { trackerType, itemPath, locked });
-
-    if (!extensionSettings.lockedItems) {
-        extensionSettings.lockedItems = {};
-    }
-
-    if (!extensionSettings.lockedItems[trackerType]) {
-        extensionSettings.lockedItems[trackerType] = {};
+    // Get current locked items from swipeStore
+    let lockedItems = getLockedItemsFromSwipeStore(trackerType);;
+    
+    // Initialize if not exists
+    if (!lockedItems) {
+        lockedItems = {};
     }
 
     const parts = itemPath.split('.');
-    let current = extensionSettings.lockedItems[trackerType];
+    let current = lockedItems;
 
     // Navigate to parent of target
     for (let i = 0; i < parts.length - 1; i++) {
@@ -462,5 +518,454 @@ export function setItemLock(trackerType, itemPath, locked) {
         delete current[finalKey];
     }
 
-    // console.log('[Lock Manager] Locked items after set:', JSON.stringify(extensionSettings.lockedItems, null, 2));
+    // Save back to swipeStore
+    setLockedItemsInSwipeStore(trackerType, lockedItems);
+
+    // console.log('[RPG Lock Manager] Locked items after set:', JSON.stringify(lockedItems, null, 2));
+}
+
+/**
+ * Restore locked content that was removed or modified by the AI.
+ * Compares new data with previous data and restores locked items that are missing or have zero values.
+ *
+ * @param {string} trackerData - JSON string of tracker data from AI (with locks removed)
+ * @param {string} previousData - JSON string of previous tracker data (with locks still applied)
+ * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
+ * @returns {string} Tracker data with locked content restored
+ */
+export function restoreLockedContent(trackerData, previousData, trackerType) {
+    if (!trackerData || !previousData) {
+        console.log('[RPG Lock Manager] restoreLockedContent: Missing data, skipping restoration');
+        return trackerData;
+    }
+
+    // Try to parse both as JSON
+    const parsedNew = repairJSON(trackerData);
+    const parsedPrev = repairJSON(previousData);
+    
+    if (!parsedNew) {
+        console.warn('[RPG Lock Manager] New data not valid JSON, cannot restore locked content');
+        return trackerData;
+    }
+    
+    if (!parsedPrev) {
+        console.warn('[RPG Lock Manager] Previous data not valid JSON, cannot restore locked content');
+        return trackerData;
+    }
+
+    // Get locked items from swipeStore
+    const lockedItems = getLockedItemsFromSwipeStore(trackerType);
+    console.log('[RPG Lock Manager] Locked Items:', lockedItems);
+
+    // Apply restoration based on tracker type
+    let result;
+    switch (trackerType) {
+        case 'userStats':
+            result = restoreUserStats(parsedNew, parsedPrev, lockedItems);
+            break;
+        case 'infoBox':
+            result = restoreInfoBox(parsedNew, parsedPrev, lockedItems);
+            break;
+        case 'characters':
+            result = restoreCharacters(parsedNew, parsedPrev, lockedItems);
+            break;
+        default:
+            result = parsedNew;
+    }
+
+    const resultString = JSON.stringify(result, null, 2);
+    
+    return resultString;
+}
+
+/**
+ * Restore locked content for User Stats tracker
+ * @param {Object} newData - Parsed new data from AI
+ * @param {Object} prevData - Parsed previous data
+ * @param {Object} lockedItems - Locked items configuration
+ * @returns {Object} Data with locked content restored
+ */
+function restoreUserStats(newData, prevData, lockedItems) {
+    // console.log('[RPG Lock Manager] === restoreUserStats START ===');
+    // console.log('[RPG Lock Manager] New Data:', newData,);
+    // console.log('[RPG Lock Manager] Previous Data:', prevData);
+    // console.log('[RPG Lock Manager] Locked Items:', lockedItems);
+    
+    const result = { ...newData };
+    
+    // Restore locked stats
+    if (lockedItems.stats && lockedItems.stats === true && prevData.stats) {
+        // console.log('[RPG Lock Manager] Restoring all stats (section locked)');
+        // Lock entire stats section - restore all stats
+        if (!result.stats) {
+            result.stats = [];
+        }
+        
+        // Merge stats from previous data
+        const existingIds = result.stats.map(s => s.id);
+        for (const prevStat of prevData.stats) {
+            if (!existingIds.includes(prevStat.id)) {
+                console.warn('[RPG Lock Manager] Stat missing, restoring:', prevStat.id);
+                // Stat is missing, add it from previous data
+                result.stats.push({ ...prevStat });
+            } else {
+                // Copy old value for locked stats to ensure they are preserved even if AI modified them
+                const newStatIndex = result.stats.findIndex(s => s.id === prevStat.id);
+                result.stats[newStatIndex] = { ...prevStat };
+            }
+        }
+    }
+    
+    // Restore locked status
+    if (lockedItems.status && prevData.status) {
+        // console.log('[RPG Lock Manager] Restoring status fields');
+        if (!result.status) {
+            // console.log('[RPG Lock Manager] Status is missing, restoring from previous');
+            result.status = { ...prevData.status };
+        } else {
+            // Check if status fields are missing or have empty values
+            const statusFields = Object.keys(lockedItems.status);
+            for (const field of statusFields) {
+                if (lockedItems.status[field] && prevData.status[field] !== undefined) {
+                    result.status[field] = prevData.status[field];
+                }
+            }
+        }
+    }
+    
+    // Restore locked skills
+    if (lockedItems.skills && prevData.skills && Array.isArray(prevData.skills)) {
+        // console.log('[RPG Lock Manager] Restoring skills');
+        if (!result.skills) {
+            result.skills = [];
+        }
+        
+        // Check each locked skill
+        for (const skillName in lockedItems.skills) {
+            if (lockedItems.skills[skillName]) {
+                // console.log('[RPG Lock Manager] Checking skill:', skillName);
+                const newSkillIndex = result.skills.findIndex(s => 
+                    typeof s === 'string' ? s === skillName : s.name === skillName
+                );
+                const prevSkillIndex = prevData.skills.findIndex(s => 
+                    typeof s === 'string' ? s === skillName : s.name === skillName
+                );
+                
+                if (prevSkillIndex !== -1) {
+                    if (newSkillIndex === -1) {
+                        console.log('[RPG Lock Manager] Skill', skillName, 'is missing, restoring from previous');
+                        // Skill is missing, add it from previous data
+                        result.skills.push(prevData.skills[prevSkillIndex]);
+                    }
+                    else{
+                        // Skill exists, but we should also restore its value in case AI modified it
+                        if (typeof prevData.skills[prevSkillIndex] === 'object' && typeof result.skills[newSkillIndex] === 'object') {
+                            result.skills[newSkillIndex] = { ...prevData.skills[prevSkillIndex] };
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Restore locked inventory items
+    if (lockedItems.inventory && prevData.inventory) {
+        console.log('[RPG Lock Manager] Restoring inventory');
+        const restoreInventoryCategory = (category) => {
+            if (!result.inventory) {
+                result.inventory = {};
+            }
+            if (!result.inventory[category]) {
+                result.inventory[category] = [];
+            }
+            
+            const lockedCategory = lockedItems.inventory[category];
+            const prevCategory = prevData.inventory[category];
+            
+            if (lockedCategory && prevCategory && Array.isArray(prevCategory)) {
+                for (const itemName in lockedCategory) {
+                    if (lockedCategory[itemName]) {
+                        // console.log('[RPG Lock Manager] Checking inventory item:', itemName, 'in category:', category);
+                        // Find item in new data by name
+                        const newItemIndex = result.inventory[category].findIndex(item => {
+                            const name = typeof item === 'string' ? item : (item.item || item.name || '');
+                            return name === itemName;
+                        });
+                        
+                        const prevItemIndex = prevCategory.findIndex(item => {
+                            const name = typeof item === 'string' ? item : (item.item || item.name || '');
+                            return name === itemName;
+                        });
+                        
+                        if (prevItemIndex !== -1) {
+                            if (newItemIndex === -1) {
+                                console.log('[RPG Lock Manager] Inventory item', itemName, 'is missing, restoring from previous');
+                                // Item is missing, add it from previous data
+                                result.inventory[category].push(prevCategory[prevItemIndex]);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        
+        restoreInventoryCategory('onPerson');
+        restoreInventoryCategory('clothing');
+        restoreInventoryCategory('assets');
+        
+        // Restore stored items
+        if (result.inventory.stored && prevData.inventory.stored) {
+            for (const location in lockedItems.inventory.stored) {
+                if (lockedItems.inventory.stored[location]) {
+                    // console.log('[RPG Lock Manager] Restoring stored items at location:', location);
+                    if (!result.inventory.stored[location]) {
+                        result.inventory.stored[location] = [];
+                    }
+                    
+                    const lockedLocation = lockedItems.inventory.stored[location];
+                    const prevLocation = prevData.inventory.stored[location];
+                    
+                    if (lockedLocation && prevLocation && Array.isArray(prevLocation)) {
+                        for (const itemName in lockedLocation) {
+                            if (lockedLocation[itemName]) {
+                                // console.log('[RPG Lock Manager] Checking stored item:', itemName, 'at location:', location);
+                                const newItemIndex = result.inventory.stored[location].findIndex(item => {
+                                    const name = typeof item === 'string' ? item : (item.item || item.name || '');
+                                    return name === itemName;
+                                });
+                                
+                                const prevItemIndex = prevLocation.findIndex(item => {
+                                    const name = typeof item === 'string' ? item : (item.item || item.name || '');
+                                    return name === itemName;
+                                });
+                                
+                                if (prevItemIndex !== -1 && newItemIndex === -1) {
+                                    // console.log('[RPG Lock Manager] Stored item', itemName, 'is missing, restoring from previous');
+                                    result.inventory.stored[location].push(prevLocation[prevItemIndex]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Restore locked quests
+    if (lockedItems.quests && prevData.quests) {
+        console.log('[RPG Lock Manager] Restoring quests');
+        // Restore main quest
+        if (lockedItems.quests.main && prevData.quests.main) {
+            if (!result.quests) {
+                result.quests = {};
+            }
+            if (prevData.quests.main) {
+                console.log('[RPG Lock Manager] Main quest has changed, restoring from previous');
+                result.quests.main = prevData.quests.main;
+            }
+        }
+        
+        // Restore optional quests
+        if (lockedItems.quests.optional && Array.isArray(prevData.quests.optional)) {
+            if (!result.quests) {
+                result.quests = {};
+            }
+            if (!result.quests.optional) {
+                result.quests.optional = [];
+            }
+            
+            // Check each locked optional quest
+            for (const key in lockedItems.quests) {
+                if (key.startsWith('optional[') && lockedItems.quests[key]) {
+                    const indexMatch = key.match(/optional\[(\d+)\]/);
+                    if (indexMatch) {
+                        const index = parseInt(indexMatch[1], 10);
+                        if (index < prevData.quests.optional.length) {
+                            const prevQuest = prevData.quests.optional[index];
+                            console.log('[RPG Lock Manager] Checking optional quest at index:', index, 'quest:', prevQuest);
+                            
+                            // If index exists in result, overwrite with previous data (like stats/skills do)
+                            if (index < result.quests.optional.length) {
+                                console.log('[RPG Lock Manager] Optional quest at index', index, 'exists but may be modified, restoring from previous');
+                                result.quests.optional[index] = { ...prevQuest };
+                            } else {
+                                // Index is missing or at the end, append it
+                                console.log('[RPG Lock Manager] Optional quest at index', index, 'is missing, appending from previous');
+                                result.quests.optional.push(prevQuest);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // console.log('[RPG Lock Manager] === restoreUserStats END ===');
+    // console.log('[RPG Lock Manager] Result:', result);
+    
+    return result;
+}
+
+/**
+ * Restore locked content for Info Box tracker
+ * @param {Object} newData - Parsed new data from AI
+ * @param {Object} prevData - Parsed previous data
+ * @param {Object} lockedItems - Locked items configuration
+ * @returns {Object} Data with locked content restored
+ */
+function restoreInfoBox(newData, prevData, lockedItems) {
+    // console.log('[RPG Lock Manager] === restoreInfoBox START ===');
+    // console.log('[RPG Lock Manager] New Data:', newData);
+    // console.log('[RPG Lock Manager] Previous Data:', prevData);
+    // console.log('[RPG Lock Manager] Locked Items:', lockedItems);
+
+    const result = { ...newData };
+    
+    // Restore locked fields
+    const fields = ['date', 'weather', 'temperature', 'time', 'location', 'recentEvents'];
+    for (const field of fields) {
+        if (lockedItems[field] && prevData[field]) {
+            console.log('[RPG Lock Manager] Restoring info box field:', field);
+            result[field] = { ...prevData[field] };
+        }
+    }
+    
+    // console.log('[RPG Lock Manager] === restoreInfoBox END ===');
+    // console.log('[RPG Lock Manager] Result:', result,);
+    
+    return result;
+}
+
+/**
+ * Restore locked content for Characters tracker
+ * @param {Object} newData - Parsed new data from AI
+ * @param {Object} prevData - Parsed previous data
+ * @param {Object} lockedItems - Locked items configuration
+ * @returns {Object} Data with locked content restored
+ */
+function restoreCharacters(newData, prevData, lockedItems) {
+    // console.log('[RPG Lock Manager] === restoreCharacters START ===');
+    // console.log('[RPG Lock Manager] New Data:', newData);
+    // console.log('[RPG Lock Manager] Previous Data:', prevData);
+    // console.log('[RPG Lock Manager] Locked Items:', lockedItems);
+
+    // Handle both array format and object format
+    let charactersNew = Array.isArray(newData) ? newData : (newData.characters || []);
+    let charactersPrev = Array.isArray(prevData) ? prevData : (prevData.characters || []);
+    
+    console.log('[RPG Lock Manager] New characters count:', charactersNew.length);
+    console.log('[RPG Lock Manager] Previous characters count:', charactersPrev.length);
+    
+    // Build map of locked characters by name
+    const lockedCharNames = new Set();
+    for (const key in lockedItems) {
+        if (lockedItems[key] === true || (typeof lockedItems[key] === 'object' && Object.keys(lockedItems[key]).length > 0)) {
+            lockedCharNames.add(key);
+        }
+    }
+    console.log('[RPG Lock Manager] Locked character names:', Array.from(lockedCharNames));
+    
+    // Restore missing characters
+    for (const prevChar of charactersPrev) {
+        const charName = prevChar.name || prevChar.characterName;
+        
+        if (!charactersNew.some(c => (c.name || c.characterName) === charName)) {
+            console.log('[RPG Lock Manager] Character', charName, 'is missing, restoring from previous');
+            // Character is missing, add it from previous data
+            charactersNew.push({ ...prevChar });
+        }
+    }
+    
+    // Restore locked fields for existing characters
+    charactersNew = charactersNew.map(char => {
+        const charName = char.name || char.characterName;
+        const charLocks = lockedItems[charName];
+        
+        if (!charLocks) {
+            return char;
+        }
+        
+        const resultChar = { ...char };
+        
+        // console.log('[RPG Lock Manager] Processing character:', charName);
+
+        const prevChar = charactersPrev.find(c => (c.name || c.characterName) === charName);
+        if(!prevChar){
+            console.warn('[RPG Lock Manager] Previous character data not found for:', charName, 'cannot restore locked fields');
+            return resultChar;
+        }
+        
+        // Check if entire character is locked
+        if (charLocks === true) {
+            // console.log('[RPG Lock Manager] Character', charName, 'is fully locked, restoring all fields from previous');
+            return { ...prevChar };
+        }
+        
+        // Check field-level locks
+        for (const fieldName in charLocks) {
+            if (charLocks[fieldName] === true) {
+                // console.log('[RPG Lock Manager] Restoring locked field:', fieldName, 'for character:', charName);
+                
+                // Full restore - overwrite with previous value from any location
+                if (prevChar[fieldName] !== undefined) {
+                    resultChar[fieldName] = prevChar[fieldName];
+                } else if (prevChar.details && prevChar.details[fieldName] !== undefined) {
+                    resultChar.details[fieldName] = prevChar.details[fieldName];
+                } else if (prevChar.relationship && prevChar.relationship[fieldName] !== undefined) {
+                    resultChar.relationship[fieldName] = prevChar.relationship[fieldName];
+                } else if (prevChar.thoughts && prevChar.thoughts[fieldName] !== undefined) {
+                    resultChar.thoughts[fieldName] = prevChar.thoughts[fieldName];
+                }
+            }
+        }
+        
+        return resultChar;
+    });
+    
+    const result = Array.isArray(newData)
+        ? charactersNew
+        : { ...newData, characters: charactersNew };
+    
+    // console.log('[RPG Lock Manager] === restoreCharacters END ===');
+    // console.log('[RPG Lock Manager] Result:', result);
+    
+    return result;
+}
+
+/**
+ * Remove lock entries for a specific inventory item
+ * @param {string} trackerType - Type of tracker ('userStats')
+ * @param {string} field - Field name ('onPerson', 'stored', 'assets')
+ * @param {string} itemName - Name of the item to unlock
+ * @param {string} [location] - Location name (required for 'stored' field)
+ */
+export function removeInventoryItemLock(trackerType, field, itemName, location) {
+    // Get current locked items from swipeStore
+    let lockedItems = getLockedItemsFromSwipeStore(trackerType);
+    
+    // Check if inventory locks exist
+    if (!lockedItems || !lockedItems.inventory) {
+        return;
+    }
+    
+    // Remove lock based on field type
+    if (field === 'onPerson') {
+        if (lockedItems.inventory.onPerson && lockedItems.inventory.onPerson[itemName]) {
+            delete lockedItems.inventory.onPerson[itemName];
+            console.log('[RPG Lock Manager] Removed lock for onPerson item:', itemName);
+        }
+    } else if (field === 'assets') {
+        if (lockedItems.inventory.assets && lockedItems.inventory.assets[itemName]) {
+            delete lockedItems.inventory.assets[itemName];
+            console.log('[RPG Lock Manager] Removed lock for assets item:', itemName);
+        }
+    } else if (field === 'stored' && location) {
+        if (lockedItems.inventory.stored && lockedItems.inventory.stored[location] && lockedItems.inventory.stored[location][itemName]) {
+            delete lockedItems.inventory.stored[location][itemName];
+            console.log('[RPG Lock Manager] Removed lock for stored item:', itemName, 'at location:', location);
+        }
+    }
+    
+    // Save updated locks back to swipeStore
+    setLockedItemsInSwipeStore(trackerType, lockedItems);
 }

@@ -10,11 +10,8 @@ import { buildInventorySummary } from '../generation/promptBuilder.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { buildUserStatsText } from '../rendering/userStats.js';
 import { renderInventory, getLocationId } from '../rendering/inventory.js';
-import { parseItems, serializeItems } from '../../utils/itemParser.js';
 import { sanitizeLocationName, sanitizeItemName } from '../../utils/security.js';
-
-// Type imports
-/** @typedef {import('../../types/inventory.js').InventoryV2} InventoryV2 */
+import { removeInventoryItemLock } from '../generation/lockManager.js';
 
 /**
  * Current active sub-tab for inventory UI
@@ -38,62 +35,6 @@ let openForms = {
     addItemStored: {}, // { [locationName]: true/false }
     addItemAssets: false
 };
-
-/**
- * Updates the swipe store with current inventory.
- * Maintains JSON format if current data is JSON, otherwise uses text format.
- * This ensures manual edits are immediately visible to AI in next generation.
- */
-function updateSwipeStoreInventory() {
-    // Read current user stats from swipe store
-    const currentData = getTrackerDataForContext('userStats');
-    
-    if (currentData) {
-        const trimmed = currentData.trim();
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            // Maintain JSON format
-            try {
-                const jsonData = JSON.parse(currentData);
-                if (jsonData && typeof jsonData === 'object') {
-                    // Update inventory in JSON
-                    const stats = extensionSettings.userStats;
-
-                    // Convert inventory back to v3 format (arrays of {name, quantity})
-                    const convertToV3Items = (itemString) => {
-                        if (!itemString) return [];
-                        const items = itemString.split(',').map(s => s.trim()).filter(s => s);
-                        return items.map(item => {
-                            const qtyMatch = item.match(/^(\d+)x\s+(.+)$/);
-                            if (qtyMatch) {
-                                return { name: qtyMatch[2].trim(), quantity: parseInt(qtyMatch[1]) };
-                            }
-                            return { name: item, quantity: 1 };
-                        });
-                    };
-
-                    jsonData.inventory = {
-                        onPerson: convertToV3Items(stats.inventory.onPerson),
-                        clothing: convertToV3Items(stats.inventory.clothing),
-                        stored: stats.inventory.stored || {},
-                        assets: convertToV3Items(stats.inventory.assets)
-                    };
-
-                    const updatedJSON = JSON.stringify(jsonData, null, 2);
-                    // Persist to swipe store
-                    updateMessageSwipeData('userStats', updatedJSON);
-                    return;
-                }
-            } catch (e) {
-                console.warn('[RPG Companion] Failed to parse JSON, falling back to text format:', e);
-            }
-        }
-    }
-
-    // Fall back to text format
-    const statsText = buildUserStatsText();
-    // Persist to swipe store
-    updateMessageSwipeData('userStats', statsText);
-}
 
 /**
  * Shows the inline form for adding a new item.
@@ -171,6 +112,7 @@ export function hideAddItemForm(field, location) {
  */
 export function saveAddItem(field, location) {
     const inventory = extensionSettings.userStats.inventory;
+    console.log('[RPG Companion] DEBUG inventory before adding item:', inventory);
     let inputId;
 
     if (field === 'stored') {
@@ -195,27 +137,34 @@ export function saveAddItem(field, location) {
         return;
     }
 
-    // Get current items, add new one, serialize back
-    let currentString;
+    // Get current items as array, add new one
+    let currentItems;
     if (field === 'stored') {
-        currentString = inventory.stored[location] || 'None';
+        currentItems = inventory.stored[location] || [];
     } else {
-        currentString = inventory[field] || 'None';
+        currentItems = inventory[field] || [];
     }
 
-    const items = parseItems(currentString);
-    items.push(itemName);
-    const newString = serializeItems(items);
-
-    // Save back to inventory
-    if (field === 'stored') {
-        inventory.stored[location] = newString;
-    } else {
-        inventory[field] = newString;
+    // Ensure we have an array
+    if (!Array.isArray(currentItems)) {
+        currentItems = [];
     }
 
-    updateSwipeStoreInventory();
-    saveSettings();
+    // Add new item as object
+    currentItems.push({ name: itemName, quantity: 1 });
+
+    // Save back to inventory as array
+    if (field === 'stored') {
+        inventory.stored[location] = currentItems;
+    } else {
+        inventory[field] = currentItems;
+    }
+    
+    console.log('[RPG Companion] DEBUG inventory after adding item:', inventory);
+    extensionSettings.userStats.inventory = inventory;
+    
+    // Save to swipe store directly
+    updateMessageSwipeData();
     saveChatData();
 
     // Hide form and re-render
@@ -234,36 +183,41 @@ export function removeItem(field, itemIndex, location) {
 
     // console.log('[RPG Companion] DEBUG removeItem called:', { field, itemIndex, location });
 
-    // Get current items, remove the one at index, serialize back
-    let currentString;
+    // Get current items as array
+    let currentItems;
     if (field === 'stored') {
-        currentString = inventory.stored[location] || 'None';
+        currentItems = inventory.stored[location] || [];
     } else {
-        currentString = inventory[field] || 'None';
+        currentItems = inventory[field] || [];
     }
 
-    // console.log('[RPG Companion] DEBUG currentString before removal:', currentString);
+    // Ensure we have an array
+    if (!Array.isArray(currentItems)) {
+        currentItems = [];
+    }
 
-    const items = parseItems(currentString);
-    // console.log('[RPG Companion] DEBUG items array before removal:', items);
+    // console.log('[RPG Companion] DEBUG items array before removal:', currentItems);
 
-    items.splice(itemIndex, 1); // Remove item at index
-    // console.log('[RPG Companion] DEBUG items array after removal:', items);
+    // Get item name for lock removal before we delete it
+    const item = currentItems[itemIndex];
+    const itemName = typeof item === 'string' ? item : (item.name || item.item || '');
+    currentItems.splice(itemIndex, 1); // Remove item at index
+    // console.log('[RPG Companion] DEBUG items array after removal:', currentItems);
 
-    const newString = serializeItems(items);
-    // console.log('[RPG Companion] DEBUG newString after removal:', newString);
-
-    // Save back to inventory
+    // Save back to inventory as array
     if (field === 'stored') {
-        inventory.stored[location] = newString;
+        inventory.stored[location] = currentItems;
     } else {
-        inventory[field] = newString;
+        inventory[field] = currentItems;
     }
 
     // console.log('[RPG Companion] DEBUG inventory after save:', inventory);
 
-    updateSwipeStoreInventory();
-    saveSettings();
+    // Remove lock for this item if it exists
+    removeInventoryItemLock('userStats', field, itemName, location);
+
+    // Save to swipe store directly
+    updateMessageSwipeData();
     saveChatData();
 
     // Re-render
@@ -323,11 +277,11 @@ export function saveAddLocation() {
         return;
     }
 
-    // Create new location with default "None"
-    inventory.stored[locationName] = 'None';
+    // Create new location with empty array
+    inventory.stored[locationName] = [];
 
-    updateSwipeStoreInventory();
-    saveSettings();
+    // Save to swipe store directly
+    updateMessageSwipeData();
     saveChatData();
 
     // Hide form and re-render
@@ -376,6 +330,17 @@ export function confirmRemoveLocation(locationName) {
     const inventory = extensionSettings.userStats.inventory;
     // console.log('[RPG Companion] DEBUG inventory.stored before deletion:', inventory.stored);
 
+    // Remove locks for all items in this location before deleting the location
+    if (inventory.stored && inventory.stored[locationName]) {
+        const itemsInLocation = inventory.stored[locationName];
+        itemsInLocation.forEach(item => {
+            const itemName = typeof item === 'string' ? item : (item.name || item.item || '');
+            if (itemName) {
+                removeInventoryItemLock('userStats', 'stored', itemName, locationName);
+            }
+        });
+    }
+
     delete inventory.stored[locationName];
     // console.log('[RPG Companion] DEBUG inventory.stored after deletion:', inventory.stored);
 
@@ -385,8 +350,8 @@ export function confirmRemoveLocation(locationName) {
         collapsedLocations.splice(index, 1);
     }
 
-    updateSwipeStoreInventory();
-    saveSettings();
+    // Save to swipe store directly
+    updateMessageSwipeData();
     saveChatData();
 
     // Re-render inventory UI

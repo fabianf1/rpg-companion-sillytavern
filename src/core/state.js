@@ -3,8 +3,6 @@
  * Centralizes all extension state variables
  */
 
-// Type imports
-/** @typedef {import('../types/inventory.js').InventoryV2} InventoryV2 */
 
 /**
  * Extension settings - persisted to SillyTavern settings

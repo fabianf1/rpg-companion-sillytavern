@@ -26,7 +26,8 @@ import { parseResponse, parseUserStats } from './parser.js';
 import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
-import { removeLocks } from './lockManager.js';
+import { removeLocks, restoreLockedContent } from './lockManager.js';
+import {getTrackerDataForContext} from './promptBuilder.js';
 import { renderThoughts } from '../rendering/thoughts.js';
 import { renderInventory } from '../rendering/inventory.js';
 import { renderQuests } from '../rendering/quests.js';
@@ -235,6 +236,29 @@ export async function updateRPGData() {
                 return;
             }
 
+
+            console.log('[RPG Companion] Restoring locked content for separate mode update');
+            const previousUserStats = getTrackerDataForContext('userStats');
+            const previousInfoBox = getTrackerDataForContext('infoBox');
+            const previousCharacterThoughts = getTrackerDataForContext('characterThoughts');
+            const getLockedItemsFromStore = getTrackerDataForContext('lockedItems');
+            if (parsedData.userStats) {
+                if (previousUserStats) {
+                    parsedData.userStats = restoreLockedContent(parsedData.userStats, previousUserStats, 'userStats');
+                }
+            }
+            if (parsedData.infoBox) {
+                if (previousInfoBox) {
+                    parsedData.infoBox = restoreLockedContent(parsedData.infoBox, previousInfoBox, 'infoBox');
+                }
+            }
+            if (parsedData.characterThoughts) {
+                if (previousCharacterThoughts) {
+                    parsedData.characterThoughts = restoreLockedContent(parsedData.characterThoughts, previousCharacterThoughts, 'characters');
+                }
+            }
+
+
             // Update extensionSettings from parsed data for display
             if (parsedData.userStats) {
                 parseUserStats(parsedData.userStats);
@@ -253,7 +277,12 @@ export async function updateRPGData() {
                 lastMessage.extra.rpg_companion_swipes[currentSwipeId] = {
                     userStats: parsedData.userStats,
                     infoBox: parsedData.infoBox,
-                    characterThoughts: parsedData.characterThoughts
+                    characterThoughts: parsedData.characterThoughts,
+                    lockedItems: {
+                        userStats: getLockedItemsFromStore ? getLockedItemsFromStore.userStats : [],
+                        infoBox: getLockedItemsFromStore ? getLockedItemsFromStore.infoBox : [],
+                        characters: getLockedItemsFromStore ? getLockedItemsFromStore.characters : []
+                    }
                 };
 
                 // console.log('[RPG Companion] Stored separate mode RPG data for message swipe', currentSwipeId);
