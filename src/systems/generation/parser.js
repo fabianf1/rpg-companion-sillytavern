@@ -257,23 +257,15 @@ export function parseUserStats(statsText) {
             if (statsData.inventory) {
                 const inv = statsData.inventory;
 
-                // Helper to convert items to array format
+                // Helper to convert items to array format (object format only)
                 const convertItems = (items) => {
                     if (!items || !Array.isArray(items)) return [];
                     return items.map(item => {
                         if (typeof item === 'object') {
-                            // Already in object format
                             return {
                                 name: item.name || item.item || '',
                                 quantity: item.quantity || 1
                             };
-                        } else if (typeof item === 'string') {
-                            // String format - parse quantity if present
-                            const qtyMatch = item.match(/^(\d+)x\s+(.+)$/);
-                            if (qtyMatch) {
-                                return { name: qtyMatch[2].trim(), quantity: parseInt(qtyMatch[1]) };
-                            }
-                            return { name: item.trim(), quantity: 1 };
                         }
                         return { name: String(item), quantity: 1 };
                     }).filter(item => item.name);
@@ -286,10 +278,6 @@ export function parseUserStats(statsText) {
                     for (const [location, items] of Object.entries(stored)) {
                         if (Array.isArray(items)) {
                             result[location] = convertItems(items);
-                        } else if (typeof items === 'string') {
-                            // Convert string to array
-                            const itemsArray = items.split(',').map(s => s.trim()).filter(s => s);
-                            result[location] = itemsArray.map(item => ({ name: item, quantity: 1 }));
                         } else {
                             result[location] = [];
                         }
@@ -306,33 +294,15 @@ export function parseUserStats(statsText) {
                 // console.log('[RPG Parser] ✓ Inventory kept as arrays:', extensionSettings.userStats.inventory);
             }
 
-            // Extract quests (convert v3 object format to v2 string format)
+            // Extract quests (keep as objects)
             if (statsData.quests) {
-                // Convert quest objects to strings
-                const convertQuest = (quest) => {
-                    if (!quest) return '';
-                    if (typeof quest === 'string') return quest;
-                    if (typeof quest === 'object') {
-                        // Check for locked format: {value, locked}
-                        // Recursively extract value if it's nested
-                        let extracted = quest;
-                        while (typeof extracted === 'object' && extracted.value !== undefined) {
-                            extracted = extracted.value;
-                        }
-                        if (typeof extracted === 'string') return extracted;
-                        // v3 format: {title, description, status}
-                        return quest.title || quest.description || JSON.stringify(quest);
-                    }
-                    return String(quest);
-                };
-
                 extensionSettings.quests = {
-                    main: convertQuest(statsData.quests.main),
+                    main: statsData.quests.main || null,
                     optional: Array.isArray(statsData.quests.optional)
-                        ? statsData.quests.optional.map(convertQuest)
+                        ? statsData.quests.optional
                         : []
-                };
-                // console.log('[RPG Parser] ✓ Converted v3 quests:', extensionSettings.quests);
+                }
+
             }
 
             // Extract skills if present (store as object, not JSON string)

@@ -57,11 +57,14 @@ export function renderQuestsSubTabs(activeTab = 'main') {
 
 /**
  * Renders the main quest view
- * @param {string} mainQuest - Current main quest title
+ * @param {string|object} mainQuest - Current main quest (string or object with title/description)
  * @returns {string} HTML for main quest view
  */
 export function renderMainQuestView(mainQuest) {
-    const questDisplay = (mainQuest && mainQuest !== 'None') ? mainQuest : '';
+    // Extract title from object if present, otherwise use string directly
+    const questDisplay = mainQuest && typeof mainQuest === 'object' 
+        ? (mainQuest.title || mainQuest.description || '')
+        : (mainQuest ? mainQuest : '');
     const hasQuest = questDisplay.length > 0;
 
     return `
@@ -122,21 +125,31 @@ export function renderMainQuestView(mainQuest) {
 
 /**
  * Renders the optional quests view
- * @param {string[]} optionalQuests - Array of optional quest titles
+ * @param {Array<string|object>} optionalQuests - Array of optional quest titles or objects
  * @returns {string} HTML for optional quests view
  */
 export function renderOptionalQuestsView(optionalQuests) {
-    const quests = optionalQuests.filter(q => q && q !== 'None');
+    // Filter out empty/null quests and extract titles from objects
+    const quests = (optionalQuests || []).filter(q => {
+        if (!q) return false;
+        if (typeof q === 'string') return true; // Keep all strings (backward compat)
+        if (typeof q === 'object') return q.title || q.description;
+        return false;
+    });
 
     let questsHtml = '';
     if (quests.length === 0) {
         questsHtml = '<div class="rpg-quest-empty">No active optional quests</div>';
     } else {
         questsHtml = quests.map((quest, index) => {
+            // Extract title from object if present, otherwise use string
+            const questTitle = typeof quest === 'object' 
+                ? (quest.title || quest.description || '')
+                : quest;
             return `
             <div class="rpg-quest-item" data-field="optional" data-index="${index}">
                 ${getLockIconHtml('userStats', `quests.optional[${index}]`)}
-                <div class="rpg-quest-title rpg-editable" contenteditable="true" data-field="optional" data-index="${index}" title="Click to edit">${escapeHtml(quest)}</div>
+                <div class="rpg-quest-title rpg-editable" contenteditable="true" data-field="optional" data-index="${index}" title="Click to edit">${escapeHtml(questTitle)}</div>
                 <div class="rpg-quest-actions">
                     <button class="rpg-quest-remove" data-action="remove-quest" data-field="optional" data-index="${index}" title="Complete/Remove quest">
                         <i class="fa-solid fa-check"></i>
@@ -204,7 +217,7 @@ export function renderQuests() {
     // const activeSubTab = $questsContainer.data('active-subtab') || 'main';
 
     // Get quests data - extract value if it's a locked object
-    let mainQuest = extensionSettings.quests.main || 'None';
+    let mainQuest = extensionSettings.quests.main;
     // Recursively extract value if it's nested objects
     while (typeof mainQuest === 'object' && mainQuest.value !== undefined) {
         mainQuest = mainQuest.value;
@@ -256,12 +269,12 @@ function attachQuestEventHandlers() {
 
         if (questTitle) {
             if (field === 'main') {
-                extensionSettings.quests.main = questTitle;
+                extensionSettings.quests.main = { title: questTitle };
             } else {
                 if (!extensionSettings.quests.optional) {
                     extensionSettings.quests.optional = [];
                 }
-                extensionSettings.quests.optional.push(questTitle);
+                extensionSettings.quests.optional.push({ title: questTitle });
             }
             // Sync quest changes to swipeStore so AI sees the addition
             updateMessageSwipeData();
@@ -293,7 +306,7 @@ function attachQuestEventHandlers() {
         const questTitle = input.val().trim();
 
         if (questTitle) {
-            extensionSettings.quests.main = questTitle;
+            extensionSettings.quests.main = { title: questTitle };
             // Sync quest changes to swipeStore so AI sees the edit
             updateMessageSwipeData();
             saveSettings();
@@ -308,7 +321,7 @@ function attachQuestEventHandlers() {
         const index = $(this).data('index');
 
         if (field === 'main') {
-            extensionSettings.quests.main = 'None';
+            extensionSettings.quests.main = null;
         } else {
             extensionSettings.quests.optional.splice(index, 1);
         }
@@ -327,7 +340,14 @@ function attachQuestEventHandlers() {
         const newTitle = $this.text().trim();
 
         if (newTitle && field === 'optional' && index !== undefined) {
-            extensionSettings.quests.optional[index] = newTitle;
+            // Update the quest object with new title
+            if (!extensionSettings.quests.optional[index]) {
+                extensionSettings.quests.optional[index] = { title: newTitle };
+            } else if (typeof extensionSettings.quests.optional[index] === 'object') {
+                extensionSettings.quests.optional[index].title = newTitle;
+            } else {
+                extensionSettings.quests.optional[index] = { title: newTitle };
+            }
             // Sync quest changes to swipeStore so AI sees the edit
             updateMessageSwipeData();
             saveSettings();

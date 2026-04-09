@@ -235,8 +235,8 @@ export let extensionSettings = {
         }
     },
     quests: {
-        main: "None",        // Current main quest title
-        optional: []         // Array of optional quest titles
+        main: null,          // Current main quest (object or null)
+        optional: []         // Array of optional quests (objects or strings)
     },
     infoBox: JSON.stringify({
         date: { value: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },

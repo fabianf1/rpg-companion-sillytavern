@@ -441,7 +441,7 @@ export function setupSettingsPopup() {
 
         // Clear quests
         extensionSettings.quests = {
-            main: "None",
+            main: null,
             optional: []
         };
 
