@@ -544,6 +544,19 @@
                     Display the "Last Roll" indicator in the panel
                 </small>
 
+                <div class="rpg-setting-row">
+                    <label for="rpg-time-format-preference" data-i18n-key="template.settingsModal.display.timeFormat">Time Format Display:</label>
+                    <select id="rpg-time-format-preference" class="rpg-select">
+                        <option value="none" data-i18n-key="template.settingsModal.display.timeFormatOptions.none">No Conversion (as provided)</option>
+                        <option value="24h" data-i18n-key="template.settingsModal.display.timeFormatOptions.twentyfour">24-Hour Format (15:00)</option>
+                        <option value="12h" data-i18n-key="template.settingsModal.display.timeFormatOptions.twelve">12-Hour Format (3:00 PM)</option>
+                    </select>
+                </div>
+                <small style="display: block; margin-left: 0px; margin-top: -8px; color: #888; font-size: 11px;"
+                    data-i18n-key="template.settingsModal.display.timeFormatNote">
+                    Automatically convert time values from AI responses to your preferred format.
+                </small>
+
             </div>
 
             <!-- Mobile FAB Options Section -->

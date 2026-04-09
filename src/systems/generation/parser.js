@@ -7,6 +7,7 @@
 import { extensionSettings, FEATURE_FLAGS, addDebugLog } from '../../core/state.js';
 import { saveSettings } from '../../core/persistence.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
+import { convertTimeFormat } from '../../utils/itemParser.js';
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -192,6 +193,19 @@ export function parseResponse(response) {
     const parsed = repairJSON(cleanedResponse.substring(startIdx, i).trim());
     if (parsed && (parsed.userStats || parsed.infoBox || parsed.characters)) {
         debugLog('[RPG Parser] Returning unified JSON parse results');
+        
+        // Apply time format conversion if time data exists
+        if (parsed.infoBox?.time && extensionSettings.timeFormatPreference !== 'none') {
+            const preference = extensionSettings.timeFormatPreference;
+            if (parsed.infoBox.time.start) {
+                parsed.infoBox.time.start = convertTimeFormat(parsed.infoBox.time.start, preference);
+            }
+            if (parsed.infoBox.time.end) {
+                parsed.infoBox.time.end = convertTimeFormat(parsed.infoBox.time.end, preference);
+            }
+            debugLog('[RPG Parser] Applied time format conversion:', preference);
+        }
+        
         return {
             userStats: parsed.userStats ? JSON.stringify(parsed.userStats) : null,
             infoBox: parsed.infoBox ? JSON.stringify(parsed.infoBox) : null,

@@ -6,6 +6,68 @@
 import { sanitizeItemName, MAX_ITEMS_PER_SECTION } from './security.js';
 
 /**
+ * Converts time format between 12-hour and 24-hour formats.
+ * Preserves non-time text (e.g., descriptive time words).
+ * @param {string} timeValue - Time string (e.g., "3:00 PM", "15:00", "3 PM")
+ * @param {string} preference - Conversion preference: 'none', '12h', '24h'
+ * @returns {string} Converted time string, or original if preference is 'none' or conversion fails
+ */
+export function convertTimeFormat(timeValue, preference) {
+    if (!timeValue || preference === 'none') {
+        return timeValue;
+    }
+
+    try {
+        // Try to match 12-hour format with AM/PM
+        const match12h = timeValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?/i);
+        if (match12h) {
+            let hours = parseInt(match12h[1]);
+            const minutes = match12h[2];
+            const period = match12h[3]?.toUpperCase();
+
+            // Convert 12h to 24h internally
+            if (period) {
+                if (period === 'PM' && hours !== 12) {
+                    hours += 12;
+                } else if (period === 'AM' && hours === 12) {
+                    hours = 0;
+                }
+            }
+
+            // Format based on preference
+            if (preference === '24h') {
+                return `${String(hours).padStart(2, '0')}:${minutes}`;
+            } else if (preference === '12h') {
+                const displayHours = hours % 12 || 12;
+                const displayPeriod = hours >= 12 ? 'PM' : 'AM';
+                return `${displayHours}:${minutes} ${displayPeriod}`;
+            }
+        }
+
+        // Try to match 24-hour format
+        const match24h = timeValue.match(/(\d{1,2}):(\d{2})/);
+        if (match24h) {
+            let hours = parseInt(match24h[1]);
+            const minutes = match24h[2];
+
+            // Already in 24h format, convert to 12h if requested
+            if (preference === '12h') {
+                const displayHours = hours % 12 || 12;
+                const displayPeriod = hours >= 12 ? 'PM' : 'AM';
+                return `${displayHours}:${minutes} ${displayPeriod}`;
+            } else if (preference === '24h') {
+                return `${String(hours).padStart(2, '0')}:${minutes}`;
+            }
+        }
+    } catch (error) {
+        console.error('[RPG Companion] Error converting time format:', error);
+    }
+
+    // If conversion fails, return original
+    return timeValue;
+}
+
+/**
  * Parses item strings from AI responses into clean arrays.
  * Handles numerous AI formatting quirks and edge cases.
  *

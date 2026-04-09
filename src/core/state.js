@@ -50,6 +50,7 @@ export let extensionSettings = {
     showDynamicWeatherToggle: true, // Show Dynamic Weather Effects toggle in main panel
     showNarratorMode: true, // Show Narrator Mode toggle in main panel
     showAutoAvatars: true, // Show Auto-generate Avatars toggle in main panel
+    timeFormatPreference: 'none', // Time format conversion: 'none' (keep as-is), '12h' (12-hour), '24h' (24-hour)
     skipInjectionsForGuided: 'none', // skip injections for instruct injections and quiet prompts (GuidedGenerations compatibility)
     enableRandomizedPlot: true, // Show randomized plot progression button above chat input
     enableNaturalPlot: true, // Show natural plot progression button above chat input
