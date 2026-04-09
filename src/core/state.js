@@ -53,6 +53,8 @@ export let extensionSettings = {
     skipInjectionsForGuided: 'none', // skip injections for instruct injections and quiet prompts (GuidedGenerations compatibility)
     enableRandomizedPlot: true, // Show randomized plot progression button above chat input
     enableNaturalPlot: true, // Show natural plot progression button above chat input
+    retryAttempts: 0, // Number of retry attempts for API failures (0 = no retries)
+    retryBaseDelay: 2000, // Base delay in ms for exponential backoff
     // History persistence settings - inject selected tracker data into historical messages
     historyPersistence: {
         enabled: false, // Master toggle for history persistence feature

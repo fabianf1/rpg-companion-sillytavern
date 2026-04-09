@@ -283,6 +283,18 @@ async function initUI() {
         updateGenerationModeUI();
     });
 
+    $('#rpg-retry-attempts').on('change', function() {
+        const value = $(this).val();
+        extensionSettings.retryAttempts = parseInt(String(value)) || 0;
+        saveSettings();
+    });
+
+    $('#rpg-retry-base-delay').on('change', function() {
+        const value = $(this).val();
+        extensionSettings.retryBaseDelay = parseInt(String(value)) || 2000;
+        saveSettings();
+    });
+
     $('#rpg-toggle-user-stats').on('change', function() {
         extensionSettings.showUserStats = $(this).prop('checked');
         saveSettings();
@@ -1045,6 +1057,8 @@ async function initUI() {
 
     populateConnectionProfileDropdown();
     $('#rpg-generation-mode').val(extensionSettings.generationMode);
+    $('#rpg-retry-attempts').val(extensionSettings.retryAttempts ?? 0);
+    $('#rpg-retry-base-delay').val(extensionSettings.retryBaseDelay ?? 2000);
     $('#rpg-skip-guided-mode').val(extensionSettings.skipInjectionsForGuided);
 
     updatePanelVisibility();

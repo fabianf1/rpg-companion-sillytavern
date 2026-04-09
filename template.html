@@ -681,6 +681,22 @@
                     </select>
                 </div>
 
+                <!-- Retry Settings -->
+                <div class="rpg-setting-row">
+                    <label for="rpg-retry-attempts"
+                        data-i18n-key="template.settingsModal.advanced.retryAttempts">Retry Attempts:</label>
+                    <input type="number" id="rpg-retry-attempts" min="0" max="10" value="0"
+                        class="rpg-input" />
+                    <small data-i18n-key="template.settingsModal.advanced.retryAttemptsNote">Number of times to retry failed API requests (0 = no retries)</small>
+                </div>
+                <div class="rpg-setting-row">
+                    <label for="rpg-retry-base-delay"
+                        data-i18n-key="template.settingsModal.advanced.retryBaseDelay">Retry Base Delay (ms):</label>
+                    <input type="number" id="rpg-retry-base-delay" min="500" max="10000" value="2000"
+                        class="rpg-input" />
+                    <small data-i18n-key="template.settingsModal.advanced.retryBaseDelayNote">Base delay for exponential backoff (delay = base × 2^(attempt-1))</small>
+                </div>
+
 
 
                 <div id="rpg-separate-mode-settings">

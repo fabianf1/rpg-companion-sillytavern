@@ -190,15 +190,40 @@ export async function updateRPGData() {
         setGenerationAbortController(controller);
         
         let response;
-        try {
-            response = await getContext().ConnectionManagerRequestService.sendRequest(profile, prompt, 0, { signal });
-        } catch (error) {
-            // Check if this was an abort
-            if (error.name === 'AbortError') {
-                console.log('[RPG Companion] Generation aborted by user or message deletion');
-                return;
+        const maxRetries = extensionSettings.retryAttempts ?? 0;
+        const baseDelay = extensionSettings.retryBaseDelay ?? 2000;
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                response = await getContext().ConnectionManagerRequestService.sendRequest(profile, prompt, 0, { signal });
+                break; // Success, exit retry loop
+            } catch (error) {
+                // Check if this was an abort
+                if (error.name === 'AbortError') {
+                    console.log('[RPG Companion] Generation aborted by user or message deletion');
+                    return;
+                }                
+
+                // Check for network errors
+                const causeString = error.cause ? error.cause.message : '';
+                const isNetworkError = 
+                    causeString.includes('ETIMEDOUT')  ||
+                    causeString.includes('ECONNREFUSED') || 
+                    causeString.includes('ENETUNREACH') ||
+                    causeString.includes('ECONNRESET');
+                
+                if (!isNetworkError || attempt >= maxRetries) {
+                    // Not a network error or max retries reached, throw the error
+                    throw error;
+                }
+                
+                
+                const delay = baseDelay;
+                console.log(`[RPG Companion] API request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, causeString);
+                
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-            throw error;
         }
 
         if (response) {
@@ -322,9 +347,7 @@ export async function updateRPGData() {
 
     } catch (error) {
         // Don't show error for user-initiated aborts
-        if (error.name === 'AbortError') {
-            console.log('[RPG Companion] Generation aborted, no error shown');
-        } else {
+        if (error.name !== 'AbortError') {
             console.error('[RPG Companion] Error updating RPG data:', error);
         }
     } finally {

@@ -82,5 +82,7 @@ export const defaultSettings = {
         cha: 10
     },
     lastDiceRoll: null, // Store last dice roll result
-    collapsedInventoryLocations: [] // Array of collapsed storage location names
+    collapsedInventoryLocations: [], // Array of collapsed storage location names
+    retryAttempts: 0, // Number of retry attempts for API failures (0 = no retries)
+    retryBaseDelay: 2000, // Base delay in ms for exponential backoff
 };
