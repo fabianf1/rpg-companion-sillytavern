@@ -655,11 +655,6 @@ async function initUI() {
         updateDiceDisplay();
     });
 
-    $('#rpg-time-format-preference').on('change', function() {
-        extensionSettings.timeFormatPreference = $(this).val();
-        saveSettings();
-    });
-
     // Mobile FAB Widget toggles - simplified, no position saving (auto-positioned)
     $('#rpg-toggle-fab-widgets-enabled').on('change', function() {
         if (!extensionSettings.mobileFabWidgets) extensionSettings.mobileFabWidgets = {};
@@ -1009,8 +1004,6 @@ async function initUI() {
     $('#rpg-toggle-auto-avatars-panel').prop('checked', extensionSettings.autoGenerateAvatars || false);
 
     $('#rpg-toggle-dice-display').prop('checked', extensionSettings.showDiceDisplay);
-
-    $('#rpg-time-format-preference').val(extensionSettings.timeFormatPreference || 'none');
 
     // Initialize Mobile FAB Widget checkboxes
     const fabWidgets = extensionSettings.mobileFabWidgets || {};

@@ -1028,6 +1028,10 @@ function renderInfoBoxTab() {
     html += '<div class="rpg-editor-widget-row">';
     html += `<input type="checkbox" id="rpg-widget-time" ${config.widgets.time.enabled ? 'checked' : ''}>`;
     html += `<label for="rpg-widget-time">${i18n.getTranslation('template.trackerEditorModal.infoBoxTab.timeWidget')}</label>`;
+    html += '<div class="rpg-radio-group">';
+    html += `<label><input type="radio" name="time-format" value="12h" ${config.widgets.time.format === '12h' ? 'checked' : ''}> 12-hour</label>`;
+    html += `<label><input type="radio" name="time-format" value="24h" ${config.widgets.time.format === '24h' ? 'checked' : ''}> 24-hour</label>`;
+    html += '</div>';
     html += '</div>';
 
     // Location widget
@@ -1076,6 +1080,10 @@ function setupInfoBoxListeners() {
 
     $('#rpg-widget-time').off('change').on('change', function () {
         widgets.time.enabled = $(this).is(':checked');
+    });
+
+    $('input[name="time-format"]').off('change').on('change', function () {
+        widgets.time.format = $(this).val();
     });
 
     $('#rpg-widget-location').off('change').on('change', function () {
