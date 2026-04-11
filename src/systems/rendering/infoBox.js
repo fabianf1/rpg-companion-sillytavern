@@ -14,6 +14,7 @@ import { i18n } from '../../core/i18n.js';
 import { isItemLocked } from '../generation/lockManager.js';
 import { repairJSON } from '../../utils/jsonRepair.js';
 import { updateFabWidgets } from '../ui/mobile.js';
+import { convertTimeFormat } from '../../utils/itemParser.js';
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
@@ -528,10 +529,10 @@ export function updateInfoBoxField(field, value) {
                 }
             } else if (field === 'timeStart') {
                 if (!jsonData.time) jsonData.time = {};
-                jsonData.time.start = value;
+                jsonData.time.start = convertTimeFormat(value, extensionSettings.trackerConfig.infoBox.widgets.time.format);
             } else if (field === 'timeEnd') {
                 if (!jsonData.time) jsonData.time = {};
-                jsonData.time.end = value;
+                jsonData.time.end = convertTimeFormat(value, extensionSettings.trackerConfig.infoBox.widgets.time.format);
             } else if (field === 'location') {
                 if (!jsonData.location) jsonData.location = {};
                 jsonData.location.value = value;

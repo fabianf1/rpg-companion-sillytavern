@@ -195,8 +195,8 @@ export function parseResponse(response) {
         debugLog('[RPG Parser] Returning unified JSON parse results');
         
         // Apply time format conversion if time data exists
-        if (parsed.infoBox?.time && extensionSettings.timeFormatPreference !== 'none') {
-            const preference = extensionSettings.timeFormatPreference;
+        if (parsed.infoBox?.time && extensionSettings.trackerConfig.infoBox.widgets.time.format !== 'none') {
+            const preference = extensionSettings.trackerConfig.infoBox.widgets.time.format;
             if (parsed.infoBox.time.start) {
                 parsed.infoBox.time.start = convertTimeFormat(parsed.infoBox.time.start, preference);
             }
