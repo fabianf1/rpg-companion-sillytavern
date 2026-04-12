@@ -750,7 +750,7 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
             if (data.quests) {
                 const quests = data.quests;
 
-                // Main quest - handle string, array, or object with {title}
+                // Main quest - handle string, array, or object with {title, completed, date, location}
                 if (quests.main) {
                     if (typeof quests.main === 'string') {
                         const mainQuest = getValue(quests.main);
@@ -759,15 +759,47 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
                         const questsList = quests.main.map(q => getValue(q)).filter(q => q);
                         if (questsList.length > 0) formatted += `Main Quests: ${questsList.join(', ')}\n`;
                     } else if (typeof quests.main === 'object') {
-                        // Handle {title: "..."} format
-                        const mainQuest = getValue(quests.main);
-                        if (mainQuest) formatted += `Main Quest: ${mainQuest}\n`;
+                        // Handle {title, completed, date, location} format
+                        const questTitle = getValue(quests.main.title);
+                        const questCompleted = quests.main.completed !== undefined ? (quests.main.completed ? '✅' : '❌') : '';
+                        const questDate = getValue(quests.main.date);
+                        const questLocation = getValue(quests.main.location);
+                        
+                        let mainQuestDetails = [];
+                        if (questTitle) mainQuestDetails.push(questTitle);
+                        if (questCompleted) mainQuestDetails.push(questCompleted);
+                        if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
+                        if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
+                        
+                        if (mainQuestDetails.length > 0) {
+                            formatted += `Main Quest: ${mainQuestDetails.join(' - ')}\n`;
+                        }
                     }
                 }
 
                 // Optional quests
                 if (quests.optional && Array.isArray(quests.optional) && quests.optional.length > 0) {
-                    const questsList = quests.optional.map(q => getValue(q)).filter(q => q);
+                    const questsList = quests.optional.map(q => {
+                        if (typeof q === 'string') {
+                            return getValue(q);
+                        } else if (q && typeof q === 'object') {
+                            // Handle {title, completed, date, location} format
+                            const questTitle = getValue(q.title);
+                            const questCompleted = q.completed !== undefined ? (q.completed ? '✅' : '❌') : '';
+                            const questDate = getValue(q.date);
+                            const questLocation = getValue(q.location);
+                            
+                            let questDetails = [];
+                            if (questTitle) questDetails.push(questTitle);
+                            if (questCompleted) questDetails.push(questCompleted);
+                            if (questDate) questDetails.push(`📅 ${questDate}`);
+                            if (questLocation) questDetails.push(`📍 ${questLocation}`);
+                            
+                            return questDetails.length > 0 ? questDetails.join(' - ') : null;
+                        }
+                        return null;
+                    }).filter(q => q);
+                    
                     if (questsList.length > 0) formatted += `Optional Quests: ${questsList.join(', ')}\n`;
                 }
             }
@@ -995,8 +1027,26 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
             if (shouldIncludeQuests && userStatsData.quests) {
                 const quests = userStatsData.quests;
                 if (quests.main) {
-                    const mainQuest = getValue(quests.main);
-                    if (mainQuest && mainQuest !== 'None') statsFormatted += `Quest: ${mainQuest}, `;
+                    let mainQuestDetails = [];
+                    
+                    if (typeof quests.main === 'string') {
+                        const mainQuest = getValue(quests.main);
+                        if (mainQuest && mainQuest !== 'None') mainQuestDetails.push(mainQuest);
+                    } else if (quests.main && typeof quests.main === 'object') {
+                        const questTitle = getValue(quests.main.title);
+                        const questCompleted = quests.main.completed !== undefined ? (quests.main.completed ? '✅' : '❌') : '';
+                        const questDate = getValue(quests.main.date);
+                        const questLocation = getValue(quests.main.location);
+                        
+                        if (questTitle) mainQuestDetails.push(questTitle);
+                        if (questCompleted) mainQuestDetails.push(questCompleted);
+                        if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
+                        if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
+                    }
+                    
+                    if (mainQuestDetails.length > 0 && mainQuestDetails.join(' - ') !== 'None') {
+                        statsFormatted += `Quest: ${mainQuestDetails.join(' - ')}, `;
+                    }
                 }
             }
 

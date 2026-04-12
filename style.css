@@ -7586,18 +7586,23 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
 
 .rpg-quest-item {
     display: flex;
-    align-items: center;
+    align-items: left;
     gap: 0.75rem;
     padding: 0.75rem;
     background: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 0.25rem;
     transition: all 0.2s ease;
+    flex-direction: column;
 }
 
 .rpg-quest-item:hover {
     border-color: var(--rpg-highlight);
     background: rgba(var(--rpg-highlight-rgb, 233, 69, 96), 0.05);
+}
+
+.rpg-quest-item.completed {
+    border: 2px solid #4caf50;
 }
 
 .rpg-quest-title {
@@ -7610,6 +7615,54 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
 .rpg-quest-actions {
     display: flex;
     gap: 0.5rem;
+}
+
+/* Quest Meta fields - smaller, below title */
+.rpg-quest-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+    font-size: 0.6rem;
+    color: var(--SmartThemeFastUISliderColColor);
+}
+
+.rpg-quest-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Quest Completed Checkbox */
+.rpg-quest-completed {
+    margin-top: 0.5rem;
+}
+
+.rpg-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.rpg-checkbox-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.rpg-checkbox-text {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Quest Hover Actions - only show on hover */
+.rpg-quest-actions-hover {
+    display: none;
+    gap: 0.5rem;
+}
+
+.rpg-quest-item:hover .rpg-quest-actions-hover {
+    display: flex;
 }
 
 /* Quest Buttons */
@@ -7707,6 +7760,24 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
     border-color: var(--rpg-highlight);
 }
 
+/* Quest Meta Inputs in inline forms */
+.rpg-quest-meta-input {
+    width: auto;
+    min-width: 8rem;
+    max-width: 12rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    margin-left: 0.25rem;
+}
+
+/* Quest Inline Form Meta Container */
+.rpg-quest-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
 .rpg-quest-edit-actions {
     display: flex;
     gap: 0.5rem;
@@ -7773,6 +7844,12 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
     }
 
     .rpg-quest-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .rpg-quest-actions-hover {
+        display: flex;
         width: 100%;
         justify-content: space-between;
     }

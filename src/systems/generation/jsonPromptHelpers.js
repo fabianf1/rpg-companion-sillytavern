@@ -119,10 +119,19 @@ export function buildUserStatsJSONInstruction() {
 
     // Quests section
     instruction += '  "quests": {\n';
-    instruction += '    "main": {"title": "Quest title"},\n';
+    instruction += '    "main": {\n';
+    instruction += '      "title": "QuestTitle",\n';
+    instruction += '      "completed": false,\n';
+    instruction += '      "date": "Date and/or Time",\n';
+    instruction += '      "location": "Location"\n';
+    instruction += '    },\n';
     instruction += '    "optional": [\n';
-    instruction += '      {"title": "Quest1"},\n';
-    instruction += '      {"title": "Quest2"}\n';
+    instruction += '      {\n';
+    instruction += '        "title": "SideQuest1",\n';
+    instruction += '        "completed": false,\n';
+    instruction += '        "date": "Date and/or Time",\n';
+    instruction += '        "location": "Location"\n';
+    instruction += '      }\n';
     instruction += '    ]\n';
     instruction += '  }\n';
     instruction += '}';
