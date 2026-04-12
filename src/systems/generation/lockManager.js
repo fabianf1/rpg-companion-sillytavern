@@ -11,27 +11,6 @@ import { saveChatData, updateMessageSwipeData } from '../../core/persistence.js'
 import {getTrackerDataForContext} from './promptBuilder.js';
 
 /**
- * Get the current swipe ID from the active message
- * @returns {number} The current swipe ID
- */
-function getCurrentSwipeId() {
-    const context = getContext();
-    const chat = context.chat;
-    if (!chat || chat.length === 0) {
-        return 0;
-    }
-    
-    // Find the last assistant message
-    for (let i = chat.length - 1; i >= 0; i--) {
-        const message = chat[i];
-        if (!message.is_user && !message.is_system) {
-            return message.swipe_id || 0;
-        }
-    }
-    return 0;
-}
-
-/**
  * Get lock settings from swipeStore for current message/swipe
  * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
  * @returns {Object} The locked items configuration for this tracker type
@@ -491,7 +470,7 @@ export function isItemLocked(trackerType, itemPath) {
  */
 export function setItemLock(trackerType, itemPath, locked) {
     // Get current locked items from swipeStore
-    let lockedItems = getLockedItemsFromSwipeStore(trackerType);;
+    let lockedItems = getLockedItemsFromSwipeStore(trackerType);
     
     // Initialize if not exists
     if (!lockedItems) {
@@ -517,11 +496,13 @@ export function setItemLock(trackerType, itemPath, locked) {
     } else {
         delete current[finalKey];
     }
+    // For characters, if the character key is empty after removal, remove it as well
+    // TODO: This cleanup logic can be enhanced to handle nested empty objects for other tracker types if needed
 
     // Save back to swipeStore
     setLockedItemsInSwipeStore(trackerType, lockedItems);
 
-    // console.log('[RPG Lock Manager] Locked items after set:', JSON.stringify(lockedItems, null, 2));
+    console.log('[RPG Lock Manager] Locked items after set:', JSON.stringify(lockedItems, null, 2));
 }
 
 /**

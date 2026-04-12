@@ -8,9 +8,15 @@ import { getContext } from '../../../../../extensions.js';
 import {
     extensionSettings,
     updateExtensionSettings,
-    FEATURE_FLAGS
+    clearSessionAvatarPrompts
 } from './state.js';
 import { validateStoredInventory } from '../utils/security.js';
+import { updateDiceDisplay } from '../systems/features/dice.js';
+import { renderUserStats } from '../systems/rendering/userStats.js';
+import { renderInfoBox } from '../systems/rendering/infoBox.js';
+import { renderThoughts, updateChatThoughts } from '../systems/rendering/thoughts.js';
+import { renderQuests } from '../systems/rendering/quests.js';
+import { renderInventory } from '../systems/rendering/inventory.js';
 
 const extensionName = 'third-party/rpg-companion-sillytavern';
 
@@ -155,14 +161,13 @@ export function saveChatData() {
 
 /**
  * Updates the last assistant message's swipe data with current tracker data.
- * This ensures user edits are preserved across swipes and included in generation context.
- */
-/**
- * Updates the last assistant message's swipe data with current tracker data.
  * Called when user edits tracker fields (stats, conditions, etc).
  * Reads current swipe data, updates it with extensionSettings, and writes back.
+ * 
+ * @param {string} [trackerType] - Optional tracker type to update ('userStats', 'characterThoughts', 'infoBox', etc.)
+ * @param {string|Object} [data] - Optional data to set for the tracker. If not provided, reads from extensionSettings.
  */
-export function updateMessageSwipeData() {
+export function updateMessageSwipeData(trackerType, data) {
     const chat = getContext().chat;
     if (!chat || chat.length === 0) {
         console.warn('[RPG Companion] No chat messages found, cannot update swipe data');
@@ -170,7 +175,7 @@ export function updateMessageSwipeData() {
     }
 
     // Find the last assistant message
-    console.log(`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}`);
+    console.log(`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}, trackerType:`, trackerType);
     for (let i = chat.length - 1; i >= 0; i--) {
         const message = chat[i];
         if (!message.is_user && !message.is_system) {
@@ -185,80 +190,102 @@ export function updateMessageSwipeData() {
             const currentSwipeData = message.extra.rpg_companion_swipes[swipeId] || {};
             console.log(`[RPG Companion] Updating message:`, i, 'Swipe:', swipeId);
             
-            // Build updated user stats data
-            // If previous data was JSON, maintain JSON format; otherwise use text
-            let userStatsData = null;
-            if (currentSwipeData.userStats) {
-                const trimmed = currentSwipeData.userStats.trim();
-                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                    // Maintain JSON format
-                    try {
-                        const jsonData = JSON.parse(currentSwipeData.userStats);
-                        if (jsonData && typeof jsonData === 'object') {
-                            const stats = extensionSettings.userStats;
-                            
-                            // Update stats array values from extensionSettings
-                            if (jsonData.stats && Array.isArray(jsonData.stats)) {
-                                jsonData.stats = jsonData.stats.map(stat => ({
-                                    ...stat,
-                                    value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
-                                }));
-                            }
-                            
-                            // Update status fields
-                            if (jsonData.status) {
-                                jsonData.status.mood = stats.mood || '😐';
-                                const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
-                                for (const fieldName of customFields) {
-                                    const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
-                                    jsonData.status[fieldKey] = stats[fieldKey] || 'None';
+            // If trackerType and data are provided, use them directly
+            if (trackerType && data !== undefined) {
+                console.log(`[RPG Companion] Using provided data for ${trackerType}`);
+                currentSwipeData[trackerType] = data;
+            } else {
+                // Otherwise, build from extensionSettings (Pattern 1: extensionSettings is source of truth)
+                console.log('[RPG Companion] Building data from extensionSettings');
+                
+                // Build updated user stats data
+                // If previous data was JSON, maintain JSON format; otherwise use text
+                let userStatsData = null;
+                if (currentSwipeData.userStats) {
+                    const trimmed = currentSwipeData.userStats.trim();
+                    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                        // Maintain JSON format
+                        try {
+                            const jsonData = JSON.parse(currentSwipeData.userStats);
+                            if (jsonData && typeof jsonData === 'object') {
+                                const stats = extensionSettings.userStats;
+                                
+                                // Update stats array values from extensionSettings
+                                if (jsonData.stats && Array.isArray(jsonData.stats)) {
+                                    jsonData.stats = jsonData.stats.map(stat => ({
+                                        ...stat,
+                                        value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
+                                    }));
                                 }
+                                
+                                // Update status fields
+                                if (jsonData.status) {
+                                    jsonData.status.mood = stats.mood || '😐';
+                                    const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
+                                    for (const fieldName of customFields) {
+                                        const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
+                                        jsonData.status[fieldKey] = stats[fieldKey] || 'None';
+                                    }
+                                }
+                                
+                                // Update inventory
+                                if (stats.inventory) {
+                                    jsonData.inventory = stats.inventory;
+                                }
+                                
+                                // Update quests
+                                if (extensionSettings.quests) {
+                                    jsonData.quests = extensionSettings.quests;
+                                }
+                                
+                                // Update skills
+                                if (stats.skills !== undefined) {
+                                    jsonData.skills = stats.skills;
+                                }
+                                
+                                userStatsData = JSON.stringify(jsonData, null, 2);
                             }
-                            
-                            // Update inventory
-                            if (stats.inventory) {
-                                jsonData.inventory = stats.inventory;
-                            }
-                            
-                            // Update quests
-                            if (extensionSettings.quests) {
-                                jsonData.quests = extensionSettings.quests;
-                            }
-                            
-                            // Update skills
-                            if (stats.skills !== undefined) {
-                                jsonData.skills = stats.skills;
-                            }
-                            
-                            userStatsData = JSON.stringify(jsonData, null, 2);
+                        } catch (e) {
+                            console.warn('[RPG Companion] Failed to update JSON userStats:', e);
+                            // Fall through to text format
                         }
-                    } catch (e) {
-                        console.warn('[RPG Companion] Failed to update JSON userStats:', e);
-                        // Fall through to text format
                     }
                 }
-            }
-            // Infobox
-            if (currentSwipeData.infoBox) {
-                currentSwipeData.infoBox = extensionSettings.infoBox;
-            }
-            
-            // Update swipe data with current tracker information
-            message.extra.rpg_companion_swipes[swipeId] = {
-                userStats: userStatsData !== null ? userStatsData : currentSwipeData.userStats,
-                infoBox: currentSwipeData.infoBox,
-                characterThoughts: currentSwipeData.characterThoughts,
-                lockedItems: {
-                    userStats: extensionSettings.lockedItems.userStats,
-                    infoBox: extensionSettings.lockedItems.infoBox,
-                    characters: extensionSettings.lockedItems.characters
+                // Infobox
+                if (currentSwipeData.infoBox) {
+                    currentSwipeData.infoBox = extensionSettings.infoBox;
                 }
-            };
+                
+                // quests
+                if (currentSwipeData.quests) {
+                    currentSwipeData.quests = extensionSettings.quests;
+                }
+                
+                // lockedItems
+                if (currentSwipeData.lockedItems) {
+                    currentSwipeData.lockedItems = {
+                        userStats: extensionSettings.lockedItems.userStats,
+                        infoBox: extensionSettings.lockedItems.infoBox,
+                        characters: extensionSettings.lockedItems.characters
+                    };
+                }
+                
+                // Update swipe data with current tracker information
+                message.extra.rpg_companion_swipes[swipeId] = {
+                    userStats: userStatsData !== null ? userStatsData : currentSwipeData.userStats,
+                    infoBox: currentSwipeData.infoBox,
+                    characterThoughts: currentSwipeData.characterThoughts,
+                    quests: currentSwipeData.quests,
+                    lockedItems: currentSwipeData.lockedItems
+                };
+            }
 
             // console.log('[RPG Companion] Updated message swipe data after user edit');
             break;
         }
     }
+    
+    saveChatData();
 }
 
 /**
@@ -1013,5 +1040,149 @@ export function importPresets(importData, overwrite = false) {
     }
 
     return importCount;
+}
+
+/**
+ * Clears cache data based on options
+ * @param {Object} options - Clear options
+ * @param {string} options.scope - Scope of clearing: 'all', 'last', or 'reset-default'
+ * @param {string} options.dataType - Data type to clear: 'all' or 'custom'
+ * @param {string[]} [options.customSelection=[]] - Array of custom items to clear when dataType is 'custom'
+ * @param {boolean} [options.resetDefaultValues=false] - Whether to reset to default values (only for 'reset-default' scope)
+ */
+export function clearCache(options) {
+    const { scope, dataType, customSelection = [] } = options;
+    const context = getContext();
+    const chat = context.chat;
+
+    console.log('[RPG Companion] Clearing cache with options:', options);
+
+    // Determine which message to clear based on scope
+    let messageIndexToClear = -1;
+    if (scope === 'all') {
+        console.log('[RPG Companion] Clearing all cache data from chat messages');
+        // Clear all messages
+        for (let i = 0; i < chat.length; i++) {
+            const message = chat[i];
+            const swipeId = message.swipe_id || 0;
+            if (message.extra && message.extra.rpg_companion_swipes) {
+                // Clear only selected items from each message
+                if (customSelection.includes('userStats') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].userStats;
+                }
+                if (customSelection.includes('infoBox') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].infoBox;
+                }
+                if (customSelection.includes('characterThoughts') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
+                }
+                if (customSelection.includes('locks') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
+                }
+                if (customSelection.includes('diceRoll') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
+                }
+            }
+        }
+    } else if (scope === 'last' || scope === 'reset-default') {
+        console.log(`[RPG Companion] Clearing cache data from the last message for scope: ${scope}`);
+        // Clear only the last message
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const message = chat[i];
+            if (!message.is_user && !message.is_system) {
+                messageIndexToClear = i;
+                break;
+            }
+        }
+        
+        if (messageIndexToClear !== -1 && chat[messageIndexToClear].extra && chat[messageIndexToClear].extra.rpg_companion_swipes) {
+            const message = chat[messageIndexToClear];
+            const swipeId = message.swipe_id || 0;
+            if(scope === 'reset-default') {
+                if (customSelection.includes('userStats') || dataType === 'all') {
+                    const data = JSON.stringify({
+                        stats: [
+                            { id: 'health', name: 'Health', value: 100 },
+                            { id: 'satiety', name: 'Satiety', value: 100 },
+                            { id: 'energy', name: 'Energy', value: 100 },
+                            { id: 'hygiene', name: 'Hygiene', value: 100 },
+                            { id: 'arousal', name: 'Arousal', value: 0 }
+                        ],
+                        status: {
+                            mood: '😐',
+                            conditions: 'None'
+                        },
+                        inventory: {
+                            onPerson: [],
+                            stored: []
+                        },
+                        quests: {
+                            main: null,
+                            optional: []
+                        }
+                    }, null, 2);
+                    updateMessageSwipeData('userStats', data)
+                }
+                if (customSelection.includes('infoBox') || dataType === 'all') {
+                    const data = JSON.stringify({
+                        date: { value: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
+                        weather: { emoji: '☀️', forecast: 'Clear skies' },
+                        temperature: { value: 20, unit: 'C' },
+                        time: { start: '00:00', end: '00:00' },
+                        location: { value: 'Unknown Location' }
+                    }, null, 2);
+                    updateMessageSwipeData('infoBox', data)
+                }
+                if (customSelection.includes('characterThoughts') || dataType === 'all') {
+                    const data = JSON.stringify({
+                        characters: []
+                    }, null, 2)
+                    updateMessageSwipeData('characterThoughts', data)
+                }
+                if (customSelection.includes('locks') || dataType === 'all') {
+                    updateMessageSwipeData('lockedItems', {userStats: {}, infoBox: {}, characters: {}});
+                }
+                if (customSelection.includes('diceRoll') || dataType === 'all') {
+                    updateMessageSwipeData('lastDiceRoll', null);
+                }
+            }
+            else{
+                if (customSelection.includes('userStats') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].userStats;
+                }
+                if (customSelection.includes('infoBox') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].infoBox;
+                }
+                if (customSelection.includes('characterThoughts') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
+                }
+                if (customSelection.includes('locks') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
+                }
+                if (customSelection.includes('diceRoll') || dataType === 'all') {
+                    delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
+                }
+            }
+        }
+    }
+
+    // Clear session avatar prompts
+    clearSessionAvatarPrompts();
+
+    // Save changes
+    saveChatData();
+    saveSettings();
+
+    // Re-render panels for selected items
+    renderUserStats();
+    renderInfoBox();
+    renderThoughts();
+    updateChatThoughts();
+    updateDiceDisplay();
+    renderInventory();
+    renderQuests();
+
+
+    console.log('[RPG Companion] Custom cache cleared with selection:', customSelection);
 }
 

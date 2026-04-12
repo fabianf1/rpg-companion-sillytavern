@@ -3131,6 +3131,40 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
     transform: translateY(0);
 }
 
+/* ============================================
+   CLEAR CACHE DROPDOWN BUTTON
+   ============================================ */
+.rpg-clear-cache-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--rpg-bg);
+    border: 2px solid var(--rpg-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 4px;
+    box-shadow: 0 4px 20px var(--rpg-shadow);
+    z-index: 10002;
+    animation: rpg-fade-in 0.2s ease;
+}
+
+@keyframes rpg-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rpg-clear-cache-options label:hover {
+    background: rgba(22, 33, 62, 0.5);
+    border-radius: 4px;
+}
+
 /* Customize Prompts Button - Neutral gray style */
 .rpg-btn-customize-prompts {
     width: 100%;

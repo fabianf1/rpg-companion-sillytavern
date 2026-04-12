@@ -11,14 +11,8 @@ import {
     $userStatsContainer,
     setPendingDiceRoll,
     getPendingDiceRoll,
-    clearSessionAvatarPrompts
 } from '../../core/state.js';
-import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
-import { renderUserStats } from '../rendering/userStats.js';
-import { renderInfoBox } from '../rendering/infoBox.js';
-import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
-import { renderQuests } from '../rendering/quests.js';
-import { renderInventory } from '../rendering/inventory.js';
+import { saveSettings, saveChatData, updateMessageSwipeData, clearCache } from '../../core/persistence.js';
 import {
     rollDice as rollDiceCore,
     clearDiceRoll as clearDiceRollCore,
@@ -351,139 +345,68 @@ export function setupSettingsPopup() {
         }
     });
 
-    // Clear cache button
-    $('#rpg-clear-cache').on('click', function() {
-        // console.log('[RPG Companion] Clear Cache button clicked');
-
-        // Clear the data by updating swipe store (set to null so panels show "not generated yet")
-        updateMessageSwipeData('userStats', null);
-        updateMessageSwipeData('infoBox', null);
-        updateMessageSwipeData('characterThoughts', null);
-
-        // Clear session avatar prompts
-        clearSessionAvatarPrompts();
-
-        // Clear chat metadata immediately (don't wait for debounced save)
-        const context = getContext();
-
-        // Clear all message swipe data
-        const chat = context.chat;
-        if (chat && chat.length > 0) {
-            for (let i = 0; i < chat.length; i++) {
-                const message = chat[i];
-                if (message.extra && message.extra.rpg_companion_swipes) {
-                    delete message.extra.rpg_companion_swipes;
-                    // console.log('[RPG Companion] Cleared swipe data from message at index', i);
-                }
-            }
+    // Clear cache button with dropdown
+    $('#rpg-clear-cache').on('click', function(e) {
+        e.stopPropagation(); // Prevent click from triggering dropdown toggle
+        
+        const $dropdown = $('#rpg-clear-cache-options');
+        const isVisible = $dropdown.css('display') === 'block';
+        
+        // Close any other open dropdowns
+        $('.rpg-clear-cache-options').not($dropdown).css('display', 'none');
+        
+        if (isVisible) {
+            $dropdown.css('display', 'none');
+        } else {
+            $dropdown.css('display', 'block');
         }
+    });
 
-        // Clear the UI
-        if ($infoBoxContainer) {
-            $infoBoxContainer.empty();
+    // Close dropdown when clicking anywhere else
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#rpg-clear-cache').length && !$(e.target).closest('#rpg-clear-cache-options').length) {
+            $('#rpg-clear-cache-options').css('display', 'none');
         }
-        if ($thoughtsContainer) {
-            $thoughtsContainer.empty();
+    });
+
+    // Handle dropdown option changes
+    $('#rpg-clear-cache-options').on('click', 'input[name="rpg-clear-cache-type"]', function() {
+        const isCustom = $(this).val() === 'custom';
+        
+        if (isCustom) {
+            // Show custom options when custom is selected
+            $('#rpg-clear-cache-custom-options').css('display', 'block');
+        } else {
+            // Hide custom options when all data is selected
+            $('#rpg-clear-cache-custom-options').css('display', 'none');
         }
-        if ($userStatsContainer) {
-            $userStatsContainer.empty();
+    });
+
+    // Handle clear cache execute button click
+    $('#rpg-clear-cache-execute').on('click', function(e) {
+        e.stopPropagation();
+        
+        // Get selected options
+        const scope = $('input[name="rpg-clear-cache-scope"]:checked').val();
+        const dataType = $('input[name="rpg-clear-cache-type"]:checked').val();
+        
+        // Get custom selections if custom type is selected
+        let customSelection = [];
+        if (dataType === 'custom') {
+            $('#rpg-clear-cache-custom-options input[name="rpg-clear-cache-custom"]:checked').each(function() {
+                customSelection.push($(this).val());
+            });
         }
-
-        // Reset user stats to default object structure (extensionSettings stores as object, not JSON string)
-        extensionSettings.userStats = {
-            health: 100,
-            satiety: 100,
-            energy: 100,
-            hygiene: 100,
-            arousal: 0,
-            mood: '😐',
-            conditions: 'None',
-            skills: [],
-            inventory: {
-                version: 2,
-                onPerson: "None",
-                clothing: "None",
-                stored: {},
-                assets: "None"
-            }
-        };
-
-        // Reset info box to defaults (as object)
-        extensionSettings.infoBox = {
-            date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-            weather: '☀️ Clear skies',
-            temperature: '20°C',
-            time: '00:00 - 00:00',
-            location: 'Unknown Location',
-            recentEvents: []
-        };
-
-        // Reset character thoughts to empty (as object)
-        extensionSettings.characterThoughts = {
-            characters: []
-        };
-
-        // Reset classic stats (attributes) to defaults
-        extensionSettings.classicStats = {
-            str: 10,
-            dex: 10,
-            con: 10,
-            int: 10,
-            wis: 10,
-            cha: 10
-        };
-
-        // Clear dice roll
-        extensionSettings.lastDiceRoll = null;
-
-        // Reset level to 1
-        extensionSettings.level = 1;
-
-        // Clear quests
-        extensionSettings.quests = {
-            main: null,
-            optional: []
-        };
-
-        // Clear all locked items
-        extensionSettings.lockedItems = {
-            stats: [],
-            skills: [],
-            inventory: {
-                onPerson: [],
-                clothing: [],
-                stored: {},
-                assets: []
-            },
-            quests: {
-                main: false,
-                optional: []
-            },
-            infoBox: {
-                date: false,
-                weather: false,
-                temperature: false,
-                time: false,
-                location: false,
-                recentEvents: false
-            },
-            characters: {}
-        };
-
-        // Save everything
-        saveChatData();
-        saveSettings();
-
-        // Re-render all panels - they will show "not generated yet" messages since data is null
-        renderUserStats();
-        renderInfoBox();
-        renderThoughts();
-        updateDiceDisplayCore();
-        updateChatThoughts();
-        renderInventory();
-        renderQuests();
-
-        // console.log('[RPG Companion] Cache cleared successfully');
+        
+        // Clear the dropdown
+        $('#rpg-clear-cache-options').css('display', 'none');
+        
+        // Execute clear based on options
+        clearCache({
+            scope: scope,
+            dataType: dataType,
+            customSelection: customSelection,
+        });
     });
 
     return settingsModal;

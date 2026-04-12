@@ -1115,23 +1115,6 @@ export function updateCharacterField(characterName, field, value) {
 
         // console.log('[RPG Companion] Saved to swipe store characterThoughts');
 
-        // Update in chat metadata
-        const chat = getContext().chat;
-        if (chat && chat.length > 0) {
-            for (let i = chat.length - 1; i >= 0; i--) {
-                const message = chat[i];
-                if (!message.is_user) {
-                    if (message.extra && message.extra.rpg_companion_swipes) {
-                        const swipeId = message.swipe_id || 0;
-                        if (message.extra.rpg_companion_swipes[swipeId]) {
-                            message.extra.rpg_companion_swipes[swipeId].characterThoughts = JSON.stringify(Array.isArray(parsedData) ? charactersArray : { ...parsedData, characters: charactersArray }, null, 2);
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
         saveChatData();
 
         // console.log('[RPG Companion] JSON format updated successfully');
@@ -1349,22 +1332,6 @@ export function updateCharacterField(characterName, field, value) {
     updateMessageSwipeData('characterThoughts', lines.join('\n'));
 
     // console.log('[RPG Companion] Updated characterThoughts data:', getTrackerDataForContext('characterThoughts'));
-
-    const chat = getContext().chat;
-    if (chat && chat.length > 0) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-            if (!message.is_user) {
-                if (message.extra && message.extra.rpg_companion_swipes) {
-                    const swipeId = message.swipe_id || 0;
-                    if (message.extra.rpg_companion_swipes[swipeId]) {
-                        message.extra.rpg_companion_swipes[swipeId].characterThoughts = lines.join('\n');
-                    }
-                }
-                break;
-            }
-        }
-    }
 
     saveChatData();
 

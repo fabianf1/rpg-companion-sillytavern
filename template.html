@@ -783,10 +783,82 @@
 
                 <!-- Clear Cache Button -->
                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rpg-border);">
-                    <button id="rpg-clear-cache" class="rpg-btn-clear-cache">
-                        <i class="fa-solid fa-trash" aria-hidden="true"></i> <span
-                            data-i18n-key="template.settingsModal.advanced.clearCache">Clear Extension Cache</span>
-                    </button>
+                    <div style="position: relative;">
+                        <button id="rpg-clear-cache" class="rpg-btn-clear-cache">
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i> <span
+                                data-i18n-key="template.settingsModal.advanced.clearCache">Clear Extension Cache</span>
+                            <i class="fa-solid fa-chevron-down" aria-hidden="true" style="margin-left: 8px;"></i>
+                        </button>
+                        <!-- Dropdown options (hidden by default) -->
+                        <div id="rpg-clear-cache-options" class="rpg-clear-cache-options" style="display: none;">
+                            <!-- Scope selector -->
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500;"
+                                    data-i18n-key="template.settingsModal.advanced.clearCacheScope">
+                                    Clear scope:
+                                </label>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                        <input type="radio" name="rpg-clear-cache-scope" value="all" checked>
+                                        <span data-i18n-key="template.settingsModal.advanced.clearCacheScopeAllMessages">All messages</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                        <input type="radio" name="rpg-clear-cache-scope" value="last">
+                                        <span data-i18n-key="template.settingsModal.advanced.clearCacheScopeLastMessage">Last message only</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                        <input type="radio" name="rpg-clear-cache-scope" value="reset-default">
+                                        <span data-i18n-key="template.settingsModal.advanced.clearCacheScopeResetDefault">Reset last message to default</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- Data type selector -->
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 500;"
+                                    data-i18n-key="template.settingsModal.advanced.clearCacheDataType">
+                                    Data type to clear:
+                                </label>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                        <input type="radio" name="rpg-clear-cache-type" value="all" checked>
+                                        <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeAll">All data</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                        <input type="radio" name="rpg-clear-cache-type" value="custom">
+                                        <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeCustom">Custom selection:</span>
+                                    </label>
+                                    <div id="rpg-clear-cache-custom-options" style="margin-left: 16px; display: none;">
+                                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                            <input type="checkbox" name="rpg-clear-cache-custom" value="userStats">
+                                            <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeUserStats">User stats</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                            <input type="checkbox" name="rpg-clear-cache-custom" value="infoBox">
+                                            <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeInfoBox">Info box</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                            <input type="checkbox" name="rpg-clear-cache-custom" value="characterThoughts">
+                                            <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeCharacterThoughts">Characters</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                            <input type="checkbox" name="rpg-clear-cache-custom" value="locks">
+                                            <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeLocks">Locks</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer;">
+                                            <input type="checkbox" name="rpg-clear-cache-custom" value="diceRoll">
+                                            <span data-i18n-key="template.settingsModal.advanced.clearCacheDataTypeDiceRoll">Dice roll</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Clear action button -->
+                            <div style="margin-top: 12px;">
+                                <button id="rpg-clear-cache-execute" class="rpg-btn-clear-cache" style="background: rgba(220, 53, 69, 0.3); border-color: rgba(220, 53, 69, 0.8); color: #ff8787;">
+                                    <span data-i18n-key="template.settingsModal.advanced.clearCacheExecute">Clear Cache</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <small style="display: block; margin-top: 8px; color: #888; font-size: 11px;"
                         data-i18n-key="template.settingsModal.advanced.clearCacheNote">
                         Clears committed and displayed tracker data for your currently active chat.

@@ -122,8 +122,8 @@ export let extensionSettings = {
             stored: []
         },
         quests: {
-            active: [],
-            completed: []
+            main: null,
+            optional: []
         }
     }, null, 2),
     statNames: {
@@ -278,26 +278,8 @@ export let extensionSettings = {
     avatarLLMCustomInstruction: '', // Custom instruction for LLM prompt generation
     // Lock state for tracker items (v3 JSON format feature)
     lockedItems: {
-        stats: [],              // Array of locked stat IDs (e.g., ["health", "satiety"])
-        skills: [],             // Array of locked skill names (e.g., ["Cooking", "Swordsmanship"])
-        inventory: {
-            onPerson: [],       // Array of locked item indices (e.g., [0, 2])
-            clothing: [],       // Array of locked item indices
-            stored: {},         // Object with location keys, each containing array of locked indices (e.g., {"Home": [0, 1]})
-            assets: []          // Array of locked asset indices
-        },
-        quests: {
-            main: false,        // Boolean for main quest lock
-            optional: []        // Array of locked optional quest indices (e.g., [0, 2])
-        },
-        infoBox: {
-            date: false,        // Boolean for date widget lock
-            weather: false,     // Boolean for weather widget lock
-            temperature: false, // Boolean for temperature widget lock
-            time: false,        // Boolean for time widget lock
-            location: false,    // Boolean for location widget lock
-            recentEvents: false // Boolean for recent events widget lock
-        },
+        userStats: {},   // Object mapping stat IDs to boolean locked state (e.g., {"health": true, "satiety": false})
+        infoBox: {},
         characters: {}          // Object mapping character names to their locked fields (e.g., {"Sarah": {relationship: true, thoughts: false}})
     },
     // Preset management for tracker configurations
