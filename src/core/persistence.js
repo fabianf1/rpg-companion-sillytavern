@@ -199,56 +199,54 @@ export function updateMessageSwipeData(trackerType, data) {
                 console.log('[RPG Companion] Building data from extensionSettings');
                 
                 // Build updated user stats data
-                // If previous data was JSON, maintain JSON format; otherwise use text
+                // Data is now stored as objects, so we just need to update the values
                 let userStatsData = null;
                 if (currentSwipeData.userStats) {
-                    const trimmed = currentSwipeData.userStats.trim();
-                    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                        // Maintain JSON format
-                        try {
-                            const jsonData = JSON.parse(currentSwipeData.userStats);
-                            if (jsonData && typeof jsonData === 'object') {
-                                const stats = extensionSettings.userStats;
-                                
-                                // Update stats array values from extensionSettings
-                                if (jsonData.stats && Array.isArray(jsonData.stats)) {
-                                    jsonData.stats = jsonData.stats.map(stat => ({
-                                        ...stat,
-                                        value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
-                                    }));
-                                }
-                                
-                                // Update status fields
-                                if (jsonData.status) {
-                                    jsonData.status.mood = stats.mood || '😐';
-                                    const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
-                                    for (const fieldName of customFields) {
-                                        const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
-                                        jsonData.status[fieldKey] = stats[fieldKey] || 'None';
-                                    }
-                                }
-                                
-                                // Update inventory
-                                if (stats.inventory) {
-                                    jsonData.inventory = stats.inventory;
-                                }
-                                
-                                // Update quests
-                                if (extensionSettings.quests) {
-                                    jsonData.quests = extensionSettings.quests;
-                                }
-                                
-                                // Update skills
-                                if (stats.skills !== undefined) {
-                                    jsonData.skills = stats.skills;
-                                }
-                                
-                                userStatsData = JSON.stringify(jsonData, null, 2);
+                    try {
+                        // Ensure we have an object to work with
+                        const jsonData = typeof currentSwipeData.userStats === 'object' ? currentSwipeData.userStats : JSON.parse(currentSwipeData.userStats);
+                        if (jsonData && typeof jsonData === 'object') {
+                            const stats = extensionSettings.userStats;
+                            
+                            // Update stats array values from extensionSettings
+                            if (jsonData.stats && Array.isArray(jsonData.stats)) {
+                                jsonData.stats = jsonData.stats.map(stat => ({
+                                    ...stat,
+                                    value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
+                                }));
                             }
-                        } catch (e) {
-                            console.warn('[RPG Companion] Failed to update JSON userStats:', e);
-                            // Fall through to text format
+                            
+                            // Update status fields
+                            if (jsonData.status) {
+                                jsonData.status.mood = stats.mood || '😐';
+                                const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
+                                for (const fieldName of customFields) {
+                                    const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
+                                    jsonData.status[fieldKey] = stats[fieldKey] || 'None';
+                                }
+                            }
+                            
+                            // Update inventory
+                            if (stats.inventory) {
+                                jsonData.inventory = stats.inventory;
+                            }
+                            
+                            // Update quests
+                            if (extensionSettings.quests) {
+                                jsonData.quests = extensionSettings.quests;
+                            }
+                            
+                            // Update skills
+                            if (stats.skills !== undefined) {
+                                jsonData.skills = stats.skills;
+                            }
+                            
+                            // Store as object (not JSON string)
+                            userStatsData = jsonData;
                         }
+                    } catch (e) {
+                        console.warn('[RPG Companion] Failed to update userStats:', e);
+                        // Fall through to use existing data
                     }
                 }
                 // Infobox
@@ -256,12 +254,7 @@ export function updateMessageSwipeData(trackerType, data) {
                     currentSwipeData.infoBox = extensionSettings.infoBox;
                 }
                 
-                // quests
-                if (currentSwipeData.quests) {
-                    currentSwipeData.quests = extensionSettings.quests;
-                }
-                
-                // lockedItems
+                // LockedItems
                 if (currentSwipeData.lockedItems) {
                     currentSwipeData.lockedItems = {
                         userStats: extensionSettings.lockedItems.userStats,

@@ -203,9 +203,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 
     // Try parsing as JSON first (new format)
     try {
-        const parsed = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
+        const parsed = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
 
         // Handle both {characters: [...]} and direct array formats
         const charactersArray = Array.isArray(parsed) ? parsed : (parsed.characters || []);
@@ -751,9 +749,7 @@ export function removeCharacter(characterName) {
     let parsedData = null;
 
     try {
-        parsedData = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
+        parsedData = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -861,9 +857,7 @@ export function addNewCharacter() {
     let parsedData = null;
 
     try {
-        parsedData = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
+        parsedData = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -994,9 +988,7 @@ export function updateCharacterField(characterName, field, value) {
     let parsedData = null;
 
     try {
-        parsedData = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
+        parsedData = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
 
         if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
             isJSON = true;
@@ -1405,26 +1397,10 @@ export function updateChatThoughts() {
         return;
     }
 
-    // Parse the Present Characters data to get thoughts
-    let thoughtsArray = []; // Array of {name, emoji, thought}
-    const thoughtsConfig = extensionSettings.trackerConfig?.presentCharacters?.thoughts;
-    const thoughtsLabel = thoughtsConfig?.name || 'Thoughts';
-
     // Read from swipe store
     const characterThoughtsData = getTrackerDataForContext('characterThoughts');
-
-    // Try JSON format first
-    try {
-        const parsed = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
-
-        // Handle both {characters: [...]} and direct array formats
-        const charactersArray = Array.isArray(parsed) ? parsed : (parsed.characters || []);
-
-        if (charactersArray.length > 0) {
-            // Extract thoughts from JSON character objects
-            thoughtsArray = charactersArray
+    const parsed = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
+    const thoughtsArray = parsed
                 .filter(char => char.thoughts && char.thoughts.content)
                 .map(char => ({
                     name: (char.name || '').toLowerCase(),
@@ -1432,81 +1408,14 @@ export function updateChatThoughts() {
                     thought: char.thoughts.content
                 }));
 
-            debugLog('[RPG Thoughts Bubble] ✓ Parsed JSON format, thoughts:', thoughtsArray.length);
-        }
-    } catch (e) {
-        debugLog('[RPG Thoughts Bubble] Not JSON format, falling back to text parsing');
-    }
-
-    // If JSON parsing failed or returned empty, try text format
-    if (thoughtsArray.length === 0) {
-        const lines = characterThoughtsData.split('\n');
-
-        // console.log('[RPG Companion] Parsing thoughts from lines:', lines);
-
-        // Parse new format to build character map and thoughts
-        let currentCharName = null;
-        let currentCharEmoji = null;
-
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-
-            if (!line ||
-                line.includes('Present Characters') ||
-                line.includes('---') ||
-                line.startsWith('```') ||
-                line.trim() === '- …' ||
-                line.includes('(Repeat the format')) {
-                continue;
-            }
-
-            // Check if this is a character name line (starts with "- ")
-            if (line.startsWith('- ')) {
-                const name = line.substring(2).trim();
-                if (name && name.toLowerCase() !== 'unavailable') {
-                    currentCharName = name;
-                    currentCharEmoji = null; // Reset emoji for new character
-                } else {
-                    currentCharName = null;
-                    currentCharEmoji = null;
-                }
-            }
-            // Check if this is a Details line (contains the emoji)
-            else if (line.startsWith('Details:') && currentCharName) {
-                const detailsContent = line.substring(line.indexOf(':') + 1).trim();
-                const parts = detailsContent.split('|').map(p => p.trim());
-
-                // First part is the emoji
-                if (parts.length > 0) {
-                    currentCharEmoji = parts[0];
-                }
-            }
-            // Check if this is a Thoughts line
-            else if (line.startsWith(thoughtsLabel + ':') && currentCharName && currentCharEmoji) {
-                const thoughtContent = line.substring(thoughtsLabel.length + 1).trim();
-
-                // The thought content is just the text (no emoji prefix in new format)
-                if (thoughtContent) {
-                    thoughtsArray.push({
-                        name: currentCharName.toLowerCase(),
-                        emoji: currentCharEmoji,
-                        thought: thoughtContent
-                    });
-                }
-            }
-        }
-    } // End of text format parsing for thoughts bubbles
-
-    debugLog('[RPG Thoughts] Parsed thoughts:', thoughtsArray);
-
-    // If no thoughts parsed, return
-    if (thoughtsArray.length === 0) {
-        // console.log('[RPG Companion] No thoughts parsed, returning');
+                
+    if(thoughtsArray.length === 0) {
+        // console.log('[RPG Companion] No characters with thoughts to display in chat');
         return;
     }
 
-    // console.log('[RPG Companion] Total thoughts:', thoughtsArray.length);
-    // console.log('[RPG Companion] Thoughts array:', thoughtsArray);
+    // Check if any character has thoughts content to display
+    // const hasThoughtsToDisplay = thoughtsArray.some(char => char.thoughts && char.thoughts.content);
 
     // Find the last message to position near
     const $messages = $('#chat .mes');

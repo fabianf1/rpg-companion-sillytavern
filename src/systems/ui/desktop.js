@@ -52,7 +52,7 @@ export function updateStripWidgets() {
     let infoData = null;
     if (infoBox) {
         try {
-            infoData = typeof infoBox === 'string' ? JSON.parse(infoBox) : infoBox;
+            infoData = typeof infoBox === 'object' ? infoBox : JSON.parse(infoBox);
         } catch (e) {
             console.warn('[RPG Strip Widgets] Failed to parse infoBox:', e);
         }
@@ -126,7 +126,7 @@ export function updateStripWidgets() {
         const userStatsData = getTrackerDataForContext('userStats');
         if (userStatsData) {
             try {
-                const parsedStats = typeof userStatsData === 'string' ? JSON.parse(userStatsData) : userStatsData;
+                const parsedStats = typeof userStatsData === 'object' ? userStatsData : JSON.parse(userStatsData);
                 if (parsedStats?.stats) {
                     allStats = parsedStats.stats;
                 }
@@ -139,7 +139,7 @@ export function updateStripWidgets() {
         if (allStats.length === 0 && extensionSettings.userStats) {
             try {
                 const userStatsJson = extensionSettings.userStats;
-                const parsedUserStats = typeof userStatsJson === 'string' ? JSON.parse(userStatsJson) : userStatsJson;
+                const parsedUserStats = typeof userStatsJson === 'object' ? userStatsJson : JSON.parse(userStatsJson);
                 if (parsedUserStats?.stats) {
                     allStats = parsedUserStats.stats;
                 }

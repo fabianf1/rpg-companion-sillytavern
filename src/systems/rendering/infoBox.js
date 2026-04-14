@@ -121,7 +121,9 @@ export function renderInfoBox() {
     };
 
     // Check if data is v3 JSON format
-    const jsonData = repairJSON(infoBoxData);
+    const jsonData = infoBoxData === 'string'
+                    ? JSON.parse(infoBoxData)
+                    : infoBoxData;
     if (jsonData) {
         // Extract from v3 JSON structure
         data.weatherEmoji = jsonData.weather?.emoji || '';
@@ -323,9 +325,7 @@ export function renderInfoBox() {
         if (infoBoxData) {
             // Try JSON format first
             try {
-                const parsed = typeof infoBoxData === 'string'
-                    ? JSON.parse(infoBoxData)
-                    : infoBoxData;
+                const parsed = typeof infoBoxData === 'object' ? infoBoxData : JSON.parse(infoBoxData);
 
                 if (parsed && Array.isArray(parsed.recentEvents)) {
                     recentEvents = parsed.recentEvents;

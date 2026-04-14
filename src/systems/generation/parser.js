@@ -207,9 +207,9 @@ export function parseResponse(response) {
         }
         
         return {
-            userStats: parsed.userStats ? JSON.stringify(parsed.userStats) : null,
-            infoBox: parsed.infoBox ? JSON.stringify(parsed.infoBox) : null,
-            characterThoughts: parsed.characters ? JSON.stringify(parsed.characters) : null
+            userStats: parsed.userStats ? parsed.userStats : null,
+            infoBox: parsed.infoBox ? parsed.infoBox : null,
+            characterThoughts: parsed.characters ? parsed.characters : null
         };
     }
 
@@ -223,15 +223,12 @@ export function parseResponse(response) {
  *
  * @param {string} statsText - The raw stats text from AI response
  */
-export function parseUserStats(statsText) {
-    debugLog('[RPG Parser] ==================== PARSING USER STATS ====================');
-    debugLog('[RPG Parser] Stats text length:', statsText.length + ' chars');
-    debugLog('[RPG Parser] Stats text preview:', statsText.substring(0, 200));
+export function parseUserStats(statsData) {
+    // debugLog('[RPG Parser] ==================== PARSING USER STATS ====================');
+    // debugLog('[RPG Parser] Stats text length:', statsText.length + ' chars');
+    // debugLog('[RPG Parser] Stats text preview:', statsText.substring(0, 200));
 
     try {
-        // Check if this is v3 JSON format - try to parse it first
-        let statsData = null;
-        statsData = repairJSON(statsText);
         if (statsData) {
             debugLog('[RPG Parser] ✓ Parsed as v3 JSON format');
 

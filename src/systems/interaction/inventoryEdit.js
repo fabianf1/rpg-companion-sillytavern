@@ -88,11 +88,14 @@ function updateSwipeStoreInventory() {
     const currentData = getTrackerDataForContext('userStats');
     
     if (currentData) {
-        const trimmed = currentData.trim();
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        // Check if data is in JSON format (object or JSON string)
+        const isJSON = typeof currentData === 'object' || (typeof currentData === 'string' && (currentData.trim().startsWith('{') || currentData.trim().startsWith('[')));
+        
+        if (isJSON) {
             // Maintain JSON format
             try {
-                const jsonData = JSON.parse(currentData);
+                // Ensure we have an object to work with
+                const jsonData = typeof currentData === 'object' ? currentData : JSON.parse(currentData);
                 if (jsonData && typeof jsonData === 'object') {
                     // Update inventory in JSON
                     const stats = extensionSettings.userStats;
@@ -117,9 +120,8 @@ function updateSwipeStoreInventory() {
                         assets: convertToV3Items(stats.inventory.assets)
                     };
 
-                    const updatedJSON = JSON.stringify(jsonData, null, 2);
-                    // Persist to swipe store
-                    updateMessageSwipeData('userStats', updatedJSON);
+                    // Persist to swipe store as object
+                    updateMessageSwipeData('userStats', jsonData);
                     return;
                 }
             } catch (e) {

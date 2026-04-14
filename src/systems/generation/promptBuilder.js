@@ -351,36 +351,21 @@ export function generateTrackerExample() {
     const characterThoughtsData = getTrackerDataForContext('characterThoughts');
 
     if (extensionSettings.showUserStats && userStatsData) {
-        // Try to parse as JSON first, otherwise treat as text
-        try {
-            JSON.parse(userStatsData);
-            // It's valid JSON - apply locks
-            const lockedData = applyLocks(userStatsData, 'userStats');
-            parts.push(`  "userStats": ${lockedData}`);
-        } catch {
-            // It's text format - no locks applied
-            example += '```\n' + userStatsData + '\n```\n';
-        }
+        // Apply locks to object data
+        const lockedData = applyLocks(userStatsData, 'userStats');
+        parts.push(`  "userStats": ${JSON.stringify(lockedData, null, 2)}`);
     }
 
     if (extensionSettings.showInfoBox && infoBoxData) {
-        try {
-            JSON.parse(infoBoxData);
-            const lockedData = applyLocks(infoBoxData, 'infoBox');
-            parts.push(`  "infoBox": ${lockedData}`);
-        } catch {
-            example += '```\n' + infoBoxData + '\n```\n';
-        }
+        // Apply locks to object data
+        const lockedData = applyLocks(infoBoxData, 'infoBox');
+        parts.push(`  "infoBox": ${JSON.stringify(lockedData, null, 2)}`);
     }
 
     if (extensionSettings.showCharacterThoughts && characterThoughtsData) {
-        try {
-            JSON.parse(characterThoughtsData);
-            const lockedData = applyLocks(characterThoughtsData, 'characters');
-            parts.push(`  "characters": ${lockedData}`);
-        } catch {
-            example += '```\n' + characterThoughtsData + '\n```';
-        }
+        // Apply locks to object data
+        const lockedData = applyLocks(characterThoughtsData, 'characters');
+        parts.push(`  "characters": ${JSON.stringify(lockedData, null, 2)}`);
     }
 
     // If we have JSON parts, wrap them in unified structure
@@ -967,9 +952,7 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
         // Process userStats if present and has persistence-enabled fields
         if (trackerData.userStats) {
             const userStatsConfig = trackerConfig.userStats;
-            const userStatsData = typeof trackerData.userStats === 'string'
-                ? JSON.parse(trackerData.userStats)
-                : trackerData.userStats;
+            const userStatsData = trackerData.userStats;
 
             let statsFormatted = '';
 
@@ -1058,9 +1041,7 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
         // Process infoBox if present and has persistence-enabled widgets
         if (trackerData.infoBox) {
             const infoBoxConfig = trackerConfig.infoBox;
-            const infoBoxData = typeof trackerData.infoBox === 'string'
-                ? JSON.parse(trackerData.infoBox)
-                : trackerData.infoBox;
+            const infoBoxData = trackerData.infoBox;
 
             let infoFormatted = '';
 
@@ -1108,9 +1089,7 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
         // Process characterThoughts if present and has persistence-enabled fields
         if (trackerData.characterThoughts) {
             const charsConfig = trackerConfig.presentCharacters;
-            const charsData = typeof trackerData.characterThoughts === 'string'
-                ? JSON.parse(trackerData.characterThoughts)
-                : trackerData.characterThoughts;
+            const charsData = trackerData.characterThoughts;
 
             // Characters can be an array or wrapped in an object
             const characters = Array.isArray(charsData) ? charsData : (charsData.characters || []);
@@ -1262,60 +1241,23 @@ export function generateRPGPromptText() {
         const unifiedPrevious = {};
 
         if (extensionSettings.showUserStats && userStatsData) {
-            try {
-                // Try to parse as JSON - apply locks before adding to previous
-                const lockedData = applyLocks(userStatsData, 'userStats');
-                const parsed = JSON.parse(lockedData);
-                unifiedPrevious.userStats = parsed;
-            } catch {
-                // Old text format - show it separately for backward compat
-                promptText += `${userStatsData}\n\n`;
-            }
+            // Apply locks and add to unified object
+            const lockedData = applyLocks(userStatsData, 'userStats');
+            unifiedPrevious.userStats = lockedData;
         }
 
         if (extensionSettings.showInfoBox && infoBoxData) {
-            try {
-                // Try to parse as JSON - apply locks before adding to previous
-                const lockedData = applyLocks(infoBoxData, 'infoBox');
-                const parsed = JSON.parse(lockedData);
-                unifiedPrevious.infoBox = parsed;
-            } catch {
-                // Old text format - show it separately for backward compat
-                if (!unifiedPrevious.userStats) {
-                    promptText += `${infoBoxData}\n\n`;
-                }
-            }
+            // Apply locks and add to unified object
+            const lockedData = applyLocks(infoBoxData, 'infoBox');
+            unifiedPrevious.infoBox = lockedData;
         }
 
         // Include Present Characters data if it exists, regardless of current showCharacterThoughts setting
         // This ensures existing character data is preserved in context even if the setting is toggled off
         if (characterThoughtsData) {
-            try {
-                let parsed;
-                // Check if it's already a JavaScript object/array (not a JSON string)
-                if (typeof characterThoughtsData === 'object') {
-                    // Already parsed - apply locks and use directly
-                    parsed = applyLocks(characterThoughtsData, 'characters');
-                } else {
-                    // It's a JSON string - apply locks and parse
-                    const lockedData = applyLocks(characterThoughtsData, 'characters');
-                    parsed = JSON.parse(lockedData);
-                }
-
-                // Only include if there's actual character data (non-empty array or object with content)
-                if (parsed && ((Array.isArray(parsed) && parsed.length > 0) ||
-                               (parsed.characters && Array.isArray(parsed.characters) && parsed.characters.length > 0))) {
-                    unifiedPrevious.characters = parsed;
-                }
-            } catch (e) {
-                // Old text format - show it separately for backward compat
-                if (!unifiedPrevious.userStats && !unifiedPrevious.infoBox) {
-                    const charText = typeof characterThoughtsData === 'string'
-                        ? characterThoughtsData
-                        : JSON.stringify(characterThoughtsData, null, 2);
-                    promptText += `${charText}\n`;
-                }
-            }
+            // Apply locks and add to unified object
+            const lockedData = applyLocks(characterThoughtsData, 'characters');
+            unifiedPrevious.characters = lockedData;
         }
 
         // If we successfully built a unified structure, display it

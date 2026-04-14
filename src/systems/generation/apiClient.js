@@ -385,7 +385,7 @@ export async function updateRPGData() {
 
 /**
  * Parses character names from Present Characters thoughts data
- * @param {string} characterThoughtsData - Raw character thoughts data
+ * @param {string|object} characterThoughtsData - Raw character thoughts data (object or JSON string)
  * @returns {Array<string>} Array of character names found
  */
 function parseCharactersFromThoughts(characterThoughtsData) {
@@ -393,9 +393,7 @@ function parseCharactersFromThoughts(characterThoughtsData) {
 
     // Try parsing as JSON first (current format)
     try {
-        const parsed = typeof characterThoughtsData === 'string'
-            ? JSON.parse(characterThoughtsData)
-            : characterThoughtsData;
+        const parsed = typeof characterThoughtsData === 'object' ? characterThoughtsData : JSON.parse(characterThoughtsData);
 
         // Handle both {characters: [...]} and direct array formats
         const charactersArray = Array.isArray(parsed) ? parsed : (parsed.characters || []);

@@ -52,19 +52,12 @@ function setLockedItemsInSwipeStore(trackerType, lockedItems) {
  * Apply locks to tracker data before sending to AI.
  * Adds "locked": true to locked items in JSON format.
  *
- * @param {string} trackerData - JSON string of tracker data
+ * @param {Object} trackerData - Object of tracker data
  * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
- * @returns {string} Tracker data with locks applied
+ * @returns {Object} Tracker data with locks applied
  */
 export function applyLocks(trackerData, trackerType) {
     if (!trackerData) return trackerData;
-
-    // Try to parse as JSON
-    const parsed = repairJSON(trackerData);
-    if (!parsed) {
-        // Not JSON format, return as-is (text format doesn't support locks)
-        return trackerData;
-    }
 
     // Get locked items from swipeStore
     const lockedItems = getLockedItemsFromSwipeStore(trackerType);
@@ -72,11 +65,11 @@ export function applyLocks(trackerData, trackerType) {
     // Apply locks based on tracker type
     switch (trackerType) {
         case 'userStats':
-            return applyUserStatsLocks(parsed, lockedItems);
+            return applyUserStatsLocks(trackerData, lockedItems);
         case 'infoBox':
-            return applyInfoBoxLocks(parsed, lockedItems);
+            return applyInfoBoxLocks(trackerData, lockedItems);
         case 'characters':
-            return applyCharactersLocks(parsed, lockedItems);
+            return applyCharactersLocks(trackerData, lockedItems);
         default:
             return trackerData;
     }
@@ -86,7 +79,7 @@ export function applyLocks(trackerData, trackerType) {
  * Apply locks to User Stats tracker
  * @param {Object} data - Parsed user stats data
  * @param {Object} lockedItems - Locked items configuration
- * @returns {string} JSON string with locks applied
+ * @returns {Object} Object with locks applied
  */
 function applyUserStatsLocks(data, lockedItems) {
     // Lock individual stats within stats object
@@ -210,14 +203,14 @@ function applyUserStatsLocks(data, lockedItems) {
         }
     }
 
-    return JSON.stringify(data, null, 2);
+    return data;
 }
 
 /**
  * Apply locks to Info Box tracker
  * @param {Object} data - Parsed info box data
  * @param {Object} lockedItems - Locked items configuration
- * @returns {string} JSON string with locks applied
+ * @returns {Object} Object with locks applied
  */
 function applyInfoBoxLocks(data, lockedItems) {
     if (lockedItems.date && data.date) {
@@ -244,14 +237,14 @@ function applyInfoBoxLocks(data, lockedItems) {
         data.recentEvents = { ...data.recentEvents, locked: true };
     }
 
-    return JSON.stringify(data, null, 2);
+    return data;
 }
 
 /**
  * Apply locks to Characters tracker
  * @param {Object} data - Parsed characters data
  * @param {Object} lockedItems - Locked items configuration
- * @returns {string} JSON string with locks applied
+ * @returns {Object} Object with locks applied
  */
 function applyCharactersLocks(data, lockedItems) {
     // console.log('[RPG Lock Manager] applyCharactersLocks called');
@@ -391,8 +384,8 @@ function applyCharactersLocks(data, lockedItems) {
     });
 
     const result = Array.isArray(data)
-        ? JSON.stringify(characters, null, 2)
-        : JSON.stringify({ ...data, characters }, null, 2);
+        ? characters
+        : { ...data, characters };
 
     // console.log('[RPG Lock Manager] Output data:', result);
     return result;
@@ -402,23 +395,16 @@ function applyCharactersLocks(data, lockedItems) {
  * Remove locks from tracker data received from AI.
  * Strips "locked": true from all items to clean up the data.
  *
- * @param {string} trackerData - JSON string of tracker data
- * @returns {string} Tracker data with locks removed
+ * @param {Object} trackerData - Object of tracker data
+ * @returns {Object} Tracker data with locks removed
  */
 export function removeLocks(trackerData) {
     if (!trackerData) return trackerData;
 
-    // Try to parse as JSON
-    const parsed = repairJSON(trackerData);
-    if (!parsed) {
-        // Not JSON format, return as-is
-        return trackerData;
-    }
-
     // Recursively remove all "locked" properties
-    const cleaned = removeLockedProperties(parsed);
+    const cleaned = removeLockedProperties(trackerData);
 
-    return JSON.stringify(cleaned, null, 2);
+    return cleaned;
 }
 
 /**
@@ -509,28 +495,14 @@ export function setItemLock(trackerType, itemPath, locked) {
  * Restore locked content that was removed or modified by the AI.
  * Compares new data with previous data and restores locked items that are missing or have zero values.
  *
- * @param {string} trackerData - JSON string of tracker data from AI (with locks removed)
- * @param {string} previousData - JSON string of previous tracker data (with locks still applied)
+ * @param {Object} trackerData - Object of tracker data from AI (with locks removed)
+ * @param {Object} previousData - Object of previous tracker data (with locks still applied)
  * @param {string} trackerType - Type of tracker ('userStats', 'infoBox', 'characters')
- * @returns {string} Tracker data with locked content restored
+ * @returns {Object} Tracker data with locked content restored
  */
 export function restoreLockedContent(trackerData, previousData, trackerType) {
     if (!trackerData || !previousData) {
         console.log('[RPG Lock Manager] restoreLockedContent: Missing data, skipping restoration');
-        return trackerData;
-    }
-
-    // Try to parse both as JSON
-    const parsedNew = repairJSON(trackerData);
-    const parsedPrev = repairJSON(previousData);
-    
-    if (!parsedNew) {
-        console.warn('[RPG Lock Manager] New data not valid JSON, cannot restore locked content');
-        return trackerData;
-    }
-    
-    if (!parsedPrev) {
-        console.warn('[RPG Lock Manager] Previous data not valid JSON, cannot restore locked content');
         return trackerData;
     }
 
@@ -542,21 +514,19 @@ export function restoreLockedContent(trackerData, previousData, trackerType) {
     let result;
     switch (trackerType) {
         case 'userStats':
-            result = restoreUserStats(parsedNew, parsedPrev, lockedItems);
+            result = restoreUserStats(trackerData, previousData, lockedItems);
             break;
         case 'infoBox':
-            result = restoreInfoBox(parsedNew, parsedPrev, lockedItems);
+            result = restoreInfoBox(trackerData, previousData, lockedItems);
             break;
         case 'characters':
-            result = restoreCharacters(parsedNew, parsedPrev, lockedItems);
+            result = restoreCharacters(trackerData, previousData, lockedItems);
             break;
         default:
-            result = parsedNew;
+            result = trackerData;
     }
 
-    const resultString = JSON.stringify(result, null, 2);
-    
-    return resultString;
+    return result;
 }
 
 /**

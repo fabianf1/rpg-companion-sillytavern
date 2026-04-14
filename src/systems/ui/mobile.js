@@ -1283,7 +1283,7 @@ export function updateFabWidgets() {
     let infoData = null;
     if (infoBox) {
         try {
-            infoData = typeof infoBox === 'string' ? JSON.parse(infoBox) : infoBox;
+            infoData = typeof infoBox === 'object' ? infoBox : JSON.parse(infoBox);
         } catch (e) {
             console.warn('[RPG FAB Widgets] Failed to parse infoBox:', e);
         }
@@ -1293,7 +1293,7 @@ export function updateFabWidgets() {
     let statsData = null;
     if (userStats) {
         try {
-            statsData = typeof userStats === 'string' ? JSON.parse(userStats) : userStats;
+            statsData = typeof userStats === 'object' ? userStats : JSON.parse(userStats);
         } catch (e) {
             console.warn('[RPG FAB Widgets] Failed to parse userStats:', e);
         }
@@ -1405,7 +1405,7 @@ export function updateFabWidgets() {
     let allStats = [];
     try {
         const userStatsJson = extensionSettings.userStats;
-        const parsedUserStats = typeof userStatsJson === 'string' ? JSON.parse(userStatsJson) : userStatsJson;
+        const parsedUserStats = typeof userStatsJson === 'object' ? userStatsJson : JSON.parse(userStatsJson);
         if (parsedUserStats?.stats) {
             allStats = parsedUserStats.stats;
         }

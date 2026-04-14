@@ -350,7 +350,7 @@ function attachQuestEventHandlers() {
     // Add quest button
     $questsContainer.find('[data-action="add-quest"]').on('click', function() {
         const field = $(this).data('field');
-        $(`#rpg-add-quest-form-${field}`).show();
+        $(`#rpg-new-quest-form-${field}`).show();
         $(`#rpg-new-quest-${field}`).val('').focus();
         $(`#rpg-new-quest-date${field === 'optional' ? '-' + field : ''}`).val('');
         $(`#rpg-new-quest-location${field === 'optional' ? '-' + field : ''}`).val('');
@@ -359,7 +359,7 @@ function attachQuestEventHandlers() {
     // Cancel add quest
     $questsContainer.find('[data-action="cancel-add-quest"]').on('click', function() {
         const field = $(this).data('field');
-        $(`#rpg-add-quest-form-${field}`).hide();
+        $(`#rpg-new-quest-form-${field}`).hide();
         $(`#rpg-new-quest-${field}`).val('');
         $(`#rpg-new-quest-date${field === 'optional' ? '-' + field : ''}`).val('');
         $(`#rpg-new-quest-location${field === 'optional' ? '-' + field : ''}`).val('');
