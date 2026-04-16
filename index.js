@@ -257,6 +257,9 @@ async function initUI() {
     // Re-apply translations to the entire body to catch all new elements from the template
     i18n.applyTranslations(document.body);
 
+    // Set up min reply length input
+    $('#rpg-min-reply-length').val(extensionSettings.minReplyLength || 100);
+
     // Set up event listeners (enable/disable is handled in Extensions tab)
     $('#rpg-toggle-auto-update').on('change', function() {
         extensionSettings.autoUpdate = $(this).prop('checked');
@@ -292,6 +295,12 @@ async function initUI() {
     $('#rpg-retry-base-delay').on('change', function() {
         const value = $(this).val();
         extensionSettings.retryBaseDelay = parseInt(String(value)) || 2000;
+        saveSettings();
+    });
+
+    $('#rpg-min-reply-length').on('change', function() {
+        const value = $(this).val();
+        extensionSettings.minReplyLength = parseInt(String(value)) || 0;
         saveSettings();
     });
 
@@ -793,7 +802,7 @@ async function initUI() {
         if (!extensionSettings.enabled) {
             return;
         }
-        await updateRPGData();
+        await updateRPGData(false); // Manual update
     });
 
     // Strip widget refresh button - same functionality as main refresh button
@@ -801,7 +810,7 @@ async function initUI() {
         if (!extensionSettings.enabled) {
             return;
         }
-        await updateRPGData();
+        await updateRPGData(false); // Manual update
     });
 
     // Strip cancel button

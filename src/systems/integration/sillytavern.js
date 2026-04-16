@@ -252,7 +252,7 @@ export async function onMessageReceived(data) {
         // Only trigger if this is a newly generated message, not loading chat history
         if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
             setTimeout(async () => {
-                await updateRPGData();
+                await updateRPGData(true); // Auto-update
             }, 500);
         }
     }

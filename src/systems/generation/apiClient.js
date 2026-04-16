@@ -147,7 +147,7 @@ export function getCurrentProfile() {
  * Makes a dedicated API call to generate tracker data, then stores it
  * in the last assistant message's swipe data.
  */
-export async function updateRPGData() {
+export async function updateRPGData(isAutoUpdate = false) {
     if (isGenerating) {
         // console.log('[RPG Companion] Already generating, skipping...');
         return;
@@ -160,6 +160,26 @@ export async function updateRPGData() {
     if (extensionSettings.generationMode !== 'separate') {
         // console.log('[RPG Companion] Not in separate mode, skipping manual update');
         return;
+    }
+
+    // Check minimum reply length for auto-update only
+    if (isAutoUpdate && extensionSettings.minReplyLength > 0) {
+        const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
+        if (lastMessage && !lastMessage.is_user) {
+            const messageText = lastMessage.mes || '';
+            const messageLength = messageText.length;
+
+            if (messageLength < extensionSettings.minReplyLength) {
+                console.log(`[RPG Companion] Auto-update skipped: latest message length (${messageLength}) is below minimum (${extensionSettings.minReplyLength})`);
+                // Show toast notification if enabled
+                if (extensionSettings.minReplyLength > 0) {
+                    const notificationText = `Auto-update skipped: latest message too short (${messageLength}/${extensionSettings.minReplyLength} chars)`;
+                    console.log(`[RPG Companion] ${notificationText}`);
+                    toastr.info(notificationText, '', { timeOut: 3000 });
+                }
+                return;
+            }
+        }
     }
 
     try {

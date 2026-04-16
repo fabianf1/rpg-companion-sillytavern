@@ -55,6 +55,7 @@ export let extensionSettings = {
     enableNaturalPlot: true, // Show natural plot progression button above chat input
     retryAttempts: 0, // Number of retry attempts for API failures (0 = no retries)
     retryBaseDelay: 2000, // Base delay in ms for exponential backoff
+    minReplyLength: 100, // Minimum reply length (characters) for auto-update (0 = disabled)
     // History persistence settings - inject selected tracker data into historical messages
     historyPersistence: {
         enabled: false, // Master toggle for history persistence feature
