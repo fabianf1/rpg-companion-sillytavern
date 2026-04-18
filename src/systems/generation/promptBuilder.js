@@ -396,9 +396,6 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
 
     // Only add tracker instructions if at least one tracker is enabled
     if (hasAnyTrackers) {
-        const codeBlockMarker = '';
-        const endCodeBlockMarker = '';
-
         // Universal instruction header
         instructions += '\nAt the start of every reply, you must attach an update to the trackers in EXACTLY the JSON format shown below as a single unified JSON object containing all enabled tracker fields. ';
 
@@ -497,10 +494,8 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
 
     // Append HTML prompt if enabled AND includeHtmlPrompt is true
     if (extensionSettings.enableHtmlPrompt && includeHtmlPrompt) {
-        // Add newlines only if we had tracker instructions
+        // Add separator if we had tracker instructions
         if (hasAnyTrackers) {
-            instructions += ``;
-        } else {
             instructions += `\n`;
         }
 
@@ -707,27 +702,45 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
                 if (inv.onPerson && Array.isArray(inv.onPerson) && inv.onPerson.length > 0) {
                     const items = inv.onPerson.map(i => getValue(i)).filter(i => i);
                     if (items.length > 0) formatted += `On Person: ${items.join(', ')}\n`;
+                } else {
+                    formatted += `On Person: None\n`;
                 }
 
                 if (inv.clothing && Array.isArray(inv.clothing) && inv.clothing.length > 0) {
                     const items = inv.clothing.map(i => getValue(i)).filter(i => i);
                     if (items.length > 0) formatted += `Clothing: ${items.join(', ')}\n`;
+                } else {
+                    formatted += `Clothing: Nothing worn\n`;
                 }
 
                 if (inv.stored && typeof inv.stored === 'object' && !Array.isArray(inv.stored)) {
-                    for (const [location, items] of Object.entries(inv.stored)) {
-                        if (Array.isArray(items) && items.length > 0) {
-                            const itemsList = items.map(i => getValue(i)).filter(i => i);
-                            if (itemsList.length > 0) {
-                                formatted += `${getValue(location)}: ${itemsList.join(', ')}\n`;
+                    const locations = Object.keys(inv.stored);
+                    if (locations.length === 0) {
+                        formatted += `Stored: No storage locations\n`;
+                    } else {
+                        let hasStoredItems = false;
+                        for (const [location, items] of Object.entries(inv.stored)) {
+                            if (Array.isArray(items) && items.length > 0) {
+                                const itemsList = items.map(i => getValue(i)).filter(i => i);
+                                if (itemsList.length > 0) {
+                                    formatted += `${getValue(location)}: ${itemsList.join(', ')}\n`;
+                                    hasStoredItems = true;
+                                }
                             }
                         }
+                        if (!hasStoredItems) {
+                            formatted += `Stored: No stored items\n`;
+                        }
                     }
+                } else {
+                    formatted += `Stored: No storage locations\n`;
                 }
 
                 if (inv.assets && Array.isArray(inv.assets) && inv.assets.length > 0) {
                     const items = inv.assets.map(i => getValue(i)).filter(i => i);
                     if (items.length > 0) formatted += `Assets: ${items.join(', ')}\n`;
+                } else {
+                    formatted += `Assets: None\n`;
                 }
             }
 
@@ -998,10 +1011,14 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
                 if (inv.onPerson && Array.isArray(inv.onPerson) && inv.onPerson.length > 0) {
                     const items = inv.onPerson.map(i => getValue(i)).filter(i => i);
                     if (items.length > 0) statsFormatted += `On Person: ${items.join(', ')}, `;
+                } else {
+                    statsFormatted += `On Person: No items, `;
                 }
                 if (inv.clothing && Array.isArray(inv.clothing) && inv.clothing.length > 0) {
                     const items = inv.clothing.map(i => getValue(i)).filter(i => i);
                     if (items.length > 0) statsFormatted += `Clothing: ${items.join(', ')}, `;
+                } else {
+                    statsFormatted += `Clothing: Nothing worn, `;
                 }
             }
 
@@ -1448,8 +1465,8 @@ Your final description must be objective and concrete, and the use of metaphors 
 Output only the final, modified prompt; do not output anything else.`;
 
 /**
- * Generates the prompt for LLM-based avatar prompt generation
- * Uses the same context as RPG generation (character cards, tracker data, chat history)
+ * Generates the prompt for LLM-based avatar prompt generation.
+ * Uses the same context as RPG generation (character cards, tracker data, chat history).
  *
  * @param {string} characterName - Name of the character to generate a prompt for
  * @returns {Promise<Array<{role: string, content: string}>>} Message array for generateRaw API
@@ -1537,15 +1554,4 @@ export async function generateAvatarPromptGenerationPrompt(characterName) {
 
     messages.push({ role: 'user', content: instructionMessage });
     return messages;
-}
-
-/**
- * Parses LLM response to extract character prompts
- * @deprecated No longer used as we generate one prompt at a time
- * @param {string} response - Raw LLM response
- * @returns {Object} Map of character name to prompt
- */
-export function parseAvatarPromptsResponse(response) {
-    // Return as is for single prompt compatibility if needed, or just object with one key
-    return response.trim();
 }
