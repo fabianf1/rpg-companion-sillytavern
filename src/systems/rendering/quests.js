@@ -80,21 +80,38 @@ function renderQuestItem(field, quest, index) {
     }
 
     // Build lock path
-    const lockPath = field === 'main' ? 'quests.main' : `quests.optional[${index}]`;
+    const lockPath = field === 'main' ? 'quests.main' : `quests.optional[${index}]` ;
+    const isLocked = isItemLocked('userStats', lockPath);
 
-    return `
-        <div class="rpg-quest-item ${isCompleted ? 'completed' : ''}" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ''}>
-            ${getLockIconHtml('userStats', lockPath)}
-            <div class="rpg-quest-title">${escapeHtml(questTitle)}</div>
-            ${metaRow}
-            <div class="rpg-quest-actions-hover">
+    // Lock icon - always visible when locked, inside hover area when unlocked
+    const lockIconHtml = isLocked 
+        ? `<span class="rpg-section-lock-icon locked" data-tracker="userStats" data-path="${lockPath}" title="Locked">🔒</span>`
+        : `<span class="rpg-section-lock-icon" data-tracker="userStats" data-path="${lockPath}" title="Click to lock">🔓</span>`;
+
+    // Completed checkbox and lock icon (only when unlocked) in hover area
+    const hoverActions = `
+        <div class="rpg-quest-actions-hover">
+            ${isLocked ? '' : `
                 <button class="rpg-quest-edit" data-action="edit-quest" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ''} title="Edit quest">
                     <i class="fa-solid fa-edit"></i>
                 </button>
                 <button class="rpg-quest-remove" data-action="remove-quest" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ''} title="Remove quest">
                     <i class="fa-solid fa-trash"></i>
                 </button>
-            </div>
+            `}
+            <label class="rpg-quest-completed-label">
+                <input type="checkbox" class="rpg-quest-completed-checkbox" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ''} ${isCompleted ? 'checked' : ''} />
+                <span class="rpg-quest-completed-text">Completed</span>
+            </label>
+        </div>
+    `;
+
+    return `
+        <div class="rpg-quest-item ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ''}>
+            ${lockIconHtml}
+            <div class="rpg-quest-title">${escapeHtml(questTitle)}</div>
+            ${metaRow}
+            ${hoverActions}
         </div>
     `;
 }
@@ -148,6 +165,11 @@ function renderQuestForm(field, action, quest) {
                 </label>
             </div>
             <div class="rpg-inline-buttons">
+                ${field === 'main' && isEdit ? `
+                    <button class="rpg-inline-btn rpg-inline-clear" data-action="clear-quest" data-field="${field}">
+                        <i class="fa-solid fa-ban"></i> Clear
+                    </button>
+                ` : ''}
                 <button class="rpg-inline-btn rpg-inline-cancel" data-action="${cancelName}" data-field="${field}">
                     <i class="fa-solid ${cancelIcon}"></i> Cancel
                 </button>
@@ -167,7 +189,7 @@ function renderQuestForm(field, action, quest) {
  */
 export function renderMainQuestView(mainQuest) {
     const { questTitle, questDate, questLocation, isCompleted } = extractQuestData(mainQuest);
-    const hasQuest = questTitle.length > 0;
+    const hasQuest = questTitle && questTitle !== 'None';
 
     return `
         <div class="rpg-quest-section">
@@ -262,8 +284,8 @@ export function renderQuests() {
 
     // Get quests data - extract value if it's a locked object
     let mainQuest = extensionSettings.quests.main;
-    // Recursively extract value if it's nested objects
-    while (typeof mainQuest === 'object' && mainQuest.value !== undefined) {
+    // Recursively extract value if it's nested objects (skip if null)
+    while (mainQuest && typeof mainQuest === 'object' && mainQuest.value !== undefined) {
         mainQuest = mainQuest.value;
     }
     const optionalQuests = extensionSettings.quests.optional || [];
@@ -317,7 +339,10 @@ function getQuestFormData(field, prefix) {
 function saveQuestData(field, questData, index) {
     const { questTitle, questDate, questLocation, questCompleted } = questData;
     
-    if (questTitle) {
+    if (field === 'main' && questTitle === 'None') {
+        // Clear main quest - set to null
+        extensionSettings.quests.main = null;
+    } else if (questTitle) {
         const questObj = { title: questTitle };
         if (questDate) questObj.date = questDate;
         if (questLocation) questObj.location = questLocation;
@@ -335,12 +360,12 @@ function saveQuestData(field, questData, index) {
                 extensionSettings.quests.optional.push(questObj);
             }
         }
-        // Sync quest changes to swipeStore so AI sees the update
-        updateMessageSwipeData();
-        saveSettings();
-        saveChatData();
-        renderQuests();
     }
+    // Sync quest changes to swipeStore so AI sees the update
+    updateMessageSwipeData();
+    saveSettings();
+    saveChatData();
+    renderQuests();
 }
 
 /**
@@ -438,6 +463,18 @@ function attachQuestEventHandlers() {
         saveQuestData(field, data, index);
     });
 
+    // Clear main quest
+    $questsContainer.find('[data-action="clear-quest"]').on('click', function() {
+        const field = $(this).data('field');
+        if (field === 'main') {
+            extensionSettings.quests.main = { title: 'None', date: '', location: '', completed: false };
+            updateMessageSwipeData();
+            saveSettings();
+            saveChatData();
+            renderQuests();
+        }
+    });
+
     // Remove quest
     $questsContainer.find('[data-action="remove-quest"]').on('click', function() {
         const field = $(this).data('field');
@@ -493,5 +530,34 @@ function attachQuestEventHandlers() {
 
         // Save settings
         saveSettings();
+    });
+
+    // Add event listener for completed checkbox clicks
+    $questsContainer.find('.rpg-quest-completed-checkbox').on('change', function() {
+        const field = $(this).data('field');
+        const index = $(this).data('index');
+        const isChecked = $(this).is(':checked');
+
+        if (field === 'main') {
+            if (extensionSettings.quests.main) {
+                extensionSettings.quests.main.completed = isChecked;
+            }
+        } else {
+            if (extensionSettings.quests.optional && extensionSettings.quests.optional[index]) {
+                extensionSettings.quests.optional[index].completed = isChecked;
+            }
+        }
+        // Sync quest changes to swipeStore so AI sees the update
+        updateMessageSwipeData();
+        saveSettings();
+        saveChatData();
+        renderQuests();
+    });
+
+    // Add hover effects for quest actions
+    $questsContainer.on('mouseenter', '.rpg-quest-item', function() {
+        $(this).find('.rpg-quest-actions-hover').show();
+    }).on('mouseleave', '.rpg-quest-item', function() {
+        $(this).find('.rpg-quest-actions-hover').hide();
     });
 }

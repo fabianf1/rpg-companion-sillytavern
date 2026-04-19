@@ -933,6 +933,22 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
     pointer-events: auto;
 }
 
+/* Lock icon always visible when locked */
+.rpg-section-lock-icon.locked {
+    display: inline-block !important;
+    opacity: 0.7 !important;
+}
+
+/* Lock icon hidden when unlocked (only show on hover) */
+.rpg-section-lock-icon:not(.locked) {
+    display: none;
+}
+
+.rpg-quest-item:hover .rpg-section-lock-icon:not(.locked),
+.rpg-quest-item.locked .rpg-section-lock-icon {
+    display: inline-block !important;
+}
+
 .rpg-section-lock-icon:hover {
     opacity: 1;
     transform: scale(1.15);
@@ -7737,6 +7753,35 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
 .rpg-add-quest-btn:hover {
     background: rgba(var(--rpg-highlight-rgb, 233, 69, 96), 0.1);
     border-color: var(--rpg-highlight);
+}
+
+/* Quest Completed Checkbox in Hover Area */
+.rpg-quest-completed-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 0.25rem;
+    background: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.rpg-quest-completed-label:hover {
+    background: var(--ac-style-color-matchedText);
+    border-color: var(--ac-style-color-matchedText);
+    color: white;
+}
+
+.rpg-quest-completed-checkbox {
+    cursor: pointer;
+}
+
+.rpg-quest-completed-text {
+    font-size: 0.8rem;
 }
 
 /* Quest Empty State */
