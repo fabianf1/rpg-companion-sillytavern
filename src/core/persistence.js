@@ -7,8 +7,7 @@ import { saveSettingsDebounced, chat_metadata, saveChatDebounced } from '../../.
 import { getContext } from '../../../../../extensions.js';
 import {
     extensionSettings,
-    updateExtensionSettings,
-    clearSessionAvatarPrompts
+    updateExtensionSettings
 } from './state.js';
 import { validateStoredInventory } from '../utils/security.js';
 import { updateDiceDisplay } from '../systems/features/dice.js';
@@ -81,7 +80,6 @@ export function loadSettings() {
 
             // Perform settings migrations based on version
             const currentVersion = extensionSettings.settingsVersion || 1;
-            let settingsChanged = false;
 
             // Migration to version 5: Add opacity properties for all colors
             if (currentVersion < 5) {
@@ -96,14 +94,10 @@ export function loadSettings() {
                     localStorage.removeItem('rpg_companion_external_api_key'); // Clear the API key
                 }
 
-                //extensionSettings.settingsVersion = 6; // During development keep disabled
-                settingsChanged = true;
+                extensionSettings.settingsVersion = 6;
             }
 
-            // Save migrated settings
-            if (settingsChanged) {
-                saveSettings();
-            }
+            saveSettings();
 
             // console.log('[RPG Companion] Settings loaded:', extensionSettings);
         } else {
@@ -1158,9 +1152,6 @@ export function clearCache(options) {
             }
         }
     }
-
-    // Clear session avatar prompts
-    clearSessionAvatarPrompts();
 
     // Save changes
     saveChatData();

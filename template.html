@@ -192,15 +192,7 @@
                         <span class="rpg-toggle-text" data-i18n-key="template.mainPanel.narratorMode">Narrator Mode</span>
                     </label>
                 </div>
-                <!-- Auto-generate Avatars Toggle -->
-                <div class="rpg-toggle-container rpg-feature-col" id="rpg-auto-avatars-toggle-wrapper">
-                    <label class="rpg-toggle-label" title="Auto-generate Avatars">
-                        <input type="checkbox" id="rpg-toggle-auto-avatars-panel">
-                        <i class="fa-solid fa-user-plus"></i>
-                        <span class="rpg-toggle-text" data-i18n-key="template.mainPanel.autoAvatars">Auto Avatars</span>
-                    </label>
-                </div>            </div>
-
+            </div>
             <!-- Manual Update Button - Single button that shows cancel on hover during update -->
             <button id="rpg-manual-update" class="rpg-btn-primary rpg-manual-update-btn">
                 <span class="rpg-btn-refresh-content">
@@ -497,15 +489,6 @@
                 <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
                     data-i18n-key="template.settingsModal.display.showNarratorModeNote">
                     Display a toggle button to enable/disable narrator mode (infer characters from context).
-                </small>
-
-                <label class="checkbox_label">
-                    <input type="checkbox" id="rpg-toggle-show-auto-avatars" />
-                    <span data-i18n-key="template.settingsModal.display.showAutoAvatars">Show Auto-generate Avatars</span>
-                </label>
-                <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
-                    data-i18n-key="template.settingsModal.display.showAutoAvatarsNote">
-                    Display a toggle button to automatically generate avatars for characters without images.
                 </small>
 
                 <label class="checkbox_label">
@@ -1183,20 +1166,6 @@
                 </small>
                 <textarea id="rpg-prompt-plot-natural" class="rpg-prompt-textarea" rows="4"></textarea>
                 <button class="menu_button rpg-restore-prompt-btn" data-prompt="plotNatural" style="margin-top: 8px;">
-                    <i class="fa-solid fa-rotate-left"></i>&nbsp;Restore Default
-                </button>
-            </div>
-
-            <!-- Avatar Generation Instruction -->
-            <div class="rpg-prompt-editor-section">
-                <label for="rpg-prompt-avatar" style="display: block; margin-bottom: 8px; font-weight: 600;">
-                    <i class="fa-solid fa-user-circle"></i> Avatar Generation Instruction
-                </label>
-                <small style="display: block; margin-bottom: 8px; color: #888; font-size: 11px;">
-                    Instructions for LLM when generating avatar image prompts. Used by Auto-generate Missing Avatars feature.
-                </small>
-                <textarea id="rpg-prompt-avatar" class="rpg-prompt-textarea" rows="3"></textarea>
-                <button class="menu_button rpg-restore-prompt-btn" data-prompt="avatar" style="margin-top: 8px;">
                     <i class="fa-solid fa-rotate-left"></i>&nbsp;Restore Default
                 </button>
             </div>

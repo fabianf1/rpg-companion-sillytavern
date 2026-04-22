@@ -3,12 +3,17 @@
  * Centralizes all extension state variables
  */
 
+/**
+ * Default avatar image (SVG with question mark) as base64 data URI
+ * Used as fallback when no avatar is available
+ */
+export const FALLBACK_AVATAR_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2NjY2NjYyIgb3BhY2l0eT0iMC4zIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjMzY2IiBmb250LXNpemU9IjQwIj4/PC90ZXh0Pjwvc3ZnPg==';
 
 /**
  * Extension settings - persisted to SillyTavern settings
  */
 export let extensionSettings = {
-    settingsVersion: 4, // Version number for settings migrations (v4 = FAB widgets enabled by default)
+    settingsVersion: 6, // Version number for settings migrations (v4 = FAB widgets enabled by default)
     enabled: true,
     autoUpdate: false,
     updateDepth: 4, // How many messages to include in the context
@@ -49,7 +54,6 @@ export let extensionSettings = {
 
     showDynamicWeatherToggle: true, // Show Dynamic Weather Effects toggle in main panel
     showNarratorMode: true, // Show Narrator Mode toggle in main panel
-    showAutoAvatars: true, // Show Auto-generate Avatars toggle in main panel
     skipInjectionsForGuided: 'none', // skip injections for instruct injections and quiet prompts (GuidedGenerations compatibility)
     enableRandomizedPlot: true, // Show randomized plot progression button above chat input
     enableNaturalPlot: true, // Show natural plot progression button above chat input
@@ -134,7 +138,6 @@ export let extensionSettings = {
         hygiene: 'Hygiene',
         arousal: 'Arousal'
     },
-    // Tracker customization configuration
     trackerConfig: {
         userStats: {
             // Stats display mode: 'percentage' or 'number'
@@ -274,9 +277,6 @@ export let extensionSettings = {
         historyDepth: 8, // Number of recent messages to include in combat initialization
         autoSaveLogs: false // Save detailed combat logs to file
     },
-    // Auto avatar generation settings
-    autoGenerateAvatars: true, // Master toggle for auto-generating avatars
-    avatarLLMCustomInstruction: '', // Custom instruction for LLM prompt generation
     // Lock state for tracker items (v3 JSON format feature)
     lockedItems: {
         userStats: {},   // Object mapping stat IDs to boolean locked state (e.g., {"health": true, "satiety": false})
@@ -296,25 +296,6 @@ export let extensionSettings = {
         defaultPresetId: null
     }
 };
-
-/**
- * Session-only storage for LLM-generated avatar prompts
- * Maps character names to their generated prompts
- * Resets on new chat (not persisted to extensionSettings)
- */
-export let sessionAvatarPrompts = {};
-
-export function setSessionAvatarPrompt(characterName, prompt) {
-    sessionAvatarPrompts[characterName] = prompt;
-}
-
-export function getSessionAvatarPrompt(characterName) {
-    return sessionAvatarPrompts[characterName] || null;
-}
-
-export function clearSessionAvatarPrompts() {
-    sessionAvatarPrompts = {};
-}
 
 /**
  * Tracks whether the last action was a swipe
@@ -399,12 +380,6 @@ export function addDebugLog(message, data = null) {
 export const FEATURE_FLAGS = {
     useNewInventory: true // Enable v2 inventory system with categorized storage
 };
-
-/**
- * Fallback avatar image (base64-encoded SVG with "?" icon)
- * Using base64 to avoid quote-encoding issues in HTML attributes
- */
-export const FALLBACK_AVATAR_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2NjY2NjYyIgb3BhY2l0eT0iMC4zIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjNjY2IiBmb250LXNpemU9IjQwIj4/PC90ZXh0Pjwvc3ZnPg==';
 
 /**
  * UI Element References (jQuery objects)

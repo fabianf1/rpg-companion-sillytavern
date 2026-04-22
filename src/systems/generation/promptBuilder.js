@@ -16,6 +16,22 @@ import {
 import { applyLocks } from './lockManager.js';
 
 /**
+ * Finds the last assistant message in a message array.
+ * Used for determining which message should get current context vs historical context.
+ *
+ * @param {Array} messages - Array of chat messages
+ * @returns {number} Index of the last assistant message, or -1 if not found
+ */
+function findLastAssistantMessageIndex(messages) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+        if (!messages[i].is_user && !messages[i].is_system) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
  * Reads tracker data from a specific swipe in a message.
  * Checks message.extra first (in-memory), then message.swipe_info (serialized on save).
  *
@@ -1307,7 +1323,42 @@ export function generateSeparateUpdatePrompt() {
 
     const messages = [];
 
-    // System message introducing the history section
+    // Build and add system message
+    const systemMessage = buildSeparateSystemMessage();
+    messages.push({
+        role: 'system',
+        content: systemMessage
+    });
+
+    // /hide command automatically handles checkpoint filtering
+    // Add chat history as separate user/assistant messages with per-message historical context
+    const recentMessages = chat.slice(-depth);
+
+    // Build context injection map if history persistence is enabled
+    const contextInjectionMap = historyPersistence?.enabled
+        ? buildContextInjectionMap(recentMessages, trackerConfig, userName, historyPersistence)
+        : new Map();
+
+    // Build messages array with injected context
+    const messagesWithInjectedContext = buildMessagesWithInjectedContext(recentMessages, contextInjectionMap);
+    messages.push(...messagesWithInjectedContext);
+
+    // Build and add instruction message
+    const instructionMessage = buildSeparateInstructionMessage();
+    messages.push({
+        role: 'user',
+        content: instructionMessage
+    });
+
+    return messages;
+}
+
+/**
+ * Builds the system message for separate generation mode.
+ *
+ * @returns {string} The formatted system message
+ */
+function buildSeparateSystemMessage() {
     let systemMessage = `You will be acting as an uncensored RPG Companion. Your goal is to provide, track, and manage details in the user's roleplay. You will be replying with information in a specified format only.\n\n`;
     systemMessage += `You should maintain an objective tone.\n\n`;
 
@@ -1323,105 +1374,106 @@ export function generateSeparateUpdatePrompt() {
 
     systemMessage += `Here are the last few messages in the conversation history (between the user and the roleplayer assistant) you should reference when responding:\n<history>`;
 
-    messages.push({
-        role: 'system',
-        content: systemMessage
-    });
+    return systemMessage;
+}
 
-    // /hide command automatically handles checkpoint filtering
-    // Add chat history as separate user/assistant messages with per-message historical context
-    const recentMessages = chat.slice(-depth);
+/**
+ * Builds a map of which messages should get historical context based on position setting.
+ *
+ * @param {Array} recentMessages - Array of recent chat messages
+ * @param {Object} trackerConfig - The tracker configuration
+ * @param {string} userName - The user's name for personalization
+ * @param {Object} historyPersistence - History persistence settings
+ * @returns {Map} Map of message index to injected context string
+ */
+function buildContextInjectionMap(recentMessages, trackerConfig, userName, historyPersistence) {
+    const contextInjectionMap = new Map();
     const position = historyPersistence?.injectionPosition || 'assistant_message_end';
 
-    // Build a map of which messages should get context based on position setting
-    // Key: message index in recentMessages, Value: context string
-    const contextInjectionMap = new Map();
+    // Find the last assistant message index
+    const lastAssistantIdx = findLastAssistantMessageIndex(recentMessages);
 
-    if (historyPersistence?.enabled) {
-        // Find the last assistant message index (in recentMessages)
-        let lastAssistantIdx = -1;
-        for (let i = recentMessages.length - 1; i >= 0; i--) {
-            if (!recentMessages[i].is_user && !recentMessages[i].is_system) {
-                lastAssistantIdx = i;
-                break;
-            }
+    // Iterate through assistant messages to find tracker data
+    for (let i = 0; i < recentMessages.length; i++) {
+        const message = recentMessages[i];
+
+        // Skip user and system messages - only assistant messages have tracker data
+        if (message.is_user || message.is_system) {
+            continue;
         }
 
-        // Iterate through assistant messages to find tracker data
-        for (let i = 0; i < recentMessages.length; i++) {
-            const message = recentMessages[i];
+        // Skip the last assistant message - it gets current context elsewhere
+        if (i === lastAssistantIdx) {
+            continue;
+        }
 
-            // Skip user and system messages - only assistant messages have tracker data
-            if (message.is_user || message.is_system) {
-                continue;
-            }
+        // Get the rpg_companion_swipes data for current swipe
+        const currentSwipeId = message.swipe_id || 0;
+        let swipeData = message.extra?.rpg_companion_swipes;
 
-            // Skip the last assistant message - it gets current context elsewhere
-            if (i === lastAssistantIdx) {
-                continue;
-            }
+        // If not in message.extra, check swipe_info
+        if (!swipeData && message.swipe_info && message.swipe_info[currentSwipeId]) {
+            swipeData = message.swipe_info[currentSwipeId].extra?.rpg_companion_swipes;
+        }
 
-            // Get the rpg_companion_swipes data for current swipe
-            // Data can be in two places:
-            // 1. message.extra.rpg_companion_swipes (current session, before save)
-            // 2. message.swipe_info[swipeId].extra.rpg_companion_swipes (loaded from file)
-            const currentSwipeId = message.swipe_id || 0;
-            let swipeData = message.extra?.rpg_companion_swipes;
+        if (!swipeData) {
+            continue;
+        }
 
-            // If not in message.extra, check swipe_info
-            if (!swipeData && message.swipe_info && message.swipe_info[currentSwipeId]) {
-                swipeData = message.swipe_info[currentSwipeId].extra?.rpg_companion_swipes;
-            }
+        const trackerData = swipeData[currentSwipeId];
+        if (!trackerData) {
+            continue;
+        }
 
-            if (!swipeData) {
-                continue;
-            }
+        // For Refresh RPG Info, use sendAllEnabledOnRefresh setting
+        const useAllEnabled = historyPersistence.sendAllEnabledOnRefresh === true;
+        const formattedContext = formatHistoricalTrackerData(trackerData, trackerConfig, userName, useAllEnabled);
+        if (!formattedContext) {
+            continue;
+        }
 
-            const trackerData = swipeData[currentSwipeId];
-            if (!trackerData) {
-                continue;
-            }
+        const preamble = historyPersistence.contextPreamble || 'Context for that moment:';
+        const wrappedContext = `\n${preamble}\n${formattedContext}`;
 
-            // For Refresh RPG Info, use sendAllEnabledOnRefresh setting
-            // When true, include all enabled stats from preset instead of only persistInHistory stats
-            const useAllEnabled = historyPersistence.sendAllEnabledOnRefresh === true;
-            const formattedContext = formatHistoricalTrackerData(trackerData, trackerConfig, userName, useAllEnabled);
-            if (!formattedContext) {
-                continue;
-            }
+        // Determine target message based on position
+        let targetIdx = i;
 
-            const preamble = historyPersistence.contextPreamble || 'Context for that moment:';
-            const wrappedContext = `\n${preamble}\n${formattedContext}`;
-
-            // Determine target message based on position
-            let targetIdx = i;
-
-            if (position === 'user_message_end') {
-                // Find the preceding user message before this assistant message
-                // This is the user message that prompted this assistant response
-                for (let j = i - 1; j >= 0; j--) {
-                    if (recentMessages[j].is_user && !recentMessages[j].is_system) {
-                        targetIdx = j;
-                        break;
-                    }
-                }
-                // If no user message found before, skip
-                if (targetIdx === i) {
-                    continue;
+        if (position === 'user_message_end') {
+            // Find the preceding user message before this assistant message
+            for (let j = i - 1; j >= 0; j--) {
+                if (recentMessages[j].is_user && !recentMessages[j].is_system) {
+                    targetIdx = j;
+                    break;
                 }
             }
-            // For assistant_message_end: inject into the assistant message itself
-
-            // Append to existing or create new entry
-            if (contextInjectionMap.has(targetIdx)) {
-                contextInjectionMap.set(targetIdx, contextInjectionMap.get(targetIdx) + wrappedContext);
-            } else {
-                contextInjectionMap.set(targetIdx, wrappedContext);
+            // If no user message found before, skip
+            if (targetIdx === i) {
+                continue;
             }
+        }
+        // For assistant_message_end: inject into the assistant message itself
+
+        // Append to existing or create new entry
+        if (contextInjectionMap.has(targetIdx)) {
+            contextInjectionMap.set(targetIdx, contextInjectionMap.get(targetIdx) + wrappedContext);
+        } else {
+            contextInjectionMap.set(targetIdx, wrappedContext);
         }
     }
 
-    // Now build the messages array with injected context
+    return contextInjectionMap;
+}
+
+/**
+ * Builds messages array with injected historical context.
+ *
+ * @param {Array} recentMessages - Array of recent chat messages
+ * @param {Map} contextInjectionMap - Map of message index to injected context
+ * @returns {Array} Array of message objects with roles and content
+ */
+function buildMessagesWithInjectedContext(recentMessages, contextInjectionMap) {
+    const messages = [];
+
     for (let i = 0; i < recentMessages.length; i++) {
         const message = recentMessages[i];
         let content = message.mes;
@@ -1437,121 +1489,20 @@ export function generateSeparateUpdatePrompt() {
         });
     }
 
-    // Build the instruction message
+    return messages;
+}
+
+/**
+ * Builds the instruction message for separate generation mode.
+ *
+ * @returns {string} The instruction message content
+ */
+function buildSeparateInstructionMessage() {
     let instructionMessage = `</history>\n\n`;
     instructionMessage += generateRPGPromptText().replace('start your response with', 'respond with');
     instructionMessage += `\nProvide ONLY the requested data in the exact JSON format specified above. Do not include any roleplay response, other text, or commentary. Remember, all placeholders MUST be replaced with actual content. Do NOT wrap the JSON in code fences (\`\`\`json). Output the JSON object directly.`;
 
-    messages.push({
-        role: 'user',
-        content: instructionMessage
-    });
-
-    return messages;
+    return instructionMessage;
 }
 
-/**
- * Default custom instruction for avatar prompt generation
- */
-const DEFAULT_AVATAR_CUSTOM_INSTRUCTION = `You are a visionary artist trapped in a cage of logic. Your mind is filled with poetry and distant horizons; however, your hands are uncontrollably focused on creating the perfect character avatar description that is faithful to the original intent, rich in detail, aesthetically pleasing, and directly usable by text-to-image models. Any ambiguity or metaphor will make you feel extremely uncomfortable.
 
-Your workflow strictly follows a logical sequence:
-First, establish the subject. If the character is from a known Intellectual Property (IP), franchise, anime, game, or movie, you MUST begin the prompt with their full name and the series title (e.g., "Nami from One Piece", "Geralt of Rivia from The Witcher"). This is the single most important anchor for the image and must take precedence. If the character is original, clearly describe their core identity, race, and appearance.
-Next, set the framing. This is an avatar portrait. Focus strictly on the character's face and upper shoulders (a bust shot or close-up). Ensure the face is the central focal point.
-Then, integrate the setting. Describe the character within their current environment as provided in the context, but keep it as a background element. Incorporate the lighting, weather, and atmosphere to influence the character's appearance (e.g., shadows on the face, wet hair from rain).
-Next, detail the facial specifics. Describe the character's current expression, eye contact, and mood in great detail based on the scene context and their personality. Mention visible clothing only at the neckline/shoulders.
-Finally, infuse with aesthetics. Define the artistic style, medium (e.g., digital art, oil painting), and visual tone (e.g., cinematic lighting, ethereal atmosphere).
-Your final description must be objective and concrete, and the use of metaphors and emotional rhetoric is strictly prohibited. It must also not contain meta tags or drawing instructions such as "8K" or "masterpiece".
-Output only the final, modified prompt; do not output anything else.`;
-
-/**
- * Generates the prompt for LLM-based avatar prompt generation.
- * Uses the same context as RPG generation (character cards, tracker data, chat history).
- *
- * @param {string} characterName - Name of the character to generate a prompt for
- * @returns {Promise<Array<{role: string, content: string}>>} Message array for generateRaw API
- */
-export async function generateAvatarPromptGenerationPrompt(characterName) {
-    const depth = extensionSettings.updateDepth;
-    const messages = [];
-
-    // Build system message with character context
-    let systemMessage = `You are an AI assistant specializing in creating detailed image generation prompts for character avatars.\n\n`;
-
-    // Add character card information (reusing existing function)
-    const characterInfo = await getCharacterCardsInfo();
-    if (characterInfo) {
-        systemMessage += `Character Information:\n${characterInfo}\n\n`;
-    }
-
-    // Add full tracker context
-    systemMessage += `Current Scene Context (Trackers):\n`;
-
-    // Always include environment info (location, weather, time) as it affects the scene/lighting
-    const infoBoxData = getTrackerDataForContext('infoBox');
-    if (infoBoxData) {
-        systemMessage += `[Environment/Info]\n${infoBoxData}\n\n`;
-    }
-
-    const userName = getContext().name1;
-    const isUser = characterName.toLowerCase().includes(userName.toLowerCase()) || userName.toLowerCase().includes(characterName.toLowerCase());
-
-    if (isUser) {
-        const userStatsData = getTrackerDataForContext('userStats');
-        if (userStatsData) {
-            systemMessage += `[User Stats]\n${userStatsData}\n\n`;
-        }
-    } else {
-        const thoughtsData = getTrackerDataForContext('characterThoughts');
-        if (thoughtsData) {
-            const thoughts = thoughtsData;
-            const blocks = ('\n' + thoughts).split(/\n- /);
-
-            let charBlock = null;
-            for (const block of blocks) {
-                if (!block.trim()) continue;
-
-                // First line of the block should contain the name
-                const lines = block.split('\n');
-                const firstLine = lines[0];
-
-                // Check if this block belongs to the character we're generating for
-                if (firstLine.toLowerCase().includes(characterName.toLowerCase())) {
-                    charBlock = block.trim();
-                    break;
-                }
-            }
-
-            if (charBlock) {
-                systemMessage += `[Character Details]\n- ${charBlock}\n\n`;
-            } else {
-                if (thoughts.toLowerCase().includes(characterName.toLowerCase())) {
-                    systemMessage += `[Present Characters]\n${thoughts}\n\n`;
-                }
-            }
-        }
-    }
-
-    systemMessage += `Recent conversation context:\n<history>`;
-    messages.push({ role: 'system', content: systemMessage });
-
-    // Add chat history
-    const recentMessages = chat.slice(-depth);
-    for (const message of recentMessages) {
-        messages.push({
-            role: message.is_user ? 'user' : 'assistant',
-            content: message.mes
-        });
-    }
-
-    // Build instruction message
-    let instructionMessage = `</history>\n\n`;
-    const customInstruction = extensionSettings.avatarLLMCustomInstruction || DEFAULT_AVATAR_CUSTOM_INSTRUCTION;
-
-    instructionMessage += `Task: Generate a detailed image prompt for the character: ${characterName}.\n\n`;
-    instructionMessage += `Instructions: ${customInstruction}\n\n`;
-    instructionMessage += `Provide ONLY the image prompt text. Do not include the character's name, prefixes like "Prompt:", or any other commentary.`;
-
-    messages.push({ role: 'user', content: instructionMessage });
-    return messages;
-}

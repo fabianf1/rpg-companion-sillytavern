@@ -33,7 +33,6 @@ import { renderInventory } from '../rendering/inventory.js';
 import { renderQuests } from '../rendering/quests.js';
 import { renderMusicPlayer } from '../rendering/musicPlayer.js';
 import { i18n } from '../../core/i18n.js';
-import { generateAvatarsForCharacters } from '../features/avatarGenerator.js';
 import { setFabLoadingState, setFabCancelState, updateFabWidgets } from '../ui/mobile.js';
 import { setStripCancelState, updateStripWidgets } from '../ui/desktop.js';
 
@@ -343,26 +342,6 @@ export async function updateRPGData(isAutoUpdate = false) {
 
             // Save to chat metadata
             saveChatData();
-
-            // Generate avatars if auto-generate is enabled (runs within this workflow)
-            // This uses the RPG Companion Trackers preset and keeps the button spinning
-            if (extensionSettings.autoGenerateAvatars) {
-                const charactersNeedingAvatars = parseCharactersFromThoughts(parsedData.characterThoughts);
-                if (charactersNeedingAvatars.length > 0) {
-                    // console.log('[RPG Companion] Generating avatars for:', charactersNeedingAvatars);
-
-                    // Generate avatars - this awaits completion
-                    await generateAvatarsForCharacters(charactersNeedingAvatars, (names) => {
-                        // Callback when generation starts - re-render to show loading spinners
-                        // console.log('[RPG Companion] Avatar generation started, showing spinners...');
-                        renderThoughts();
-                    });
-
-                    // Re-render once all avatars are generated
-                    // console.log('[RPG Companion] All avatars generated, re-rendering...');
-                    renderThoughts();
-                }
-            }
         }
 
     } catch (error) {

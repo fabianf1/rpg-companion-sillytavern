@@ -18,7 +18,6 @@ import {
     setInventoryContainer,
     setQuestsContainer,
     setMusicPlayerContainer,
-    clearSessionAvatarPrompts,
     abortCurrentGeneration
 } from './src/core/state.js';
 import { loadSettings, saveSettings } from './src/core/persistence.js';
@@ -638,26 +637,6 @@ async function initUI() {
         updateFeatureTogglesVisibility();
     });
 
-    $('#rpg-toggle-show-auto-avatars').on('change', function() {
-        extensionSettings.showAutoAvatars = $(this).prop('checked');
-        // Also disable the feature when hiding the toggle
-        if (!extensionSettings.showAutoAvatars) {
-            extensionSettings.autoGenerateAvatars = false;
-            $('#rpg-toggle-auto-avatars-panel').prop('checked', false);
-        }
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    // Auto avatar generation panel toggle
-    $('#rpg-toggle-auto-avatars-panel').on('change', function() {
-        extensionSettings.autoGenerateAvatars = $(this).prop('checked');
-        saveSettings();
-
-        // Re-render thoughts to update tooltips (regenerate vs delete)
-        renderThoughts();
-    });
-
     $('#rpg-toggle-dice-display').on('change', function() {
         extensionSettings.showDiceDisplay = $(this).prop('checked');
         saveSettings();
@@ -984,7 +963,6 @@ async function initUI() {
     $('#rpg-toggle-weather-background').prop('checked', extensionSettings.weatherBackground ?? true);
     $('#rpg-toggle-weather-foreground').prop('checked', extensionSettings.weatherForeground ?? false);
     $('#rpg-toggle-show-narrator-mode').prop('checked', extensionSettings.showNarratorMode ?? true);
-    $('#rpg-toggle-show-auto-avatars').prop('checked', extensionSettings.showAutoAvatars ?? true);
 
     // Hide holiday promo if previously dismissed
     if (extensionSettings.dismissedHolidayPromo) {
@@ -1010,7 +988,6 @@ async function initUI() {
     $('#rpg-summary-pov').val(extensionSettings.encounterSettings?.summaryNarrative?.pov ?? 'narrator');
 
     // Initialize avatar options (panel toggle)
-    $('#rpg-toggle-auto-avatars-panel').prop('checked', extensionSettings.autoGenerateAvatars || false);
 
     $('#rpg-toggle-dice-display').prop('checked', extensionSettings.showDiceDisplay);
 
@@ -1238,7 +1215,7 @@ jQuery(async () => {
                 [event_types.MESSAGE_RECEIVED]: onMessageReceived,
                 [event_types.GENERATION_STOPPED]: onGenerationEnded,
                 [event_types.GENERATION_ENDED]: onGenerationEnded,
-                [event_types.CHAT_CHANGED]: [onCharacterChanged, updatePersonaAvatar, restoreCheckpointOnLoad, clearSessionAvatarPrompts],
+                [event_types.CHAT_CHANGED]: [onCharacterChanged, updatePersonaAvatar, restoreCheckpointOnLoad],
                 [event_types.MESSAGE_SWIPED]: onMessageSwiped,
                 [event_types.MESSAGE_DELETED]: onMessageDeleted,
                 [event_types.USER_MESSAGE_RENDERED]: updatePersonaAvatar,
