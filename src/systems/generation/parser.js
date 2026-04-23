@@ -305,17 +305,6 @@ export function parseUserStats(statsData) {
                 // console.log('[RPG Parser] ✓ Inventory kept as arrays:', extensionSettings.userStats.inventory);
             }
 
-            // Extract quests (keep as objects)
-            if (statsData.quests) {
-                extensionSettings.quests = {
-                    main: statsData.quests.main || null,
-                    optional: Array.isArray(statsData.quests.optional)
-                        ? statsData.quests.optional
-                        : []
-                }
-
-            }
-
             // Extract skills if present (store as object, not JSON string)
             if (statsData.skills && Array.isArray(statsData.skills)) {
                 extensionSettings.userStats.skills = statsData.skills;

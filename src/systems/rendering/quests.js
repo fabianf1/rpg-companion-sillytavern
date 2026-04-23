@@ -268,27 +268,21 @@ export function renderQuests() {
         return;
     }
 
-    // Check if tracker data exists (from swipe store or extensionSettings)
+    // Get tracker data directly from swipe store
     const trackerData = getTrackerDataForContext('userStats');
     
-    // Parse the trackerData. It's kinda... weird that we have to parse it. Espcially because it is also used in the inventory...
-    if (trackerData) {
-        parseUserStats(trackerData);
-    }
-    
-    if (!trackerData || !extensionSettings.userStats) {
-        // Always render to the #rpg-user-stats container
-        $questsContainer.html('<div class="rpg-inventory-empty">No quests generated yet</div>')
+    if (!trackerData || !trackerData.quests) {
+        $questsContainer.html('<div class="rpg-inventory-empty">No quests generated yet</div>');
         return;
     }
 
-    // Get quests data - extract value if it's a locked object
-    let mainQuest = extensionSettings.quests.main;
-    // Recursively extract value if it's nested objects (skip if null)
+    // Get quests data directly from trackerData (no intermediate extensionSettings)
+    let mainQuest = trackerData.quests.main;
+    // Recursively extract value if it's a locked object
     while (mainQuest && typeof mainQuest === 'object' && mainQuest.value !== undefined) {
         mainQuest = mainQuest.value;
     }
-    const optionalQuests = extensionSettings.quests.optional || [];
+    const optionalQuests = trackerData.quests.optional || [];
 
     // Build HTML
     let html = '<div class="rpg-quests-wrapper">';
@@ -331,7 +325,7 @@ function getQuestFormData(field, prefix) {
 }
 
 /**
- * Save quest data to extension settings
+ * Save quest data directly to swipe store
  * @param {string} field - Field type ('main' or 'optional')
  * @param {object} questData - Quest data object
  * @param {number} [index] - Index for optional quests
@@ -339,9 +333,13 @@ function getQuestFormData(field, prefix) {
 function saveQuestData(field, questData, index) {
     const { questTitle, questDate, questLocation, questCompleted } = questData;
     
+    let trackerData = getTrackerDataForContext('userStats');
+    // Build quests data object directly (no extensionSettings intermediate)
+    const questsData = { main: null, optional: [] };
+    
     if (field === 'main' && questTitle === 'None') {
         // Clear main quest - set to null
-        extensionSettings.quests.main = null;
+        trackerData.quests.main = null;
     } else if (questTitle) {
         const questObj = { title: questTitle };
         if (questDate) questObj.date = questDate;
@@ -349,21 +347,18 @@ function saveQuestData(field, questData, index) {
         questObj.completed = questCompleted;
 
         if (field === 'main') {
-            extensionSettings.quests.main = questObj;
+            trackerData.quests.main = questObj;
         } else {
-            if (!extensionSettings.quests.optional) {
-                extensionSettings.quests.optional = [];
-            }
             if (index !== undefined) {
-                extensionSettings.quests.optional[index] = questObj;
+                trackerData.quests.optional[index] = questObj;
             } else {
-                extensionSettings.quests.optional.push(questObj);
+                trackerData.quests.optional.push(questObj);
             }
         }
     }
-    // Sync quest changes to swipeStore so AI sees the update
-    updateMessageSwipeData();
-    saveSettings();
+    
+    // Save directly to swipe store (no extensionSettings updates)
+    updateMessageSwipeData('userStats', trackerData);
     saveChatData();
     renderQuests();
 }
@@ -467,9 +462,13 @@ function attachQuestEventHandlers() {
     $questsContainer.find('[data-action="clear-quest"]').on('click', function() {
         const field = $(this).data('field');
         if (field === 'main') {
-            extensionSettings.quests.main = { title: 'None', date: '', location: '', completed: false };
-            updateMessageSwipeData();
-            saveSettings();
+            // Build quests data with cleared main quest
+            const trackerData = getTrackerDataForContext('userStats');
+            const questsData = trackerData?.quests || { main: null, optional: [] };
+            questsData.main = { title: 'None', date: '', location: '', completed: false };
+            
+            // Save directly to swipe store
+            updateMessageSwipeData('userStats', questsData);
             saveChatData();
             renderQuests();
         }
@@ -480,14 +479,18 @@ function attachQuestEventHandlers() {
         const field = $(this).data('field');
         const index = $(this).data('index');
 
+        // Get current quests data from swipe store
+        const trackerData = getTrackerDataForContext('userStats');
+        const questsData = trackerData?.quests || { main: null, optional: [] };
+
         if (field === 'main') {
-            extensionSettings.quests.main = null;
+            questsData.main = null;
         } else {
-            extensionSettings.quests.optional.splice(index, 1);
+            questsData.optional.splice(index, 1);
         }
-        // Sync quest changes to swipeStore so AI sees the removal
-        updateMessageSwipeData();
-        saveSettings();
+        
+        // Save directly to swipe store
+        updateMessageSwipeData('userStats', questsData);
         saveChatData();
         renderQuests();
     });
@@ -538,9 +541,13 @@ function attachQuestEventHandlers() {
         const index = $(this).data('index');
         const isChecked = $(this).is(':checked');
 
+        // Get current quests data from swipe store
+        const trackerData = getTrackerDataForContext('userStats');
+        const questsData = trackerData?.quests || { main: null, optional: [] };
+
         if (field === 'main') {
-            if (extensionSettings.quests.main) {
-                extensionSettings.quests.main.completed = isChecked;
+            if (questsData.main) {
+                questsData.main.completed = isChecked;
             }
         } else {
             if (extensionSettings.quests.optional && extensionSettings.quests.optional[index]) {
