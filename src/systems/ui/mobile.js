@@ -1401,18 +1401,8 @@ export function updateFabWidgets() {
     }
 
     // Stats (large - goes to West) - respects trackerConfig.userStats.customStats
-    // Use extensionSettings.userStats as primary source (contains all stats)
+    // Use statsData
     let allStats = [];
-    try {
-        const userStatsJson = extensionSettings.userStats;
-        const parsedUserStats = typeof userStatsJson === 'object' ? userStatsJson : JSON.parse(userStatsJson);
-        if (parsedUserStats?.stats) {
-            allStats = parsedUserStats.stats;
-        }
-    } catch (e) {
-        console.warn('[RPG FAB Widgets] Failed to parse extensionSettings.userStats:', e);
-    }
-    // Fallback to statsData if extensionSettings.userStats is empty
     if (allStats.length === 0 && statsData?.stats) {
         allStats = statsData.stats;
     }

@@ -179,11 +179,6 @@ export async function onMessageReceived(data) {
                 characterThoughts: parsedData.characterThoughts
             };
 
-            // Parse user stats to update extensionSettings
-            if (parsedData.userStats) {
-                parseUserStats(parsedData.userStats);
-            }
-
             // comment.log('[RPG Companion] Stored RPG data for swipe', currentSwipeId);
 
             // Remove the tracker code blocks from the visible message

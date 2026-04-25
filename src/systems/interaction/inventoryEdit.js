@@ -11,6 +11,28 @@ import { renderInventory } from '../rendering/inventory.js';
 import { sanitizeItemName } from '../../utils/security.js';
 
 /**
+ * Helper to get inventory from tracker data (handles both flat and object formats)
+ * @returns {Object} Inventory object
+ */
+function getInventoryFromTracker() {
+    const trackerData = getTrackerDataForContext('userStats');
+    if (!trackerData) return { onPerson: [], clothing: [], stored: {}, assets: {} };
+    
+    // Get inventory from tracker data
+    if (trackerData.inventory) {
+        return trackerData.inventory;
+    }
+    
+    // Try object format (onPerson, clothing, stored, assets)
+    return {
+        onPerson: trackerData.onPerson || [],
+        clothing: trackerData.clothing || [],
+        stored: trackerData.stored || {},
+        assets: trackerData.assets || {}
+    };
+}
+
+/**
  * Updates an existing inventory item's name.
  * Validates, sanitizes, and persists the change.
  *
@@ -20,7 +42,7 @@ import { sanitizeItemName } from '../../utils/security.js';
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function updateInventoryItem(field, index, newName, location) {
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getInventoryFromTracker();
 
     // Validate and sanitize the new item name
     const sanitizedName = sanitizeItemName(newName);
@@ -69,8 +91,12 @@ export function updateInventoryItem(field, index, newName, location) {
         inventory[field] = currentItems;
     }
 
+    // Update tracker data with modified inventory
+    const trackerData = getTrackerDataForContext('userStats') || {};
+    trackerData.inventory = inventory;
+    updateMessageSwipeData('userStats', trackerData);
+    
     // Save to swipe store directly
-    updateMessageSwipeData();
     saveChatData();
 
     // Re-render inventory
@@ -98,7 +124,7 @@ function updateSwipeStoreInventory() {
                 const jsonData = typeof currentData === 'object' ? currentData : JSON.parse(currentData);
                 if (jsonData && typeof jsonData === 'object') {
                     // Update inventory in JSON
-                    const stats = extensionSettings.userStats;
+                    const stats = getTrackerDataForContext('userStats');
 
                     // Convert inventory back to v3 format (arrays of {name, quantity})
                     const convertToV3Items = (itemString) => {
@@ -131,7 +157,7 @@ function updateSwipeStoreInventory() {
     }
 
     // Fall back to text format
-    const stats = extensionSettings.userStats;
+    const stats = getTrackerDataForContext('userStats');
     const inventorySummary = buildInventorySummary(stats.inventory);
     const statsText =
         `Health: ${stats.health}%\n` +

@@ -14,6 +14,28 @@ import { sanitizeLocationName, sanitizeItemName } from '../../utils/security.js'
 import { removeInventoryItemLock } from '../generation/lockManager.js';
 
 /**
+ * Helper to get inventory from tracker data (handles both flat and object formats)
+ * @returns {Object} Inventory object
+ */
+function getInventoryFromTracker() {
+    const trackerData = getTrackerDataForContext('userStats');
+    if (!trackerData) return { onPerson: [], clothing: [], stored: {}, assets: {} };
+    
+    // Get inventory from tracker data
+    if (trackerData.inventory) {
+        return trackerData.inventory;
+    }
+    
+    // Try object format (onPerson, clothing, stored, assets)
+    return {
+        onPerson: trackerData.onPerson || [],
+        clothing: trackerData.clothing || [],
+        stored: trackerData.stored || {},
+        assets: trackerData.assets || {}
+    };
+}
+
+/**
  * Current active sub-tab for inventory UI
  * @type {string}
  */
@@ -111,7 +133,7 @@ export function hideAddItemForm(field, location) {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function saveAddItem(field, location) {
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getInventoryFromTracker();
     console.log('[RPG Companion] DEBUG inventory before adding item:', inventory);
     let inputId;
 
@@ -161,10 +183,13 @@ export function saveAddItem(field, location) {
     }
     
     console.log('[RPG Companion] DEBUG inventory after adding item:', inventory);
-    extensionSettings.userStats.inventory = inventory;
+    
+    // Update tracker data with modified inventory
+    const trackerData = getTrackerDataForContext('userStats') || {};
+    trackerData.inventory = inventory;
+    updateMessageSwipeData('userStats', trackerData);
     
     // Save to swipe store directly
-    updateMessageSwipeData();
     saveChatData();
 
     // Hide form and re-render
@@ -179,7 +204,7 @@ export function saveAddItem(field, location) {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function removeItem(field, itemIndex, location) {
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getInventoryFromTracker();
 
     // console.log('[RPG Companion] DEBUG removeItem called:', { field, itemIndex, location });
 
@@ -216,8 +241,12 @@ export function removeItem(field, itemIndex, location) {
     // Remove lock for this item if it exists
     removeInventoryItemLock('userStats', field, itemName, location);
 
+    // Update tracker data with modified inventory
+    const trackerData = getTrackerDataForContext('userStats') || {};
+    trackerData.inventory = inventory;
+    updateMessageSwipeData('userStats', trackerData);
+    
     // Save to swipe store directly
-    updateMessageSwipeData();
     saveChatData();
 
     // Re-render
@@ -254,7 +283,7 @@ export function hideAddLocationForm() {
  * Saves a new storage location from the inline form.
  */
 export function saveAddLocation() {
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getInventoryFromTracker();
     const input = $('#rpg-new-location-name');
     const rawLocationName = input.val().trim();
 
@@ -280,8 +309,12 @@ export function saveAddLocation() {
     // Create new location with empty array
     inventory.stored[locationName] = [];
 
+    // Update tracker data with modified inventory
+    const trackerData = getTrackerDataForContext('userStats') || {};
+    trackerData.inventory = inventory;
+    updateMessageSwipeData('userStats', trackerData);
+    
     // Save to swipe store directly
-    updateMessageSwipeData();
     saveChatData();
 
     // Hide form and re-render
@@ -327,7 +360,7 @@ export function hideRemoveConfirmation(locationName) {
  */
 export function confirmRemoveLocation(locationName) {
     // console.log('[RPG Companion] DEBUG confirmRemoveLocation called for:', locationName);
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getInventoryFromTracker();
     // console.log('[RPG Companion] DEBUG inventory.stored before deletion:', inventory.stored);
 
     // Remove locks for all items in this location before deleting the location
@@ -350,8 +383,12 @@ export function confirmRemoveLocation(locationName) {
         collapsedLocations.splice(index, 1);
     }
 
+    // Update tracker data with modified inventory
+    const trackerData = getTrackerDataForContext('userStats') || {};
+    trackerData.inventory = inventory;
+    updateMessageSwipeData('userStats', trackerData);
+    
     // Save to swipe store directly
-    updateMessageSwipeData();
     saveChatData();
 
     // Re-render inventory UI
@@ -592,7 +629,7 @@ export function restoreFormStates() {
     // Restore add item stored forms (for each location)
     // Clean up orphaned states for deleted locations (Bug #3 fix)
     if (openForms.addItemStored && typeof openForms.addItemStored === 'object') {
-        const inventory = extensionSettings.userStats.inventory;
+        const inventory = getInventoryFromTracker();
         const locationsToDelete = [];
 
         for (const location in openForms.addItemStored) {

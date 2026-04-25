@@ -7,7 +7,6 @@ import { extensionSettings, $questsContainer } from '../../core/state.js';
 import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
-import { parseUserStats } from '../generation/parser.js';
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
@@ -397,10 +396,12 @@ function attachQuestEventHandlers() {
     $questsContainer.find('[data-action="edit-quest"]').on('click', function() {
         const field = $(this).data('field');
         const index = $(this).data('index');
+
+        const quests = getTrackerDataForContext('userStats')?.quests || { main: null, optional: [] };
         
         if (field === 'main') {
             // Populate edit form with current main quest data
-            const mainQuest = extensionSettings.quests.main;
+            const mainQuest = quests.main;
             if (mainQuest) {
                 const { questTitle, questDate, questLocation, isCompleted } = extractQuestData(mainQuest);
                 $(`#rpg-edit-quest-${field}`).val(questTitle);
@@ -413,8 +414,8 @@ function attachQuestEventHandlers() {
             $(`#rpg-edit-quest-${field}`).focus();
         } else {
             // Populate edit form with current optional quest data
-            if (extensionSettings.quests.optional && extensionSettings.quests.optional[index]) {
-                const quest = extensionSettings.quests.optional[index];
+            if (quests.optional && quests.optional[index]) {
+                const quest = quests.optional[index];
                 const { questTitle, questDate, questLocation, isCompleted } = extractQuestData(quest);
                 $(`#rpg-edit-quest-${field}`).val(questTitle);
                 $(`#rpg-edit-quest-date-${field}`).val(questDate);
@@ -550,8 +551,8 @@ function attachQuestEventHandlers() {
                 questsData.main.completed = isChecked;
             }
         } else {
-            if (extensionSettings.quests.optional && extensionSettings.quests.optional[index]) {
-                extensionSettings.quests.optional[index].completed = isChecked;
+            if (questsData.optional && questsData.optional[index]) {
+                questsData.optional[index].completed = isChecked;
             }
         }
         // Sync quest changes to swipeStore so AI sees the update

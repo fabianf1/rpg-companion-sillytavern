@@ -21,7 +21,6 @@ import { buildInventorySummary, getTrackerDataForContext } from '../generation/p
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 import { updateFabWidgets } from '../ui/mobile.js';
 import { getStatBarColors } from '../ui/theme.js';
-import { parseUserStats } from '../generation/parser.js';
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -38,11 +37,72 @@ function toFieldKey(name) {
 }
 
 /**
+ * Helper to extract stat value from tracker data (handles both flat and array formats)
+ * @param {object} trackerData - The tracker data object from swipe store
+ * @param {string} statId - The stat ID to extract (e.g., 'health', 'energy')
+ * @param {number} defaultValue - Default value if not found
+ * @returns {number} The stat value
+ */
+function getStatValue(trackerData, statId, defaultValue = 100) {
+    if (!trackerData) return defaultValue;
+    
+    // Try flat format first (tracker data)
+    if (trackerData[statId] !== undefined) {
+        return trackerData[statId];
+    }
+    
+    // Try array format (stats array in tracker data)
+    if (trackerData.stats && Array.isArray(trackerData.stats)) {
+        const stat = trackerData.stats.find(s => s.id === statId);
+        if (stat && stat.value !== undefined) {
+            return stat.value;
+        }
+    }
+    
+    return defaultValue;
+}
+
+/**
+ * Helper to extract status field value from tracker data
+ * @param {object} trackerData - The tracker data object from swipe store
+ * @param {string} fieldKey - The field key (e.g., 'mood', 'conditions')
+ * @param {string} defaultValue - Default value if not found
+ * @returns {string} The field value
+ */
+function getStatusField(trackerData, fieldKey, defaultValue = '') {
+    if (!trackerData) return defaultValue;
+    
+    // Try flat format first
+    if (trackerData[fieldKey] !== undefined) {
+        return trackerData[fieldKey];
+    }
+    
+    // Try status object format
+    if (trackerData.status && typeof trackerData.status === 'object') {
+        // Try the field key directly
+        if (trackerData.status[fieldKey] !== undefined) {
+            return trackerData.status[fieldKey];
+        }
+        // Try lowercase field name
+        const lowerKey = fieldKey.toLowerCase();
+        if (trackerData.status[lowerKey] !== undefined) {
+            return trackerData.status[lowerKey];
+        }
+        // Try mood field if looking for mood
+        if (fieldKey === 'mood' && trackerData.status.mood !== undefined) {
+            return trackerData.status.mood;
+        }
+    }
+    
+    return defaultValue;
+}
+
+/**
  * Builds the user stats text string using custom stat names
  * @returns {string} Formatted stats text for tracker
  */
 export function buildUserStatsText() {
-    const stats = extensionSettings.userStats;
+    const trackerData = getTrackerDataForContext('userStats');
     const config = extensionSettings.trackerConfig?.userStats || {
         customStats: [
             { id: 'health', name: 'Health', enabled: true },
@@ -57,28 +117,40 @@ export function buildUserStatsText() {
 
     let text = '';
 
+    if (!trackerData) {
+        return text.trim();
+    }
+
     // Add enabled custom stats
     const enabledStats = config.customStats.filter(stat => stat && stat.enabled && stat.name && stat.id);
     for (const stat of enabledStats) {
-        const value = stats[stat.id] !== undefined ? stats[stat.id] : 100;
+        const value = getStatValue(trackerData, stat.id, 100);
         text += `${stat.name}: ${value}%\n`;
     }
 
     // Add status section if enabled
     if (config.statusSection.enabled) {
         if (config.statusSection.showMoodEmoji) {
-            text += `${stats.mood}: `;
+            text += `${getStatusField(trackerData, 'mood', '')}: `;
         }
-        text += `${stats.conditions || 'None'}\n`;
+        text += `${getStatusField(trackerData, 'conditions', 'None')}\n`;
     }
 
     // Add inventory summary
-    const inventorySummary = buildInventorySummary(stats.inventory);
+    const inventory = getStatusField(trackerData, 'inventory', {});
+    const inventorySummary = buildInventorySummary(inventory);
     text += inventorySummary;
 
     // Add skills if enabled
-    if (config.skillsSection.enabled && stats.skills) {
-        text += `\n${config.skillsSection.label}: ${stats.skills}`;
+    if (config.skillsSection.enabled) {
+        const skills = getStatusField(trackerData, 'skills', null);
+        if (skills) {
+            if (Array.isArray(skills)) {
+                text += `\n${config.skillsSection.label}: ${skills.map(s => s.name || s).join(', ')}`;
+            } else {
+                text += `\n${config.skillsSection.label}: ${skills}`;
+            }
+        }
     }
 
     return text.trim();
@@ -98,12 +170,7 @@ export function renderUserStats() {
     // Check if tracker data exists (from swipe store or extensionSettings)
     const trackerData = getTrackerDataForContext('userStats');
     
-    // Parse the trackerData. It's kinda... weird that we have to parse it. Espcially because it is also used in the inventory...
-    if (trackerData) {
-        parseUserStats(trackerData);
-    }
-    
-    if (!trackerData || !extensionSettings.userStats) {
+    if (!trackerData) {
         // Always render to the #rpg-user-stats container
         $userStatsContainer.html('<div class="rpg-inventory-empty">No statuses generated yet</div>')
         // Clear the tracker message display
@@ -111,7 +178,7 @@ export function renderUserStats() {
         return;
     }
 
-    const stats = extensionSettings.userStats;
+    const stats = trackerData;
     // });
     const config = extensionSettings.trackerConfig?.userStats || {
         customStats: [
@@ -178,7 +245,7 @@ export function renderUserStats() {
     const displayMode = config.statsDisplayMode || 'percentage';
 
     for (const stat of enabledStats) {
-        const value = stats[stat.id] !== undefined ? stats[stat.id] : 100;
+        const value = getStatValue(stats, stat.id, 100);
         const maxValue = stat.maxValue || 100;
 
         // Calculate percentage for bar fill
@@ -219,14 +286,14 @@ export function renderUserStats() {
         }
 
         if (config.statusSection.showMoodEmoji) {
-            html += `<div class="rpg-mood-emoji rpg-editable" contenteditable="true" data-field="mood" title="${i18n.getTranslation('userStats.clickToEditEmoji')}">${stats.mood}</div>`;
+            html += `<div class="rpg-mood-emoji rpg-editable" contenteditable="true" data-field="mood" title="${i18n.getTranslation('userStats.clickToEditEmoji')}">${getStatusField(stats, 'mood', '')}</div>`;
         }
 
         // Render custom status fields
         if (config.statusSection.customFields && config.statusSection.customFields.length > 0) {
             for (const fieldName of config.statusSection.customFields) {
                 const fieldKey = toFieldKey(fieldName);
-                let fieldValue = stats[fieldKey] || 'None';
+                let fieldValue = getStatusField(stats, fieldKey, 'None');
                 // Handle array format (from JSON)
                 if (Array.isArray(fieldValue)) {
                     fieldValue = fieldValue.join(', ') || 'None';
@@ -249,10 +316,13 @@ export function renderUserStats() {
         const skillsLockedClass = isSkillsLocked ? ' locked' : '';
         let skillsValue = 'None';
         // Handle JSON array format: [{name: "Art"}, {name: "Coding"}]
-        if (Array.isArray(stats.skills)) {
-            skillsValue = stats.skills.map(s => s.name || s).join(', ') || 'None';
-        } else if (stats.skills) {
-            skillsValue = stats.skills;
+        const skillsData = getStatusField(stats, 'skills', null);
+        if (skillsData) {
+            if (Array.isArray(skillsData)) {
+                skillsValue = skillsData.map(s => s.name || s).join(', ') || 'None';
+            } else if (typeof skillsData === 'string') {
+                skillsValue = skillsData;
+            }
         }
         html += `
             <div class="rpg-skills-section">`;
@@ -293,7 +363,10 @@ export function renderUserStats() {
         `;
 
             enabledAttributes.forEach(attr => {
-                const value = extensionSettings.classicStats[attr.id] !== undefined ? extensionSettings.classicStats[attr.id] : 10;
+                // Use tracker data first, then classicStats from settings, then default to 10
+                const trackerData = getTrackerDataForContext('userStats');
+                const trackerValue = trackerData?.classicStats?.[attr.id];
+                const value = trackerValue !== undefined ? trackerValue : (extensionSettings.classicStats[attr.id] !== undefined ? extensionSettings.classicStats[attr.id] : 10);
                 html += `
                         <div class="rpg-classic-stat" data-stat="${attr.id}">
                             <span class="rpg-classic-stat-label">${attr.name}</span>
@@ -353,11 +426,12 @@ export function renderUserStats() {
             value = Math.max(0, Math.min(100, value));
         }
 
-        // Update the setting
-        extensionSettings.userStats[field] = value;
+        // Update tracker data
+        const trackerData = getTrackerDataForContext('userStats');
+        trackerData[field] = value;
+        updateMessageSwipeData(trackerData);
 
         // Update and persist data
-        updateMessageSwipeData();
         saveSettings();
         saveChatData();
 
@@ -369,10 +443,12 @@ export function renderUserStats() {
     // Add event listeners for mood/conditions editing
     $('.rpg-mood-emoji.rpg-editable').on('blur', function () {
         const value = $(this).text().trim();
-        extensionSettings.userStats.mood = value || '😐';
+        // Update tracker data
+        const trackerData = getTrackerDataForContext('userStats');
+        trackerData.mood = value || '😐';
+        updateMessageSwipeData(trackerData);
 
         // Update and persist data
-        updateMessageSwipeData();
         saveSettings();
         saveChatData();
     });
@@ -380,11 +456,12 @@ export function renderUserStats() {
     $('.rpg-mood-conditions.rpg-editable').on('blur', function () {
         const value = $(this).text().trim();
         const fieldKey = $(this).data('field');
-        extensionSettings.userStats[fieldKey] = value || 'None';
-
+        // Update tracker data
+        const trackerData = getTrackerDataForContext('userStats');
+        trackerData[fieldKey] = value || 'None';
+        updateMessageSwipeData(trackerData);
 
         // Update and persist data
-        updateMessageSwipeData();
         saveSettings();
         saveChatData();
     });
@@ -392,10 +469,12 @@ export function renderUserStats() {
     // Add event listener for skills editing
     $('.rpg-skills-value.rpg-editable').on('blur', function () {
         const value = $(this).text().trim();
-        extensionSettings.userStats.skills = value || 'None';
+        // Update tracker data
+        const trackerData = getTrackerDataForContext('userStats');
+        trackerData.skills = value || 'None';
+        updateMessageSwipeData(trackerData);
 
         // Update and persist data
-        updateMessageSwipeData();
         saveSettings();
         saveChatData();
     });

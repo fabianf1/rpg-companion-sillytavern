@@ -10,7 +10,6 @@ import { updateInventoryItem } from '../interaction/inventoryEdit.js';
 // parseItems is no longer imported - arrays are used directly
 import { isItemLocked, setItemLock } from '../generation/lockManager.js';
 import { getTrackerDataForContext } from '../generation/promptBuilder.js';
-import { parseUserStats } from '../generation/parser.js';
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
@@ -594,7 +593,7 @@ export function updateInventoryDisplay(containerId, options = {}) {
         return;
     }
 
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = getTrackerDataForContext('userStats')?.inventory ?? extensionSettings.userStats.inventory;
     console.log('[RPG Companion] Updating inventory display with data:', inventory, 'and options:', options);
     const html = generateInventoryHTML(inventory, options);
     container.innerHTML = html;
@@ -617,17 +616,12 @@ export function renderInventory() {
     // Check if tracker data exists (from swipe store or extensionSettings)
     const trackerData = getTrackerDataForContext('userStats');
 
-    // Parse the trackerData.
-    if (trackerData) {
-        parseUserStats(trackerData);
-    }
-
-    if(!trackerData || !extensionSettings.userStats || !extensionSettings.userStats.inventory) {
+    if(!trackerData || !trackerData.inventory) {
         console.warn('[RPG Companion] No inventory data found in tracker for userStats context.');
         $inventoryContainer.html('<div class="rpg-inventory-empty">No inventory generated yet</div>')
         return;
     }
-    const inventory = extensionSettings.userStats.inventory;
+    const inventory = trackerData.inventory;
 
     // Get current render options (active tab, collapsed locations)
     const options = getInventoryRenderOptions();

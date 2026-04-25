@@ -16,6 +16,7 @@ import { renderInfoBox } from '../systems/rendering/infoBox.js';
 import { renderThoughts, updateChatThoughts } from '../systems/rendering/thoughts.js';
 import { renderQuests } from '../systems/rendering/quests.js';
 import { renderInventory } from '../systems/rendering/inventory.js';
+import { getTrackerDataForContext } from '../systems/generation/promptBuilder.js';
 
 const extensionName = 'third-party/rpg-companion-sillytavern';
 
@@ -114,9 +115,6 @@ export function loadSettings() {
         // Migrate to preset manager system if presets don't exist
         migrateToPresetManager();
 
-        // Initialize custom status fields
-        initializeCustomStatusFields();
-
         // Ensure all stats have maxValue (for number display mode)
         ensureStatsHaveMaxValue();
     } catch (error) {
@@ -189,8 +187,8 @@ export function updateMessageSwipeData(trackerType, data) {
                 console.log(`[RPG Companion] Using provided data for ${trackerType}`);
                 currentSwipeData[trackerType] = data;
             } else {
-                // Otherwise, build from extensionSettings (Pattern 1: extensionSettings is source of truth)
-                console.log('[RPG Companion] Building data from extensionSettings');
+                // Otherwise, build from tracker data (Pattern 2: tracker data is source of truth)
+                console.log('[RPG Companion] Building data from tracker data');
                 
                 // Build updated user stats data
                 // Data is now stored as objects, so we just need to update the values
@@ -200,39 +198,40 @@ export function updateMessageSwipeData(trackerType, data) {
                         // Ensure we have an object to work with
                         const jsonData = typeof currentSwipeData.userStats === 'object' ? currentSwipeData.userStats : JSON.parse(currentSwipeData.userStats);
                         if (jsonData && typeof jsonData === 'object') {
-                            const stats = extensionSettings.userStats;
+                            // Get current tracker data from swipe store
+                            const trackerData = getTrackerDataForContext('userStats');
                             
-                            // Update stats array values from extensionSettings
+                            // Update stats array values from tracker data
                             if (jsonData.stats && Array.isArray(jsonData.stats)) {
                                 jsonData.stats = jsonData.stats.map(stat => ({
                                     ...stat,
-                                    value: stats[stat.id] !== undefined ? stats[stat.id] : stat.value
+                                    value: trackerData?.[stat.id] ?? stat.value
                                 }));
                             }
                             
                             // Update status fields
                             if (jsonData.status) {
-                                jsonData.status.mood = stats.mood || '😐';
+                                jsonData.status.mood = trackerData?.mood || '😐';
                                 const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
                                 for (const fieldName of customFields) {
                                     const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
-                                    jsonData.status[fieldKey] = stats[fieldKey] || 'None';
+                                    jsonData.status[fieldKey] = trackerData?.[fieldKey] || 'None';
                                 }
                             }
                             
                             // Update inventory
-                            if (stats.inventory) {
-                                jsonData.inventory = stats.inventory;
+                            if (trackerData?.inventory) {
+                                jsonData.inventory = trackerData.inventory;
                             }
                             
                             // Update quests
-                            if (extensionSettings.quests) {
-                                jsonData.quests = extensionSettings.quests;
+                            if (trackerData?.quests) {
+                                jsonData.quests = trackerData.quests;
                             }
                             
                             // Update skills
-                            if (stats.skills !== undefined) {
-                                jsonData.skills = stats.skills;
+                            if (trackerData?.skills !== undefined) {
+                                jsonData.skills = trackerData.skills;
                             }
                             
                             // Store as object (not JSON string)
@@ -287,12 +286,16 @@ export function updateMessageSwipeData(trackerType, data) {
 function validateInventoryStructure(inventory, source) {
     if (!inventory || typeof inventory !== 'object') {
         console.error(`[RPG Companion] Invalid inventory from ${source}, resetting to defaults`);
-        extensionSettings.userStats.inventory = {
+        // Get tracker data first
+        const trackerData = getTrackerDataForContext('userStats');
+        // Use tracker inventory if available, otherwise use defaults
+        const defaultInventory = trackerData?.inventory ?? {
             version: 2,
             onPerson: [],
             stored: {},
             assets: []
         };
+        extensionSettings.userStats.inventory = defaultInventory;
         saveSettings();
         return;
     }
@@ -435,15 +438,6 @@ function migrateToTrackerConfig() {
             enabled: true
         }));
         // console.log('[RPG Companion] Migrated statNames to customStats array');
-    }
-
-    // Ensure all stats have corresponding values in userStats
-    if (extensionSettings.userStats) {
-        for (const stat of extensionSettings.trackerConfig.userStats.customStats) {
-            if (extensionSettings.userStats[stat.id] === undefined) {
-                extensionSettings.userStats[stat.id] = stat.id === 'arousal' ? 0 : 100;
-            }
-        }
     }
 
     // Migrate old showRPGAttributes boolean to rpgAttributes array
@@ -631,23 +625,6 @@ export function migrateToPresetManager() {
 
         // console.log('[RPG Companion] Created Default preset from existing trackerConfig');
         saveSettings();
-    }
-}
-
-/**
- * Initializes custom status fields in userStats based on trackerConfig
- * Ensures all defined custom status fields have a value in the userStats object
- */
-function initializeCustomStatusFields() {
-    const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
-
-    // Initialize each custom field if it doesn't exist
-    for (const fieldName of customFields) {
-        const fieldKey = fieldName.toLowerCase();
-        if (extensionSettings.userStats[fieldKey] === undefined) {
-            extensionSettings.userStats[fieldKey] = 'None';
-            // console.log(`[RPG Companion] Initialized custom status field: ${fieldKey}`);
-        }
     }
 }
 

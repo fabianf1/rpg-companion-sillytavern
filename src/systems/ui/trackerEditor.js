@@ -859,10 +859,6 @@ function setupUserStatsListeners() {
             enabled: true,
             maxValue: 100
         });
-        // Initialize value if doesn't exist
-        if (extensionSettings.userStats[newId] === undefined) {
-            extensionSettings.userStats[newId] = 100;
-        }
         renderUserStatsTab();
     });
 

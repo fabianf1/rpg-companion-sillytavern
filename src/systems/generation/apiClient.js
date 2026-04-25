@@ -22,7 +22,7 @@ import { saveChatData } from '../../core/persistence.js';
 import {
     generateSeparateUpdatePrompt,
 } from './promptBuilder.js';
-import { parseResponse, parseUserStats } from './parser.js';
+import { parseResponse } from './parser.js';
 import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
@@ -302,11 +302,6 @@ export async function updateRPGData(isAutoUpdate = false) {
                 }
             }
 
-
-            // Update extensionSettings from parsed data for display
-            if (parsedData.userStats) {
-                parseUserStats(parsedData.userStats);
-            }
 
             // Store on assistant message's swipe (authoritative source)
             if (lastMessage && !lastMessage.is_user) {

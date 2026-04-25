@@ -12,7 +12,6 @@ import {
 } from '../../core/state.js';
 import { getTrackerDataForContext } from './promptBuilder.js';
 import { evaluateSuppression } from './suppression.js';
-import { parseUserStats } from './parser.js';
 import {
     generateTrackerExample,
     generateTrackerInstructions,
@@ -705,12 +704,6 @@ export async function onGenerationStarted(type, data, dryRun) {
     // Use the swipe store data as source for generation
     const swipeUserStats = getTrackerDataForContext('userStats');
     console.debug('[RPG Companion] Using Swipe Store Data for generation');
-
-    // Parse stats from swipe store data to update the extensionSettings for prompt generation
-    if (swipeUserStats) {
-        parseUserStats(swipeUserStats);
-        console.debug('[RPG Companion] Parsed user stats into extensionSettings');
-    }
 
     if (extensionSettings.generationMode === 'together') {
         const exampleRaw = generateTrackerExample();

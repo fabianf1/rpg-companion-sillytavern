@@ -13,6 +13,28 @@ import { buildInventorySummary, generateTrackerInstructions, generateTrackerExam
 import { applyLocks } from './lockManager.js';
 
 /**
+ * Helper to get inventory from tracker data
+ * @returns {Object} Inventory object
+ */
+function getInventoryFromTracker() {
+    const trackerData = getTrackerDataForContext('userStats');
+    if (!trackerData) return { onPerson: [], clothing: [], stored: {}, assets: {} };
+    
+    // Get inventory from tracker data
+    if (trackerData.inventory) {
+        return trackerData.inventory;
+    }
+    
+    // Try object format (onPerson, clothing, stored, assets)
+    return {
+        onPerson: trackerData.onPerson || [],
+        clothing: trackerData.clothing || [],
+        stored: trackerData.stored || {},
+        assets: trackerData.assets || {}
+    };
+}
+
+/**
  * Gets character information from the current chat
  * @returns {Promise<string>} Formatted character information
  */
@@ -226,7 +248,7 @@ export async function buildEncounterInitPrompt() {
     }
 
     // Add inventory
-    const inventory = extensionSettings.userStats?.inventory;
+    const inventory = getInventoryFromTracker();
     if (inventory) {
         const inventorySummary = buildInventorySummary(inventory);
         userStatsInfo += `${userName}'s Inventory:\n${inventorySummary}\n\n`;
@@ -413,14 +435,16 @@ export async function buildCombatActionPrompt(action, combatStats) {
                 systemMessage += personaText;
             } else {
                 systemMessage += `Name: ${context.name1}\n`;
-                if (extensionSettings.userStats?.personaDescription) {
-                    systemMessage += `${extensionSettings.userStats.personaDescription}\n`;
+                const trackerData = getTrackerDataForContext('userStats');
+                if (trackerData?.personaDescription) {
+                    systemMessage += `${trackerData.personaDescription}\n`;
                 }
             }
         } catch (e) {
             systemMessage += `Name: ${context.name1}\n`;
-            if (extensionSettings.userStats?.personaDescription) {
-                systemMessage += `${extensionSettings.userStats.personaDescription}\n`;
+            const trackerData = getTrackerDataForContext('userStats');
+            if (trackerData?.personaDescription) {
+                systemMessage += `${trackerData.personaDescription}\n`;
             }
         }
 
@@ -428,6 +452,7 @@ export async function buildCombatActionPrompt(action, combatStats) {
         if (extensionSettings.classicStats) {
             const stats = extensionSettings.classicStats;
             const config = extensionSettings.trackerConfig?.userStats;
+            const trackerData = getTrackerDataForContext('userStats');
             const rpgAttributes = (config?.rpgAttributes && config.rpgAttributes.length > 0) ? config.rpgAttributes : [
                 { id: 'str', name: 'STR', enabled: true },
                 { id: 'dex', name: 'DEX', enabled: true },
@@ -438,7 +463,9 @@ export async function buildCombatActionPrompt(action, combatStats) {
             ];
             const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
             const attributeStrings = enabledAttributes.map(attr => `${attr.name} ${stats[attr.id] || 10}`);
-            systemMessage += `\nAttributes: ${attributeStrings.join(', ')}, LVL ${extensionSettings.level}\n`;
+            const showLevel = config?.showLevel !== false;
+            const levelStr = showLevel ? `, LVL ${trackerData?.level || extensionSettings.level}` : '';
+            systemMessage += `\nAttributes: ${attributeStrings.join('')}${levelStr}\n`;
         }
 
         systemMessage += `</persona>\n\n`;

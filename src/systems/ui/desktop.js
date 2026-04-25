@@ -135,19 +135,6 @@ export function updateStripWidgets() {
             }
         }
 
-        // Fallback to extensionSettings.userStats
-        if (allStats.length === 0 && extensionSettings.userStats) {
-            try {
-                const userStatsJson = extensionSettings.userStats;
-                const parsedUserStats = typeof userStatsJson === 'object' ? userStatsJson : JSON.parse(userStatsJson);
-                if (parsedUserStats?.stats) {
-                    allStats = parsedUserStats.stats;
-                }
-            } catch (e) {
-                console.warn('[RPG Strip Widgets] Failed to parse extensionSettings.userStats:', e);
-            }
-        }
-
         if (allStats.length > 0) {
             // Get enabled stats from trackerConfig
             const configuredStats = extensionSettings.trackerConfig?.userStats?.customStats || [];
