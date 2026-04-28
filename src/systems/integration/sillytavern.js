@@ -18,7 +18,7 @@ import {
     abortCurrentGeneration,
     $musicPlayerContainer
 } from '../../core/state.js';
-import { saveChatData, autoSwitchPresetForEntity } from '../../core/persistence.js';
+import { saveChatData, autoSwitchPresetForEntity, migrateAppearanceData } from '../../core/persistence.js';
 
 // Generation & Parsing
 import { parseResponse } from '../generation/parser.js';
@@ -32,6 +32,7 @@ import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
 import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
 import { renderInventory } from '../rendering/inventory.js';
+import { renderAppearance } from '../rendering/appearance.js';
 import { renderQuests } from '../rendering/quests.js';
 import { renderMusicPlayer } from '../rendering/musicPlayer.js';
 
@@ -275,6 +276,7 @@ export async function onMessageReceived(data) {
  * Event handler for character change.
  */
 export function onCharacterChanged() {
+    console.log('[RPG Companion] 🟠 EVENT: onCharacterChanged');
     // Abort any pending or in-flight separate-mode generation so
     // its result is not applied to the (now-changed) chat tail.
     abortCurrentGeneration();
@@ -292,15 +294,18 @@ export function onCharacterChanged() {
     //     console.log('[RPG Companion] Auto-switched preset for character');
     // }
 
+    // Apply migration
+    migrateAppearanceData();
+
     // Reload lock settings from the current message's swipeStore
     reloadLocksFromSwipeStore();
-
 
     // Re-render with the loaded data
     renderUserStats();
     renderInfoBox();
     renderThoughts();
     renderInventory();
+    renderAppearance();
     renderQuests();
     renderMusicPlayer($musicPlayerContainer[0]);
 

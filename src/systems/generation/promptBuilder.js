@@ -1071,6 +1071,59 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
             }
         }
 
+        // Process appearance if present and has persistence-enabled fields
+        if (trackerData.userStats && trackerData.userStats.appearance) {
+            const userStatsConfig = trackerConfig.userStats;
+            const appearanceData = trackerData.userStats.appearance;
+            const shouldIncludeAppearance = useAllEnabled || userStatsConfig.appearancePersistInHistory;
+
+            if (shouldIncludeAppearance && appearanceData) {
+                let appearanceFormatted = '';
+
+                // Description (clothing, hair, physical features)
+                if (appearanceData.description) {
+                    const description = getValue(appearanceData.description);
+                    if (description) appearanceFormatted += `Appearance: ${description}, `;
+                }
+
+                // Hair
+                if (appearanceData.hair) {
+                    const hair = getValue(appearanceData.hair);
+                    if (hair) appearanceFormatted += `Hair: ${hair}, `;
+                }
+
+                // Scent
+                if (appearanceData.scent) {
+                    const scent = getValue(appearanceData.scent);
+                    if (scent) appearanceFormatted += `Scent: ${scent}, `;
+                }
+
+                // Posture
+                if (appearanceData.posture) {
+                    const posture = getValue(appearanceData.posture);
+                    if (posture) appearanceFormatted += `Posture: ${posture}, `;
+                }
+
+                // Clothing (from appearance.clothing, not inventory.clothing)
+                if (appearanceData.clothing && Array.isArray(appearanceData.clothing) && appearanceData.clothing.length > 0) {
+                    const items = appearanceData.clothing.map(i => getValue(i)).filter(i => i);
+                    if (items.length > 0) appearanceFormatted += `Clothing: ${items.join(', ')}, `;
+                } else if (appearanceData.clothing && Array.isArray(appearanceData.clothing) && appearanceData.clothing.length === 0) {
+                    appearanceFormatted += `Clothing: Nothing worn, `;
+                }
+
+                // Features (physical features like scars, tattoos, etc.)
+                if (appearanceData.features && Array.isArray(appearanceData.features) && appearanceData.features.length > 0) {
+                    const features = appearanceData.features.map(f => getValue(f)).filter(f => f);
+                    if (features.length > 0) appearanceFormatted += `Features: ${features.join(', ')}, `;
+                }
+
+                if (appearanceFormatted) {
+                    formatted += `${userName}: ${appearanceFormatted.slice(0, -2)}\n`;
+                }
+            }
+        }
+
         // Process infoBox if present and has persistence-enabled widgets
         if (trackerData.infoBox) {
             const infoBoxConfig = trackerConfig.infoBox;

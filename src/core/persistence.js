@@ -651,6 +651,53 @@ function ensureStatsHaveMaxValue() {
 }
 
 /**
+ * Migrates appearance data from inventory.clothing to userStats.appearance
+ * This migration moves clothing data from the old inventory structure to the new appearance structure
+ */
+export function migrateAppearanceData() {
+    // Check if we already have appearance data
+    const currentData = getTrackerDataForContext('userStats') || {};
+    if (currentData.appearance && (currentData.appearance.clothing ||
+        currentData.appearance.scent || currentData.appearance.posture)) {
+        // Appearance data already exists, skip migration
+        console.log('[RPG Companion] Appearance data already exists, skipping migration');
+        return;
+    }
+
+    // Check if we have clothing in inventory; Empty clothing means no clothing, so migrate anyway in that case
+    const inventoryData = currentData.inventory;
+    if (!inventoryData || !inventoryData.clothing) {
+        // No clothing data to migrate
+        console.log('[RPG Companion] No clothing data found in inventory, skipping appearance migration');
+        return;
+    }
+
+    console.log('[RPG Companion] Migrating appearance data from inventory to userStats.appearance');
+
+    // Create appearance data with migrated clothing
+    const appearanceData = {
+        description: currentData.description || '',
+        hair: currentData.hair || '',
+        scent: currentData.scent || '',
+        posture: currentData.posture || '',
+        clothing: inventoryData.clothing,
+        features: currentData.features || []
+    };
+
+    // Update the userStats data with appearance
+    let updatedData = {
+        ...currentData,
+        appearance: appearanceData,
+    };
+    delete updatedData.inventory.clothing; // Remove clothing from inventory since it's now in appearance
+
+    // Update swipe store with migrated data
+    updateMessageSwipeData('userStats', updatedData);
+
+    console.log('[RPG Companion] Appearance data migration complete');
+}
+
+/**
  * Gets all available presets
  * @returns {Object} Map of preset ID to preset data
  */

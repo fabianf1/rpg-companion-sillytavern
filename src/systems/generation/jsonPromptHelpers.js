@@ -103,9 +103,6 @@ export function buildUserStatsJSONInstruction() {
         instruction += '      {"name": "Item1", "quantity": X},\n';
         instruction += '      {"name": "Item2", "quantity": X}\n';
         instruction += '    ],\n';
-        instruction += '    "clothing": [\n';
-        instruction += '      {"name": "Clothing1"}\n';
-        instruction += '    ],\n';
         instruction += '    "stored": {\n';
         instruction += '      "Location1": [\n';
         instruction += '        {"name": "Item", "quantity": X}\n';
@@ -116,6 +113,23 @@ export function buildUserStatsJSONInstruction() {
         instruction += '    ]\n';
         instruction += '  },\n';
     }
+
+    // Appearance section
+    instruction += '  "appearance": {\n';
+    instruction += '    "clothing": [\n';
+    instruction += '      {"name": "Clothing1"}\n';
+    instruction += '    ],\n';
+    instruction += '    "accessories": [\n';
+    instruction += '      {"name": "accessory1"}\n'; // Quantity can be added as a separate field if needed, e.g. "quantity": X
+    instruction += '    ],\n';
+    instruction += '    "physicalFeatures": [\n';
+    instruction += '      {"name": "physicalFeature1"}\n';
+    instruction += '    ],\n';
+    instruction += '    "hair": "Hair Description",\n';
+    instruction += '    "scent": "Scent Description",\n';
+    instruction += '    "posture": "Posture Description",\n';
+    instruction += '    "demeanor": "Demeanor/Expression"\n';
+    instruction += '  },\n';
 
     // Quests section
     instruction += '  "quests": {\n';

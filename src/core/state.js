@@ -126,6 +126,13 @@ export let extensionSettings = {
             onPerson: [],
             stored: []
         },
+        appearance: {
+            clothing: [],
+            hair: '',
+            scent: '',
+            posture: '',
+            physicalFeatures: ''
+        },
         quests: {
             main: null,
             optional: []
@@ -389,6 +396,7 @@ export let $userStatsContainer = null;
 export let $infoBoxContainer = null;
 export let $thoughtsContainer = null;
 export let $inventoryContainer = null;
+export let $appearanceContainer = null;
 export let $questsContainer = null;
 export let $musicPlayerContainer = null;
 
@@ -453,4 +461,8 @@ export function setQuestsContainer($element) {
 
 export function setMusicPlayerContainer($element) {
     $musicPlayerContainer = $element;
+}
+
+export function setAppearanceContainer($element) {
+    $appearanceContainer = $element;
 }

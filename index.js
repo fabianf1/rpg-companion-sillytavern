@@ -16,6 +16,7 @@ import {
     setInfoBoxContainer,
     setThoughtsContainer,
     setInventoryContainer,
+    setAppearanceContainer,
     setQuestsContainer,
     setMusicPlayerContainer,
     abortCurrentGeneration
@@ -36,6 +37,7 @@ import {
 } from './src/systems/rendering/thoughts.js';
 import { renderInventory } from './src/systems/rendering/inventory.js';
 import { renderQuests } from './src/systems/rendering/quests.js';
+import { renderAppearance } from './src/systems/rendering/appearance.js';
 import { renderMusicPlayer } from './src/systems/rendering/musicPlayer.js';
 import { toggleSnowflakes, initSnowflakes } from './src/systems/ui/snowflakes.js';
 import { toggleDynamicWeather, initWeatherEffects, updateWeatherEffect } from './src/systems/ui/weatherEffects.js';
@@ -250,6 +252,7 @@ async function initUI() {
     setInfoBoxContainer($('#rpg-info-box'));
     setThoughtsContainer($('#rpg-thoughts'));
     setInventoryContainer($('#rpg-inventory'));
+    setAppearanceContainer($('#rpg-appearance'));
     setQuestsContainer($('#rpg-quests'));
     setMusicPlayerContainer($('#rpg-music-player'));
 
@@ -342,6 +345,7 @@ async function initUI() {
         renderThoughts();
         renderInventory();
         renderQuests();
+        renderAppearance();
     });
 
     $('#rpg-toggle-thoughts-in-chat').on('change', function() {
@@ -1076,6 +1080,7 @@ async function initUI() {
     renderInfoBox();
     renderThoughts();
     renderInventory();
+    renderAppearance();
     renderQuests();
     renderMusicPlayer($musicPlayerContainer[0]);
     updateDiceDisplay();

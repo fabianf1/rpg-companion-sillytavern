@@ -295,11 +295,12 @@ export function setupDesktopTabs() {
     const $userStats = $('#rpg-user-stats');
     const $infoBox = $('#rpg-info-box');
     const $thoughts = $('#rpg-thoughts');
+    const $appearance = $('#rpg-appearance');
     const $inventory = $('#rpg-inventory');
     const $quests = $('#rpg-quests');
 
     // If no sections exist, nothing to organize
-    if ($userStats.length === 0 && $infoBox.length === 0 && $thoughts.length === 0 && $inventory.length === 0 && $quests.length === 0) {
+    if ($userStats.length === 0 && $infoBox.length === 0 && $thoughts.length === 0 && $appearance.length === 0 && $inventory.length === 0 && $quests.length === 0) {
         return;
     }
 
@@ -307,6 +308,7 @@ export function setupDesktopTabs() {
     const tabButtons = [];
     const hasInventory = $inventory.length > 0 && extensionSettings.showInventory;
     const hasQuests = $quests.length > 0 && extensionSettings.showQuests;
+    const hasAppearance = $appearance.length > 0;
 
     // Status tab (always present if any status content exists)
     tabButtons.push(`
@@ -315,6 +317,16 @@ export function setupDesktopTabs() {
             <span data-i18n-key="global.status">Status</span>
         </button>
     `);
+
+    // Appearance tab (only if appearance section exists)
+    if (hasAppearance) {
+        tabButtons.push(`
+            <button class="rpg-tab-btn" data-tab="appearance">
+                <i class="fa-solid fa-user-astronaut"></i>
+                <span data-i18n-key="global.appearance">Appearance</span>
+            </button>
+        `);
+    }
 
     // Inventory tab (only if enabled in settings)
     if (hasInventory) {
@@ -340,6 +352,7 @@ export function setupDesktopTabs() {
 
     // Create tab content containers
     const $statusTab = $('<div class="rpg-tab-content active" data-tab-content="status"></div>');
+    const $appearanceTab = $('<div class="rpg-tab-content" data-tab-content="appearance"></div>');
     const $inventoryTab = $('<div class="rpg-tab-content" data-tab-content="inventory"></div>');
     const $questsTab = $('<div class="rpg-tab-content" data-tab-content="quests"></div>');
 
@@ -360,6 +373,10 @@ export function setupDesktopTabs() {
         $statusTab.append($thoughts.detach());
         if (extensionSettings.showCharacterThoughts) $thoughts.show();
     }
+    if ($appearance.length > 0) {
+        $appearanceTab.append($appearance.detach());
+        if (extensionSettings.showUserStats) $appearance.show();
+    }
     if ($inventory.length > 0) {
         $inventoryTab.append($inventory.detach());
         // Only show if enabled (will be part of tab structure)
@@ -379,8 +396,9 @@ export function setupDesktopTabs() {
     $tabsContainer.append($tabNav);
     $tabsContainer.append($statusTab);
 
-    // Always append inventory and quests tabs to preserve the elements
+    // Always append appearance, inventory and quests tabs to preserve the elements
     // But they'll only show if enabled (via tab button visibility)
+    $tabsContainer.append($appearanceTab);
     $tabsContainer.append($inventoryTab);
     $tabsContainer.append($questsTab);
 
@@ -413,6 +431,7 @@ export function removeDesktopTabs() {
     const $userStats = $('#rpg-user-stats').detach();
     const $infoBox = $('#rpg-info-box').detach();
     const $thoughts = $('#rpg-thoughts').detach();
+    const $appearance = $('#rpg-appearance').detach();
     const $inventory = $('#rpg-inventory').detach();
     const $quests = $('#rpg-quests').detach();
 
@@ -423,15 +442,22 @@ export function removeDesktopTabs() {
     const $dividerStats = $('#rpg-divider-stats');
     const $dividerInfo = $('#rpg-divider-info');
     const $dividerThoughts = $('#rpg-divider-thoughts');
+    const $dividerAppearance = $('#rpg-divider-appearance');
 
     // Restore original sections to content box in correct order
     const $contentBox = $('.rpg-content-box');
 
-    // Re-insert sections in original order: User Stats, Info Box, Thoughts, Inventory, Quests
+    // Re-insert sections in original order: User Stats, Info Box, Thoughts, Appearance, Inventory, Quests
     if ($dividerStats.length) {
         $dividerStats.before($userStats);
         $dividerInfo.before($infoBox);
         $dividerThoughts.before($thoughts);
+        if ($dividerAppearance.length) {
+            $dividerAppearance.before($appearance);
+        } else {
+            $contentBox.append($thoughts);
+            $contentBox.append($appearance);
+        }
         $contentBox.append($inventory);
         $contentBox.append($quests);
     } else {
@@ -439,12 +465,16 @@ export function removeDesktopTabs() {
         $contentBox.append($userStats);
         $contentBox.append($infoBox);
         $contentBox.append($thoughts);
+        $contentBox.append($appearance);
         $contentBox.append($inventory);
         $contentBox.append($quests);
     }
 
     // Show/hide sections based on settings (respect visibility settings)
-    if (extensionSettings.showUserStats) $userStats.show();
+    if (extensionSettings.showUserStats) {
+        $userStats.show();
+        $appearance.show();
+    }
     if (extensionSettings.showInfoBox) {
         const infoBoxData = getTrackerDataForContext('infoBox');
         if (infoBoxData) $infoBox.show();

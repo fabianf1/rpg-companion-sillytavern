@@ -32,6 +32,7 @@ import { renderThoughts } from '../rendering/thoughts.js';
 import { renderInventory } from '../rendering/inventory.js';
 import { renderQuests } from '../rendering/quests.js';
 import { renderMusicPlayer } from '../rendering/musicPlayer.js';
+import { renderAppearance } from '../rendering/appearance.js';
 import { i18n } from '../../core/i18n.js';
 import { setFabLoadingState, setFabCancelState, updateFabWidgets } from '../ui/mobile.js';
 import { setStripCancelState, updateStripWidgets } from '../ui/desktop.js';
@@ -334,6 +335,7 @@ export async function updateRPGData(isAutoUpdate = false) {
             renderInventory();
             renderQuests();
             renderMusicPlayer($musicPlayerContainer[0]);
+            renderAppearance();
 
             // Save to chat metadata
             saveChatData();
@@ -353,6 +355,7 @@ export async function updateRPGData(isAutoUpdate = false) {
         updateFabWidgets(); // Update FAB widgets with new data
         updateStripWidgets(); // Update strip widgets with new data
         renderUserStats(); // To show the outdated message
+        renderAppearance(); // To show the outdated appearance data
 
         // Restore button to original state
         const $updateBtn = $('#rpg-manual-update');

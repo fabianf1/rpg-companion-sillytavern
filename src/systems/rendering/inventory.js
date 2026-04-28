@@ -50,9 +50,6 @@ export function renderInventorySubTabs(activeTab = 'onPerson') {
             <button class="rpg-inventory-subtab ${activeTab === 'onPerson' ? 'active' : ''}" data-tab="onPerson">
                 On Person
             </button>
-            <button class="rpg-inventory-subtab ${activeTab === 'clothing' ? 'active' : ''}" data-tab="clothing">
-                Clothing
-            </button>
             <button class="rpg-inventory-subtab ${activeTab === 'stored' ? 'active' : ''}" data-tab="stored">
                 Stored
             </button>
@@ -138,93 +135,6 @@ export function renderOnPersonView(onPersonItems, viewMode = 'list') {
                             <i class="fa-solid fa-times"></i> Cancel
                         </button>
                         <button class="rpg-inline-btn rpg-inline-save" data-action="save-add-item" data-field="onPerson">
-                            <i class="fa-solid fa-check"></i> Add
-                        </button>
-                    </div>
-                </div>
-                <div class="rpg-item-list ${listViewClass}">
-                    ${itemsHtml}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Renders the "Clothing" inventory view with list or grid display
- * @param {Array<{name: string, quantity?: number}>} clothingItems - Current clothing items as array of objects
- * @param {string} viewMode - View mode ('list' or 'grid')
- * @returns {string} HTML for clothing view with items and add button
- */
-export function renderClothingView(clothingItems, viewMode = 'list') {
-    // Convert array to display strings for UI
-    const displayItems = Array.isArray(clothingItems) 
-        ? clothingItems.map(item => typeof item === 'object' ? item.name : item)
-        : [];
-
-    let itemsHtml = '';
-    if (displayItems.length === 0) {
-        itemsHtml = '<div class="rpg-inventory-empty">No clothing worn</div>';
-    } else {
-        if (viewMode === 'grid') {
-            // Grid view: card-style items
-            itemsHtml = displayItems.map((item, index) => {
-                const originalItem = Array.isArray(clothingItems) ? clothingItems[index] : null;
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
-                return `
-                <div class="rpg-item-card" data-field="clothing" data-index="${index}">
-                    ${lockIconHtml}
-                    <button class="rpg-item-remove" data-action="remove-item" data-field="clothing" data-index="${index}" title="Remove item">
-                        <i class="fa-solid fa-times"></i>
-                    </button>
-                    <span class="rpg-item-name rpg-editable" contenteditable="true" data-field="clothing" data-index="${index}" title="Click to edit">${escapeHtml(item)}</span>
-                </div>
-            `}).join('');
-        } else {
-            // List view: full-width rows
-            itemsHtml = displayItems.map((item, index) => {
-                const originalItem = Array.isArray(clothingItems) ? clothingItems[index] : null;
-                const lockIconHtml = getLockIconHtml('userStats', `inventory.clothing.${originalItem && typeof originalItem === 'object' ? originalItem.name : item}`);
-                return `
-                <div class="rpg-item-row" data-field="clothing" data-index="${index}">
-                    ${lockIconHtml}
-                    <span class="rpg-item-name rpg-editable" contenteditable="true" data-field="clothing" data-index="${index}" title="Click to edit">${escapeHtml(item)}</span>
-                    <button class="rpg-item-remove" data-action="remove-item" data-field="clothing" data-index="${index}" title="Remove item">
-                        <i class="fa-solid fa-times"></i>
-                    </button>
-                </div>
-            `}).join('');
-        }
-    }
-
-    const listViewClass = viewMode === 'list' ? 'rpg-item-list-view' : 'rpg-item-grid-view';
-
-    return `
-        <div class="rpg-inventory-section" data-section="clothing">
-            <div class="rpg-inventory-header">
-                <h4>Clothing Worn</h4>
-                <div class="rpg-inventory-header-actions">
-                    <div class="rpg-view-toggle">
-                        <button class="rpg-view-btn ${viewMode === 'list' ? 'active' : ''}" data-action="switch-view" data-field="clothing" data-view="list" title="List view">
-                            <i class="fa-solid fa-list"></i>
-                        </button>
-                        <button class="rpg-view-btn ${viewMode === 'grid' ? 'active' : ''}" data-action="switch-view" data-field="clothing" data-view="grid" title="Grid view">
-                            <i class="fa-solid fa-th"></i>
-                        </button>
-                    </div>
-                    <button class="rpg-inventory-add-btn" data-action="add-item" data-field="clothing" title="Add new clothing item">
-                        <i class="fa-solid fa-plus"></i> Add Clothing
-                    </button>
-                </div>
-            </div>
-            <div class="rpg-inventory-content">
-                <div class="rpg-inline-form" id="rpg-add-item-form-clothing" style="display: none;">
-                    <input type="text" class="rpg-inline-input" id="rpg-new-item-clothing" placeholder="Enter clothing item..." />
-                    <div class="rpg-inline-buttons">
-                        <button class="rpg-inline-btn rpg-inline-cancel" data-action="cancel-add-item" data-field="clothing">
-                            <i class="fa-solid fa-times"></i> Cancel
-                        </button>
-                        <button class="rpg-inline-btn rpg-inline-save" data-action="save-add-item" data-field="clothing">
                             <i class="fa-solid fa-check"></i> Add
                         </button>
                     </div>
@@ -550,7 +460,6 @@ function generateInventoryHTML(inventory, options = {}) {
     // Get view modes from settings (default to 'list')
     const viewModes = extensionSettings.inventoryViewModes || {
         onPerson: 'list',
-        clothing: 'list',
         stored: 'list',
         assets: 'list'
     };
@@ -559,9 +468,6 @@ function generateInventoryHTML(inventory, options = {}) {
     switch (activeSubTab) {
         case 'onPerson':
             html += renderOnPersonView(inventory.onPerson, viewModes.onPerson);
-            break;
-        case 'clothing':
-            html += renderClothingView(inventory.clothing, viewModes.clothing);
             break;
         case 'stored':
             html += renderStoredView(inventory.stored, collapsedLocations, viewModes.stored);
