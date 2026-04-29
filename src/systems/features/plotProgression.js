@@ -11,9 +11,8 @@ import { Generate } from '../../../../../../../script.js';
 /**
  * Sets up the plot progression buttons inside the send form area.
  * @param {Function} handlePlotClick - Callback function to handle plot button clicks
- * @param {Function} handleEncounterClick - Callback function to handle encounter button click
  */
-export function setupPlotButtons(handlePlotClick, handleEncounterClick) {
+export function setupPlotButtons(handlePlotClick) {
     // Remove existing buttons if any
     $('#rpg-plot-buttons').remove();
 
@@ -49,18 +48,6 @@ export function setupPlotButtons(handlePlotClick, handleEncounterClick) {
             " tabindex="0" role="button" title="Continue the story naturally without twists">
                 <i class="fa-solid fa-forward"></i>&nbsp;<span class="rpg-btn-text">Natural Plot</span>
             </button>
-            <button id="rpg-encounter-button" class="menu_button interactable" style="
-                background-color: #cc3333;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 4px;
-                font-size: 13px;
-                cursor: pointer;
-                margin: 0 2px;
-            " tabindex="0" role="button" title="Enter combat encounter">
-                <i class="fa-solid fa-fire"></i>&nbsp;<span class="rpg-btn-text">Enter Encounter</span>
-            </button>
         </span>
     `;
 
@@ -70,7 +57,6 @@ export function setupPlotButtons(handlePlotClick, handleEncounterClick) {
     // Add event handlers for buttons
     $('#rpg-plot-random').on('click', () => handlePlotClick('random'));
     $('#rpg-plot-natural').on('click', () => handlePlotClick('natural'));
-    $('#rpg-encounter-button').on('click', () => handleEncounterClick());
 
     // Show/hide based on setting
     togglePlotButtons();

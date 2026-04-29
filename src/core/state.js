@@ -278,12 +278,6 @@ export let extensionSettings = {
         assets: 'list'    // 'list' or 'grid' view mode for Assets section
     },
     npcAvatars: {}, // Store custom avatar images for NPCs (key: character name, value: base64 data URI)
-    // Combat encounter settings
-    encounterSettings: {
-        enabled: true, // Show Start Encounter button above chat input
-        historyDepth: 8, // Number of recent messages to include in combat initialization
-        autoSaveLogs: false // Save detailed combat logs to file
-    },
     // Lock state for tracker items (v3 JSON format feature)
     lockedItems: {
         userStats: {},   // Object mapping stat IDs to boolean locked state (e.g., {"health": true, "satiety": false})
