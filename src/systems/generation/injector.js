@@ -25,7 +25,6 @@ import {
     DEFAULT_NARRATOR_PROMPT,
     DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT
 } from './promptBuilder.js';
-import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
 
 // ============================================================================
 // CONSTANTS AND CONFIGURATION
@@ -658,9 +657,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
     }
-
-    // Ensure checkpoint is applied before generation
-    await restoreCheckpointOnLoad();
 
     const currentChatLength = chat ? chat.length : 0;
 

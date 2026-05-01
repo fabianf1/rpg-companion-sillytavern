@@ -40,10 +40,6 @@ import { getSafeThumbnailUrl } from '../../utils/avatars.js';
 import { setFabLoadingState, updateFabWidgets } from '../ui/mobile.js';
 import { updateStripWidgets } from '../ui/desktop.js';
 
-// Chapter checkpoint
-import { updateAllCheckpointIndicators } from '../ui/checkpointUI.js';
-import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
-
 /**
  * Reload lock settings from the current message's swipeStore
  * This ensures locks are message-specific and persist across swipes
@@ -247,8 +243,6 @@ export async function onMessageReceived(data) {
         // console.log('[RPG Companion] Plot progression generation completed');
     }
 
-    // Re-apply checkpoint in case SillyTavern unhid messages during generation
-    await restoreCheckpointOnLoad();
 }
 
 /**
@@ -293,9 +287,6 @@ export function onCharacterChanged() {
 
     // Update chat thought overlays
     updateChatThoughts();
-
-    // Update checkpoint indicators for the loaded chat
-    updateAllCheckpointIndicators();
 }
 
 /**
@@ -444,7 +435,6 @@ export async function onGenerationEnded() {
 
     // SillyTavern may auto-unhide messages when generation stops
     // Re-apply checkpoint if one exists
-    await restoreCheckpointOnLoad();
 }
 
 /**

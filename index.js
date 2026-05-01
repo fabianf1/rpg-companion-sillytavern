@@ -65,13 +65,6 @@ import {
     initPromptsEditor
 } from './src/systems/ui/promptsEditor.js';
 import {
-    initChapterCheckpointUI,
-    injectCheckpointButton,
-    updateAllCheckpointIndicators,
-    cleanupCheckpointUI
-} from './src/systems/ui/checkpointUI.js';
-import { restoreCheckpointOnLoad } from './src/systems/features/chapterCheckpoint.js';
-import {
     togglePlotButtons,
     setupCollapseToggle,
     updatePanelVisibility,
@@ -150,7 +143,6 @@ async function addExtensionSettings() {
             // Disabling extension - remove UI elements
             clearExtensionPrompts();
             updateChatThoughts(); // Remove thought bubbles
-            cleanupCheckpointUI(); // Remove checkpoint buttons and indicators
 
             // Disable dynamic weather effects
             toggleDynamicWeather(false);
@@ -164,8 +156,6 @@ async function addExtensionSettings() {
             // Enabling extension - initialize UI
             await initUI();
             updateChatThoughts(); // Create thought bubbles if data exists
-            injectCheckpointButton(); // Re-add checkpoint buttons
-            updateAllCheckpointIndicators(); // Update button states
         }
     });
 
@@ -945,10 +935,6 @@ async function initUI() {
     setupContentEditableScrolling();
     initInventoryEventListeners();
 
-    // Initialize chapter checkpoint UI
-    initChapterCheckpointUI();
-    injectCheckpointButton();
-
     // Expose weather effect functions globally for cross-module access
     if (!window.RPGCompanion) {
         window.RPGCompanion = {};
@@ -1068,7 +1054,7 @@ jQuery(async () => {
                 [event_types.MESSAGE_RECEIVED]: onMessageReceived,
                 [event_types.GENERATION_STOPPED]: onGenerationEnded,
                 [event_types.GENERATION_ENDED]: onGenerationEnded,
-                [event_types.CHAT_CHANGED]: [onCharacterChanged, updatePersonaAvatar, restoreCheckpointOnLoad],
+                [event_types.CHAT_CHANGED]: [onCharacterChanged, updatePersonaAvatar],
                 [event_types.MESSAGE_SWIPED]: onMessageSwiped,
                 [event_types.MESSAGE_DELETED]: onMessageDeleted,
                 [event_types.USER_MESSAGE_RENDERED]: updatePersonaAvatar,
@@ -1082,9 +1068,6 @@ jQuery(async () => {
             console.error('[RPG Companion] Event registration failed:', error);
             throw error; // This is critical - can't continue without events
         }
-
-        // Restore checkpoint state if one exists
-        await restoreCheckpointOnLoad();
 
         // Initialize snowflakes effect if enabled
         try {
