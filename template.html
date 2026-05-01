@@ -121,11 +121,6 @@
 
                 <!-- Divider after Quests -->
                 <div id="rpg-divider-quests" class="rpg-divider"></div>
-
-                <!-- Music Player Section -->
-                <div id="rpg-music-player" class="rpg-section rpg-music-section">
-                    <!-- Content will be populated by JavaScript -->
-                </div>
             </div>
 
             <!-- Feature Toggles Row -->
@@ -172,15 +167,6 @@
                         <input type="checkbox" id="rpg-toggle-cyoa">
                         <i class="fa-solid fa-list-ol"></i>
                         <span class="rpg-toggle-text" data-i18n-key="template.mainPanel.cyoa">CYOA</span>
-                    </label>
-                </div>
-
-                <!-- Spotify Music Toggle -->
-                <div class="rpg-toggle-container rpg-feature-col" id="rpg-spotify-toggle-wrapper">
-                    <label class="rpg-toggle-label" title="Spotify Music">
-                        <input type="checkbox" id="rpg-toggle-spotify-music">
-                        <i class="fa-brands fa-spotify"></i>
-                        <span class="rpg-toggle-text" data-i18n-key="template.mainPanel.spotifyMusic">Spotify Music</span>
                     </label>
                 </div>
 
@@ -451,15 +437,6 @@
                 <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
                     data-i18n-key="template.settingsModal.display.showCYOAToggleNote">
                     Display a toggle button to enable/disable "Choose Your Own Adventure" formatting instruction that makes the model produce five possible actions/dialogues for you to choose from at the end of the output.
-                </small>
-
-                <label class="checkbox_label">
-                    <input type="checkbox" id="rpg-toggle-show-spotify-toggle" />
-                    <span data-i18n-key="template.settingsModal.display.showSpotifyMusicToggle">Show Spotify Music</span>
-                </label>
-                <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
-                    data-i18n-key="template.settingsModal.display.showSpotifyMusicToggleNote">
-                    Display Spotify music player with AI-suggested scene-appropriate tracks.
                 </small>
 
                 <label class="checkbox_label">
@@ -1079,20 +1056,6 @@
                 </small>
                 <textarea id="rpg-prompt-cyoa" class="rpg-prompt-textarea" rows="4"></textarea>
                 <button class="menu_button rpg-restore-prompt-btn" data-prompt="cyoa" style="margin-top: 8px;">
-                    <i class="fa-solid fa-rotate-left"></i>&nbsp;Restore Default
-                </button>
-            </div>
-
-            <!-- Spotify Music Prompt -->
-            <div class="rpg-prompt-editor-section">
-                <label for="rpg-prompt-spotify" style="display: block; margin-bottom: 8px; font-weight: 600;">
-                    <i class="fa-brands fa-spotify"></i> Spotify Music Prompt
-                </label>
-                <small style="display: block; margin-bottom: 8px; color: #888; font-size: 11px;">
-                    Injected when "Enable Spotify Music" is enabled. Asks AI to suggest appropriate music for the scene.
-                </small>
-                <textarea id="rpg-prompt-spotify" class="rpg-prompt-textarea" rows="4"></textarea>
-                <button class="menu_button rpg-restore-prompt-btn" data-prompt="spotify" style="margin-top: 8px;">
                     <i class="fa-solid fa-rotate-left"></i>&nbsp;Restore Default
                 </button>
             </div>

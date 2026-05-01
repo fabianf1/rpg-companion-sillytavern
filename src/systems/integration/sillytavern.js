@@ -15,14 +15,12 @@ import {
     setLastActionWasSwipe,
     setIsPlotProgression,
     setIsAwaitingNewMessage,
-    abortCurrentGeneration,
-    $musicPlayerContainer
+    abortCurrentGeneration
 } from '../../core/state.js';
 import { saveChatData, autoSwitchPresetForEntity, migrateAppearanceData } from '../../core/persistence.js';
 
 // Generation & Parsing
 import { parseResponse } from '../generation/parser.js';
-import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { updateRPGData } from '../generation/apiClient.js';
 import { removeLocks, restoreLockedContent, getLockedItemsFromSwipeStore } from '../generation/lockManager.js';
 import { initHistoryInjectionListeners } from '../generation/injector.js';
@@ -34,7 +32,6 @@ import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
 import { renderInventory } from '../rendering/inventory.js';
 import { renderAppearance } from '../rendering/appearance.js';
 import { renderQuests } from '../rendering/quests.js';
-import { renderMusicPlayer } from '../rendering/musicPlayer.js';
 
 // Utils
 import { getSafeThumbnailUrl } from '../../utils/avatars.js';
@@ -162,9 +159,6 @@ export async function onMessageReceived(data) {
                 }
             }
 
-            // Parse and store Spotify URL if feature is enabled
-            parseAndStoreSpotifyUrl(responseText);
-
             // Store RPG data for this specific swipe in the message's extra field (authoritative source)
             if (!lastMessage.extra) {
                 lastMessage.extra = {};
@@ -212,7 +206,6 @@ export async function onMessageReceived(data) {
             renderThoughts();
             renderInventory();
             renderQuests();
-            renderMusicPlayer($musicPlayerContainer[0]);
 
             // Update FAB widgets and strip widgets with newly parsed data
             updateFabWidgets();
@@ -229,20 +222,6 @@ export async function onMessageReceived(data) {
             saveChatData();
         }
     } else if (extensionSettings.generationMode === 'separate') {
-        // In separate mode, also parse Spotify URLs from the main roleplay response
-        const lastMessage = chat[chat.length - 1];
-        if (lastMessage && !lastMessage.is_user) {
-            const responseText = lastMessage.mes;
-
-            // Parse and store Spotify URL
-            const foundSpotifyUrl = parseAndStoreSpotifyUrl(responseText);
-
-            // No need to clean message - SillyTavern auto-hides <Song - Artist/> tags
-            if (foundSpotifyUrl && extensionSettings.enableSpotifyMusic) {
-                // Just render the music player
-                renderMusicPlayer($musicPlayerContainer[0]);
-            }
-        }
 
         // Trigger auto-update if enabled (for separate mode)
         // Only trigger if this is a newly generated message, not loading chat history
@@ -307,7 +286,6 @@ export function onCharacterChanged() {
     renderInventory();
     renderAppearance();
     renderQuests();
-    renderMusicPlayer($musicPlayerContainer[0]);
 
     // Update FAB widgets and strip widgets with loaded data
     updateFabWidgets();
@@ -367,7 +345,6 @@ export function onMessageSwiped(messageIndex) {
     renderThoughts();
     renderInventory();
     renderQuests();
-    renderMusicPlayer($musicPlayerContainer[0]);
 
     // Reload lock settings from the current message's swipeStore
     reloadLocksFromSwipeStore();
@@ -398,7 +375,6 @@ export function onMessageDeleted() {
     renderThoughts();
     renderInventory();
     renderQuests();
-    renderMusicPlayer($musicPlayerContainer[0]);
 
     // Update widget strips.
     updateFabWidgets();
@@ -451,7 +427,6 @@ export function clearExtensionPrompts() {
     setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, 0, false);
     setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, 0, false);
     setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, 0, false);
-    setExtensionPrompt('rpg-companion-spotify', '', extension_prompt_types.IN_CHAT, 0, false);
     setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, 1, false);
     // Note: rpg-companion-plot is not cleared here since it's passed via quiet_prompt option
     // console.log('[RPG Companion] Cleared all extension prompts');

@@ -9,7 +9,6 @@ import { i18n } from './src/core/i18n.js';
 import { migrateToV3JSON } from './src/utils/jsonMigration.js';
 import {
     extensionSettings,
-    $musicPlayerContainer,
     updateExtensionSettings,
     setPanelContainer,
     setUserStatsContainer,
@@ -18,7 +17,6 @@ import {
     setInventoryContainer,
     setAppearanceContainer,
     setQuestsContainer,
-    setMusicPlayerContainer,
     abortCurrentGeneration
 } from './src/core/state.js';
 import { loadSettings, saveSettings } from './src/core/persistence.js';
@@ -38,7 +36,6 @@ import {
 import { renderInventory } from './src/systems/rendering/inventory.js';
 import { renderQuests } from './src/systems/rendering/quests.js';
 import { renderAppearance } from './src/systems/rendering/appearance.js';
-import { renderMusicPlayer } from './src/systems/rendering/musicPlayer.js';
 import { toggleSnowflakes, initSnowflakes } from './src/systems/ui/snowflakes.js';
 import { toggleDynamicWeather, initWeatherEffects, updateWeatherEffect } from './src/systems/ui/weatherEffects.js';
 
@@ -253,7 +250,6 @@ async function initUI() {
     setInventoryContainer($('#rpg-inventory'));
     setAppearanceContainer($('#rpg-appearance'));
     setQuestsContainer($('#rpg-quests'));
-    setMusicPlayerContainer($('#rpg-music-player'));
 
     // Re-apply translations to the entire body to catch all new elements from the template
     i18n.applyTranslations(document.body);
@@ -381,15 +377,6 @@ async function initUI() {
         saveSettings();
     });
 
-    $('#rpg-toggle-spotify-music').on('change', function() {
-        extensionSettings.enableSpotifyMusic = $(this).prop('checked');
-        saveSettings();
-        updateSectionVisibility();
-        renderMusicPlayer($musicPlayerContainer[0]);
-    });
-
-
-
     $('#rpg-toggle-dynamic-weather').on('change', function() {
         extensionSettings.enableDynamicWeather = $(this).prop('checked');
         saveSettings();
@@ -465,12 +452,6 @@ async function initUI() {
 
     $('#rpg-toggle-show-cyoa-toggle').on('change', function() {
         extensionSettings.showCYOAToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    $('#rpg-toggle-show-spotify-toggle').on('change', function() {
-        extensionSettings.showSpotifyToggle = $(this).prop('checked');
         saveSettings();
         updateFeatureTogglesVisibility();
     });
@@ -836,7 +817,6 @@ async function initUI() {
     $('#rpg-toggle-deception').prop('checked', extensionSettings.enableDeceptionSystem ?? false);
     $('#rpg-toggle-omniscience').prop('checked', extensionSettings.enableOmniscienceFilter ?? false);
     $('#rpg-toggle-cyoa').prop('checked', extensionSettings.enableCYOA ?? false);
-    $('#rpg-toggle-spotify-music').prop('checked', extensionSettings.enableSpotifyMusic);
 
     $('#rpg-toggle-dynamic-weather').prop('checked', extensionSettings.enableDynamicWeather);
     $('#rpg-toggle-narrator').prop('checked', extensionSettings.narratorMode);
@@ -847,7 +827,6 @@ async function initUI() {
     $('#rpg-toggle-show-deception-toggle').prop('checked', extensionSettings.showDeceptionToggle ?? true);
     $('#rpg-toggle-show-omniscience-toggle').prop('checked', extensionSettings.showOmniscienceToggle ?? true);
     $('#rpg-toggle-show-cyoa-toggle').prop('checked', extensionSettings.showCYOAToggle ?? true);
-    $('#rpg-toggle-show-spotify-toggle').prop('checked', extensionSettings.showSpotifyToggle ?? true);
     $('#rpg-toggle-show-dynamic-weather-toggle').prop('checked', extensionSettings.showDynamicWeatherToggle ?? true);
     $('#rpg-toggle-weather-background').prop('checked', extensionSettings.weatherBackground ?? true);
     $('#rpg-toggle-weather-foreground').prop('checked', extensionSettings.weatherForeground ?? false);
@@ -952,7 +931,6 @@ async function initUI() {
     renderInventory();
     renderAppearance();
     renderQuests();
-    renderMusicPlayer($musicPlayerContainer[0]);
     updateDiceDisplay();
     updateFabWidgets();
     updateStripWidgets();

@@ -38,8 +38,6 @@ export let extensionSettings = {
     customOmnisciencePrompt: '', // Custom omniscience filter prompt text (empty = use default)
     enableCYOA: false, // Enable "Choose Your Own Adventure" formatting with action choices
     customCYOAPrompt: '', // Custom CYOA prompt text (empty = use default)
-    enableSpotifyMusic: false, // Enable Spotify music integration (asks AI for Spotify URLs)
-    customSpotifyPrompt: '', // Custom Spotify prompt text (empty = use default)
 
     enableDynamicWeather: true, // Enable dynamic weather effects based on Info Box weather field (v2: enabled by default)
     weatherBackground: true, // Show weather effects in background (behind chat)
@@ -50,7 +48,6 @@ export let extensionSettings = {
     showDeceptionToggle: true, // Show Deception System toggle in main panel
     showOmniscienceToggle: true, // Show Omniscience Filter toggle in main panel
     showCYOAToggle: true, // Show CYOA toggle in main panel
-    showSpotifyToggle: true, // Show Spotify Music toggle in main panel
 
     showDynamicWeatherToggle: true, // Show Dynamic Weather Effects toggle in main panel
     showNarratorMode: true, // Show Narrator Mode toggle in main panel
@@ -392,7 +389,6 @@ export let $thoughtsContainer = null;
 export let $inventoryContainer = null;
 export let $appearanceContainer = null;
 export let $questsContainer = null;
-export let $musicPlayerContainer = null;
 
 /**
  * State setters - provide controlled mutation of state variables
@@ -451,10 +447,6 @@ export function setInventoryContainer($element) {
 
 export function setQuestsContainer($element) {
     $questsContainer = $element;
-}
-
-export function setMusicPlayerContainer($element) {
-    $musicPlayerContainer = $element;
 }
 
 export function setAppearanceContainer($element) {

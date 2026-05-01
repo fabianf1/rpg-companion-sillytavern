@@ -119,16 +119,6 @@ Example: <filter event="Zandik quietly takes the key from the table and slips ou
 export const DEFAULT_CYOA_PROMPT = `Since this is a "Choose Your Own Adventure" type of game, you must finish your response by creating a numbered list of 5 different possible action or dialogue options (depending on the scene) for the user to choose from. Make sure they all fit their persona well. They will respond with their choice on how to progress.`;
 
 /**
- * Default Spotify music prompt text (customizable by users)
- */
-export const DEFAULT_SPOTIFY_PROMPT = `If fitting for the current scene's mood and atmosphere, suggest a song that fits the ambiance. Choose music that enhances the emotional tone, setting, or action of the scene.`;
-
-/**
- * Spotify format instruction (constant, not editable by users)
- */
-export const SPOTIFY_FORMAT_INSTRUCTION = `Include it in this exact format: <spotify:Song Title - Artist Name/>.`;
-
-/**
  * Default Narrator Mode prompt text (customizable by users)
  */
 export const DEFAULT_NARRATOR_PROMPT = `Infer the identity and details of characters present in each scene from the story context below. Do not use fixed character references; instead, identify characters naturally based on their actions, dialogue, and descriptions in the narrative.`;
@@ -518,20 +508,6 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
         // Use custom HTML prompt if set, otherwise use default
         const htmlPrompt = extensionSettings.customHtmlPrompt || DEFAULT_HTML_PROMPT;
         instructions += htmlPrompt;
-    }
-
-    // Append Spotify music prompt if enabled AND includeHtmlPrompt is true
-    if (extensionSettings.enableSpotifyMusic && includeHtmlPrompt) {
-        // Add separator
-        if (hasAnyTrackers || extensionSettings.enableHtmlPrompt) {
-            instructions += `\n\n`;
-        } else {
-            instructions += `\n`;
-        }
-
-        // Use custom Spotify prompt if set, otherwise use default
-        const spotifyPrompt = extensionSettings.customSpotifyPrompt || DEFAULT_SPOTIFY_PROMPT;
-        instructions += spotifyPrompt + ' ' + SPOTIFY_FORMAT_INSTRUCTION;
     }
 
     return instructions;

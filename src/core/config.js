@@ -32,8 +32,6 @@ export const defaultSettings = {
     showLockIcons: true, // Show lock/unlock icons on tracker items
     showThoughtsInChat: true, // Show thoughts overlay in chat
     enableHtmlPrompt: false, // Enable immersive HTML prompt injection
-    enableSpotifyMusic: false, // Enable Spotify music integration (asks AI for Spotify URLs)
-    customSpotifyPrompt: '', // Custom Spotify prompt text (empty = use default)
     // Controls when the extension skips injecting tracker instructions/examples/HTML
     // into generations that appear to be user-injected instructions. Valid values:
     //  - 'none'          -> never skip (legacy behavior: always inject)

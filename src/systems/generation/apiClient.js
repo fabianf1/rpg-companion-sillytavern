@@ -15,15 +15,13 @@ import {
     isGenerating,
     setIsGenerating,
     setLastActionWasSwipe,
-    setGenerationAbortController,
-    $musicPlayerContainer
+    setGenerationAbortController
 } from '../../core/state.js';
 import { saveChatData } from '../../core/persistence.js';
 import {
     generateSeparateUpdatePrompt,
 } from './promptBuilder.js';
 import { parseResponse } from './parser.js';
-import { parseAndStoreSpotifyUrl } from '../features/musicPlayer.js';
 import { renderUserStats } from '../rendering/userStats.js';
 import { renderInfoBox } from '../rendering/infoBox.js';
 import { removeLocks, restoreLockedContent } from './lockManager.js';
@@ -31,7 +29,6 @@ import {getTrackerDataForContext} from './promptBuilder.js';
 import { renderThoughts } from '../rendering/thoughts.js';
 import { renderInventory } from '../rendering/inventory.js';
 import { renderQuests } from '../rendering/quests.js';
-import { renderMusicPlayer } from '../rendering/musicPlayer.js';
 import { renderAppearance } from '../rendering/appearance.js';
 import { i18n } from '../../core/i18n.js';
 import { setFabLoadingState, setFabCancelState, updateFabWidgets } from '../ui/mobile.js';
@@ -266,8 +263,6 @@ export async function updateRPGData(isAutoUpdate = false) {
                 parsedData.characterThoughts = removeLocks(parsedData.characterThoughts);
             }
 
-            // Parse and store Spotify URL if feature is enabled
-            parseAndStoreSpotifyUrl(response);
             // console.log('[RPG Companion] Parsed data:', parsedData);
             // console.log('[RPG Companion] parsedData.userStats:', parsedData.userStats ? parsedData.userStats.substring(0, 100) + '...' : 'null');
 
@@ -334,7 +329,6 @@ export async function updateRPGData(isAutoUpdate = false) {
             renderThoughts();
             renderInventory();
             renderQuests();
-            renderMusicPlayer($musicPlayerContainer[0]);
             renderAppearance();
 
             // Save to chat metadata

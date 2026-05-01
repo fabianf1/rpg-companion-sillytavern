@@ -22,10 +22,8 @@ import {
     DEFAULT_DECEPTION_PROMPT,
     DEFAULT_OMNISCIENCE_FILTER_PROMPT,
     DEFAULT_CYOA_PROMPT,
-    DEFAULT_SPOTIFY_PROMPT,
     DEFAULT_NARRATOR_PROMPT,
-    DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT,
-    SPOTIFY_FORMAT_INSTRUCTION
+    DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT
 } from './promptBuilder.js';
 import { restoreCheckpointOnLoad } from '../features/chapterCheckpoint.js';
 
@@ -51,7 +49,6 @@ const PROMPT_FEATURES = [
     { name: 'dialogueColoring', key: 'enableDialogueColoring', default: DEFAULT_DIALOGUE_COLORING_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
     { name: 'deception', key: 'enableDeceptionSystem', default: DEFAULT_DECEPTION_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
     { name: 'omniscience', key: 'enableOmniscienceFilter', default: DEFAULT_OMNISCIENCE_FILTER_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
-    { name: 'spotify', key: 'enableSpotifyMusic', default: DEFAULT_SPOTIFY_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
     { name: 'cyoa', key: 'enableCYOA', default: DEFAULT_CYOA_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE }
 ];
 
@@ -641,7 +638,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-spotify', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
         return;
     }
@@ -660,7 +656,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-spotify', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
     }
 
@@ -779,7 +774,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         setExtensionPrompt('rpg-companion-deception', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-omniscience', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-zzz-cyoa', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-spotify', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
     }
 
     // Set suppression state for the historical context injection

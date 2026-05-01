@@ -11,7 +11,6 @@ import {
     $thoughtsContainer,
     $inventoryContainer,
     $questsContainer,
-    $musicPlayerContainer,
     setInventoryContainer,
     setQuestsContainer
 } from '../../core/state.js';
@@ -316,18 +315,10 @@ export function updateSectionVisibility() {
         $('#rpg-quests').hide();
     }
 
-    if ($musicPlayerContainer) {
-        if (extensionSettings.enableSpotifyMusic) {
-            $musicPlayerContainer.show();
-        } else {
-            $musicPlayerContainer.hide();
-        }
-    }
-
     // Show/hide dividers intelligently
     // Divider after User Stats: shown if User Stats is visible AND at least one section after it is visible
     const showDividerAfterStats = extensionSettings.showUserStats &&
-        (extensionSettings.showInfoBox || extensionSettings.showCharacterThoughts || extensionSettings.showInventory || extensionSettings.showQuests || extensionSettings.enableSpotifyMusic);
+        (extensionSettings.showInfoBox || extensionSettings.showCharacterThoughts || extensionSettings.showInventory || extensionSettings.showQuests);
     if (showDividerAfterStats) {
         $('#rpg-divider-stats').show();
     } else {
@@ -345,23 +336,23 @@ export function updateSectionVisibility() {
 
     // Divider after Thoughts: shown if Thoughts is visible AND at least one section after it is visible
     const showDividerAfterThoughts = extensionSettings.showCharacterThoughts &&
-        (extensionSettings.showInventory || extensionSettings.showQuests || extensionSettings.enableSpotifyMusic);
+        (extensionSettings.showInventory || extensionSettings.showQuests);
     if (showDividerAfterThoughts) {
         $('#rpg-divider-thoughts').show();
     } else {
         $('#rpg-divider-thoughts').hide();
     }
 
-    // Divider after Inventory: shown if Inventory is visible AND (Quests or Music) is visible
-    const showDividerAfterInventory = extensionSettings.showInventory && (extensionSettings.showQuests || extensionSettings.enableSpotifyMusic);
+    // Divider after Inventory: shown if Inventory is visible AND Quests is visible
+    const showDividerAfterInventory = extensionSettings.showInventory && extensionSettings.showQuests;
     if (showDividerAfterInventory) {
         $('#rpg-divider-inventory').show();
     } else {
         $('#rpg-divider-inventory').hide();
     }
 
-    // Divider after Quests: shown if Quests is visible AND Music is visible
-    const showDividerAfterQuests = extensionSettings.showQuests && extensionSettings.enableSpotifyMusic;
+    // Divider after Quests: shown if Quests is visible
+    const showDividerAfterQuests = extensionSettings.showQuests;
     if (showDividerAfterQuests) {
         $('#rpg-divider-quests').show();
     } else {
