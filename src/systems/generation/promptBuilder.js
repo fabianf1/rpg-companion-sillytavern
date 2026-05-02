@@ -100,25 +100,6 @@ export const DEFAULT_HTML_PROMPT = `If appropriate, include inline HTML, CSS, an
 export const DEFAULT_DIALOGUE_COLORING_PROMPT = `Wrap all character/NPC "dialogues" in unique <font color=######>tags</font>, exemplary: <font color=#abc123>"You're pretty good."</font> Assign a distinct color to each speaker and reuse it whenever they speak again.`;
 
 /**
- * Default Deception System prompt text
- */
-export const DEFAULT_DECEPTION_PROMPT = `When a character is lying or deceiving, you should follow up that line with the <lie> tag, containing a brief description of the truth and the lie's reason, using the template below (replace placeholders in quotation marks). This will be hidden from the user's view, but not to you, making it useful for future consequences: <lie character="name" type="lying/deceiving/omitting" truth="truth" reason="reason"/>.`;
-
-/**
- * Default Omniscience Filter prompt text
- * This instructs the AI to separate information the player character cannot perceive
- */
-export const DEFAULT_OMNISCIENCE_FILTER_PROMPT = `You must strictly separate what the player can directly perceive from what they cannot. They should only read limited narrative content that their persona can actually see, hear, smell, touch, or otherwise directly sense. Before writing any narrative content that involves events, actions, or details the player directly cannot perceive (because they're not looking, too far away, behind them, in another room, happening silently, include NPCs' internal thoughts, etc.), you absolutely must output that hidden information inside a <filter> tag using this exact format:
-<filter event="[Brief description of what is happening that the player cannot perceive]" reason="[Why the player character cannot perceive this - e.g., 'behind them', 'in another room', 'too quiet to hear', 'focused elsewhere']"/>
-Example: <filter event="Zandik quietly takes the key from the table and slips out the back door" reason="Zandik is behind Mari, who is absorbed in reading, and he moves silently"/> You hear a faint click from somewhere behind you, but when you glance up from your newspaper, the room seems unchanged.`;
-
-
-/**
- * Default CYOA prompt text
- */
-export const DEFAULT_CYOA_PROMPT = `Since this is a "Choose Your Own Adventure" type of game, you must finish your response by creating a numbered list of 5 different possible action or dialogue options (depending on the scene) for the user to choose from. Make sure they all fit their persona well. They will respond with their choice on how to progress.`;
-
-/**
  * Default Narrator Mode prompt text (customizable by users)
  */
 export const DEFAULT_NARRATOR_PROMPT = `Infer the identity and details of characters present in each scene from the story context below. Do not use fixed character references; instead, identify characters naturally based on their actions, dialogue, and descriptions in the narrative.`;
@@ -386,7 +367,7 @@ export function generateTrackerExample() {
  * Generates the instruction portion - format specifications and guidelines.
  * NOW USES JSON FORMAT (v3) instead of text format
  *
- * @param {boolean} includeHtmlPrompt - Whether to include the HTML prompt (true for main generation, false for separate tracker generation)
+ * @param {boolean} includeHtmlPrompt - Whether to include the HTML prompt (true for main generation, false for separate tracker generation); Depracated since HTML prompt is not used anymore
  * @param {boolean} includeContinuation - Whether to include "After updating the trackers, continue..." instruction
  * @param {boolean} includeAttributes - Whether to include RPG attributes (false for separate tracker generation)
  * @returns {string} Formatted instruction text for the AI
@@ -496,18 +477,6 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
         } else if (includeAttributes && trackerConfig?.userStats?.alwaysSendAttributes && trackerConfig?.userStats?.showRPGAttributes !== false) {
             instructions += `\n`;
         }
-    }
-
-    // Append HTML prompt if enabled AND includeHtmlPrompt is true
-    if (extensionSettings.enableHtmlPrompt && includeHtmlPrompt) {
-        // Add separator if we had tracker instructions
-        if (hasAnyTrackers) {
-            instructions += `\n`;
-        }
-
-        // Use custom HTML prompt if set, otherwise use default
-        const htmlPrompt = extensionSettings.customHtmlPrompt || DEFAULT_HTML_PROMPT;
-        instructions += htmlPrompt;
     }
 
     return instructions;

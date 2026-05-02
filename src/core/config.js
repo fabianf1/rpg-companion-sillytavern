@@ -31,7 +31,6 @@ export const defaultSettings = {
     showQuests: true, // Show quests section
     showLockIcons: true, // Show lock/unlock icons on tracker items
     showThoughtsInChat: true, // Show thoughts overlay in chat
-    enableHtmlPrompt: false, // Enable immersive HTML prompt injection
     // Controls when the extension skips injecting tracker instructions/examples/HTML
     // into generations that appear to be user-injected instructions. Valid values:
     //  - 'none'          -> never skip (legacy behavior: always inject)
@@ -40,7 +39,6 @@ export const defaultSettings = {
     // This setting helps compatibility with other extensions like GuidedGenerations.
     skipInjectionsForGuided: 'none',
     enablePlotButtons: true, // Show plot progression buttons above chat input
-    saveTrackerHistory: false, // Save tracker data in chat history for each message
     panelPosition: 'right', // 'left', 'right', or 'top'
     theme: 'default', // Theme: default, sci-fi, fantasy, cyberpunk, custom
     customColors: {

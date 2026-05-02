@@ -5,7 +5,6 @@
 
 import { togglePlotButtons } from '../ui/layout.js';
 import { extensionSettings, setIsPlotProgression } from '../../core/state.js';
-import { DEFAULT_HTML_PROMPT, DEFAULT_DIALOGUE_COLORING_PROMPT, DEFAULT_DECEPTION_PROMPT, DEFAULT_CYOA_PROMPT } from '../generation/promptBuilder.js';
 import { Generate } from '../../../../../../../script.js';
 
 /**
@@ -93,33 +92,6 @@ export async function sendPlotProgression(type) {
             prompt = extensionSettings.customPlotNaturalPrompt || 'Actually, the scene is getting stale. Progress it, to make things more interesting! Reintroduce an unresolved plot point from the past, or push the story further towards the current main goal. Be creative, but stay grounded in the setting.';
         }
 
-        // Add HTML prompt if enabled
-        if (extensionSettings.enableHtmlPrompt) {
-            // Use custom HTML prompt if set, otherwise use default
-            const htmlPromptText = extensionSettings.customHtmlPrompt || DEFAULT_HTML_PROMPT;
-            prompt += '\n\n' + htmlPromptText;
-        }
-
-        // Add Dialogue Coloring prompt if enabled
-        if (extensionSettings.enableDialogueColoring) {
-            // Use custom Dialogue Coloring prompt if set, otherwise use default
-            const dialogueColoringPromptText = extensionSettings.customDialogueColoringPrompt || DEFAULT_DIALOGUE_COLORING_PROMPT;
-            prompt += '\n\n' + dialogueColoringPromptText;
-        }
-
-        // Add Deception System prompt if enabled
-        if (extensionSettings.enableDeceptionSystem) {
-            // Use custom Deception prompt if set, otherwise use default
-            const deceptionPromptText = extensionSettings.customDeceptionPrompt || DEFAULT_DECEPTION_PROMPT;
-            prompt += '\n\n' + deceptionPromptText;
-        }
-
-        // Add CYOA prompt if enabled
-        if (extensionSettings.enableCYOA) {
-            // Use custom CYOA prompt if set, otherwise use default
-            const cyoaPromptText = extensionSettings.customCYOAPrompt || DEFAULT_CYOA_PROMPT;
-            prompt += '\n\n' + cyoaPromptText;
-        }
 
         // Set flag to indicate we're doing plot progression
         // This will be used by onMessageReceived to clear the prompt after generation completes

@@ -176,32 +176,16 @@ export function toggleAnimations() {
  */
 export function updateFeatureTogglesVisibility() {
     const $featuresRow = $('#rpg-features-row');
-    const $htmlToggle = $('#rpg-html-toggle-wrapper');
-    const $dialogueColoringToggle = $('#rpg-dialogue-coloring-toggle-wrapper');
-    const $deceptionToggle = $('#rpg-deception-toggle-wrapper');
-    const $omniscienceToggle = $('#rpg-omniscience-toggle-wrapper');
-    const $cyoaToggle = $('#rpg-cyoa-toggle-wrapper');
 
     const $dynamicWeatherToggle = $('#rpg-dynamic-weather-toggle-wrapper');
     const $narratorToggle = $('#rpg-narrator-toggle-wrapper');
 
     // Show/hide individual toggles
-    $htmlToggle.toggle(extensionSettings.showHtmlToggle);
-    $dialogueColoringToggle.toggle(extensionSettings.showDialogueColoringToggle);
-    $deceptionToggle.toggle(extensionSettings.showDeceptionToggle ?? true);
-    $omniscienceToggle.toggle(extensionSettings.showOmniscienceToggle ?? true);
-    $cyoaToggle.toggle(extensionSettings.showCYOAToggle ?? true);
-
     $dynamicWeatherToggle.toggle(extensionSettings.showDynamicWeatherToggle);
     $narratorToggle.toggle(extensionSettings.showNarratorMode);
 
     // Hide entire row if all toggles are hidden
-    const anyVisible = extensionSettings.showHtmlToggle ||
-                      extensionSettings.showDialogueColoringToggle ||
-                      (extensionSettings.showDeceptionToggle ?? true) ||
-                      (extensionSettings.showOmniscienceToggle ?? true) ||
-                      (extensionSettings.showCYOAToggle ?? true) ||
-                      extensionSettings.showDynamicWeatherToggle ||
+    const anyVisible = extensionSettings.showDynamicWeatherToggle ||
                       extensionSettings.showNarratorMode;
     $featuresRow.toggle(anyVisible);
 }

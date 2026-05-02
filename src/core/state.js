@@ -13,7 +13,7 @@ export const FALLBACK_AVATAR_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB4bWxuc
  * Extension settings - persisted to SillyTavern settings
  */
 export let extensionSettings = {
-    settingsVersion: 6, // Version number for settings migrations (v4 = FAB widgets enabled by default)
+    settingsVersion: 7, // Version number for settings migrations (v7 = removed HTML, Dialogue Coloring, Deception, Omniscience, CYOA features)
     enabled: true,
     autoUpdate: false,
     updateDepth: 4, // How many messages to include in the context
@@ -28,26 +28,11 @@ export let extensionSettings = {
     narratorMode: false, // Use character card as narrator instead of fixed character references
     customNarratorPrompt: '', // Custom narrator mode prompt text (empty = use default)
     customContextInstructionsPrompt: '', // Custom context instructions prompt text (empty = use default)
-    enableHtmlPrompt: false, // Enable immersive HTML prompt injection
-    customHtmlPrompt: '', // Custom HTML prompt text (empty = use default)
-    enableDialogueColoring: false, // Enable dialogue coloring prompt injection
-    customDialogueColoringPrompt: '', // Custom dialogue coloring prompt text (empty = use default)
-    enableDeceptionSystem: false, // Enable deception tracking with <lie> tags
-    customDeceptionPrompt: '', // Custom deception prompt text (empty = use default)
-    enableOmniscienceFilter: false, // Enable omniscience filter with <filter> tags
-    customOmnisciencePrompt: '', // Custom omniscience filter prompt text (empty = use default)
-    enableCYOA: false, // Enable "Choose Your Own Adventure" formatting with action choices
-    customCYOAPrompt: '', // Custom CYOA prompt text (empty = use default)
 
     enableDynamicWeather: true, // Enable dynamic weather effects based on Info Box weather field (v2: enabled by default)
     weatherBackground: true, // Show weather effects in background (behind chat)
     weatherForeground: false, // Show weather effects in foreground (on top of chat)
     dismissedHolidayPromo: false, // User dismissed the holiday promotion banner
-    showHtmlToggle: true, // Show Immersive HTML toggle in main panel
-    showDialogueColoringToggle: true, // Show Dialogue Coloring toggle in main panel (enabled by default)
-    showDeceptionToggle: true, // Show Deception System toggle in main panel
-    showOmniscienceToggle: true, // Show Omniscience Filter toggle in main panel
-    showCYOAToggle: true, // Show CYOA toggle in main panel
 
     showDynamicWeatherToggle: true, // Show Dynamic Weather Effects toggle in main panel
     showNarratorMode: true, // Show Narrator Mode toggle in main panel

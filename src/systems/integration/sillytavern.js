@@ -416,8 +416,6 @@ export function updatePersonaAvatar() {
 export function clearExtensionPrompts() {
     setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, 0, false);
     setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, 0, false);
-    setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, 0, false);
-    setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, 0, false);
     setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, 1, false);
     // Note: rpg-companion-plot is not cleared here since it's passed via quiet_prompt option
     // console.log('[RPG Companion] Cleared all extension prompts');

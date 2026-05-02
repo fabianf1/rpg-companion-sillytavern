@@ -340,33 +340,6 @@ async function initUI() {
         updateChatThoughts();
     });
 
-    $('#rpg-toggle-html-prompt').on('change', function() {
-        extensionSettings.enableHtmlPrompt = $(this).prop('checked');
-        // console.log('[RPG Companion] Toggle enableHtmlPrompt changed to:', extensionSettings.enableHtmlPrompt);
-        saveSettings();
-    });
-
-    $('#rpg-toggle-dialogue-coloring').on('change', function() {
-        extensionSettings.enableDialogueColoring = $(this).prop('checked');
-        // console.log('[RPG Companion] Toggle enableDialogueColoring changed to:', extensionSettings.enableDialogueColoring);
-        saveSettings();
-    });
-
-    $('#rpg-toggle-deception').on('change', function() {
-        extensionSettings.enableDeceptionSystem = $(this).prop('checked');
-        saveSettings();
-    });
-
-    $('#rpg-toggle-omniscience').on('change', function() {
-        extensionSettings.enableOmniscienceFilter = $(this).prop('checked');
-        saveSettings();
-    });
-
-    $('#rpg-toggle-cyoa').on('change', function() {
-        extensionSettings.enableCYOA = $(this).prop('checked');
-        saveSettings();
-    });
-
     $('#rpg-toggle-dynamic-weather').on('change', function() {
         extensionSettings.enableDynamicWeather = $(this).prop('checked');
         saveSettings();
@@ -396,11 +369,6 @@ async function initUI() {
         saveSettings();
     });
 
-    $('#rpg-save-tracker-history').on('change', function() {
-        extensionSettings.saveTrackerHistory = $(this).prop('checked');
-        saveSettings();
-    });
-
     $('#rpg-toggle-randomized-plot').on('change', function() {
         extensionSettings.enableRandomizedPlot = $(this).prop('checked');
         saveSettings();
@@ -416,35 +384,6 @@ async function initUI() {
 
 
     // Feature toggle visibility controls
-    $('#rpg-toggle-show-html-toggle').on('change', function() {
-        extensionSettings.showHtmlToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    $('#rpg-toggle-show-dialogue-coloring-toggle').on('change', function() {
-        extensionSettings.showDialogueColoringToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    $('#rpg-toggle-show-deception-toggle').on('change', function() {
-        extensionSettings.showDeceptionToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    $('#rpg-toggle-show-omniscience-toggle').on('change', function() {
-        extensionSettings.showOmniscienceToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
-
-    $('#rpg-toggle-show-cyoa-toggle').on('change', function() {
-        extensionSettings.showCYOAToggle = $(this).prop('checked');
-        saveSettings();
-        updateFeatureTogglesVisibility();
-    });
 
     $('#rpg-toggle-show-dynamic-weather-toggle').on('change', function() {
         extensionSettings.showDynamicWeatherToggle = $(this).prop('checked');
@@ -802,21 +741,11 @@ async function initUI() {
     $('#rpg-toggle-quests').prop('checked', extensionSettings.showQuests);
     $('#rpg-toggle-lock-icons').prop('checked', extensionSettings.showLockIcons ?? true);
     $('#rpg-toggle-thoughts-in-chat').prop('checked', extensionSettings.showThoughtsInChat);
-    $('#rpg-toggle-html-prompt').prop('checked', extensionSettings.enableHtmlPrompt);
-    $('#rpg-toggle-dialogue-coloring').prop('checked', extensionSettings.enableDialogueColoring);
-    $('#rpg-toggle-deception').prop('checked', extensionSettings.enableDeceptionSystem ?? false);
-    $('#rpg-toggle-omniscience').prop('checked', extensionSettings.enableOmniscienceFilter ?? false);
-    $('#rpg-toggle-cyoa').prop('checked', extensionSettings.enableCYOA ?? false);
 
     $('#rpg-toggle-dynamic-weather').prop('checked', extensionSettings.enableDynamicWeather);
     $('#rpg-toggle-narrator').prop('checked', extensionSettings.narratorMode);
 
     // Feature toggle visibility settings
-    $('#rpg-toggle-show-html-toggle').prop('checked', extensionSettings.showHtmlToggle ?? true);
-    $('#rpg-toggle-show-dialogue-coloring-toggle').prop('checked', extensionSettings.showDialogueColoringToggle ?? true);
-    $('#rpg-toggle-show-deception-toggle').prop('checked', extensionSettings.showDeceptionToggle ?? true);
-    $('#rpg-toggle-show-omniscience-toggle').prop('checked', extensionSettings.showOmniscienceToggle ?? true);
-    $('#rpg-toggle-show-cyoa-toggle').prop('checked', extensionSettings.showCYOAToggle ?? true);
     $('#rpg-toggle-show-dynamic-weather-toggle').prop('checked', extensionSettings.showDynamicWeatherToggle ?? true);
     $('#rpg-toggle-weather-background').prop('checked', extensionSettings.weatherBackground ?? true);
     $('#rpg-toggle-weather-foreground').prop('checked', extensionSettings.weatherForeground ?? false);

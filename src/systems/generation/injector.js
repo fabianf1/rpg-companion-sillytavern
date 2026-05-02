@@ -17,11 +17,6 @@ import {
     generateTrackerInstructions,
     generateContextualSummary,
     formatHistoricalTrackerData,
-    DEFAULT_HTML_PROMPT,
-    DEFAULT_DIALOGUE_COLORING_PROMPT,
-    DEFAULT_DECEPTION_PROMPT,
-    DEFAULT_OMNISCIENCE_FILTER_PROMPT,
-    DEFAULT_CYOA_PROMPT,
     DEFAULT_NARRATOR_PROMPT,
     DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT
 } from './promptBuilder.js';
@@ -39,17 +34,6 @@ const INJECTION_DEPTHS = {
     TRACKER_CONTEXT: 1
 };
 
-/**
- * Feature configuration for prompt injection
- * Reduces code duplication by standardizing how features are injected
- */
-const PROMPT_FEATURES = [
-    { name: 'html', key: 'enableHtmlPrompt', default: DEFAULT_HTML_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
-    { name: 'dialogueColoring', key: 'enableDialogueColoring', default: DEFAULT_DIALOGUE_COLORING_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
-    { name: 'deception', key: 'enableDeceptionSystem', default: DEFAULT_DECEPTION_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
-    { name: 'omniscience', key: 'enableOmniscienceFilter', default: DEFAULT_OMNISCIENCE_FILTER_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE },
-    { name: 'cyoa', key: 'enableCYOA', default: DEFAULT_CYOA_PROMPT, depth: INJECTION_DEPTHS.FIRST_MESSAGE }
-];
 
 // Track suppression state for event handler
 let currentSuppressionState = false;
@@ -559,25 +543,6 @@ function onChatCompletionPromptReady(eventData) {
 }
 
 /**
- * Helper function to inject all enabled prompt features
- * Reduces code duplication and makes feature injection consistent
- *
- * @param {string} mode - Either 'together' or 'separate'
- * @param {boolean} shouldSuppress - Whether to skip injection due to suppression
- */
-function injectPromptFeatures(mode, shouldSuppress) {
-    PROMPT_FEATURES.forEach(feature => {
-        if (extensionSettings[feature.key] && !shouldSuppress) {
-            const promptText = extensionSettings[`custom${feature.name.charAt(0).toUpperCase() + feature.name.slice(1)}Prompt`] || feature.default;
-            const prompt = `\n- ${promptText}\n`;
-            setExtensionPrompt(`rpg-companion-${feature.name}`, prompt, extension_prompt_types.IN_CHAT, feature.depth, false);
-        } else {
-            setExtensionPrompt(`rpg-companion-${feature.name}`, '', extension_prompt_types.IN_CHAT, feature.depth, false);
-        }
-    });
-}
-
-/**
  * Validates extension settings structure
  * @param {Object} settings - The extension settings to validate
  * @returns {boolean} True if settings are valid
@@ -635,8 +600,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         console.debug('[RPG Companion] Extension disabled, clearing all prompts');
         setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
         return;
     }
@@ -654,7 +617,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         // Clear any existing RPG Companion prompts to prevent conflicts
         setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
     }
 
@@ -730,9 +692,6 @@ export async function onGenerationStarted(type, data, dryRun) {
             setExtensionPrompt('rpg-companion-inject', instructions, extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false, extension_prompt_roles.USER);
         }
 
-        // Inject all enabled prompt features using the helper function
-        injectPromptFeatures('together', shouldSuppress);
-
     } else if (extensionSettings.generationMode === 'separate') {
         // In SEPARATE mode, inject the contextual summary for main roleplay generation
         const contextSummary = generateContextualSummary();
@@ -753,9 +712,6 @@ export async function onGenerationStarted(type, data, dryRun) {
             setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
         }
 
-        // Inject all enabled prompt features using the helper function
-        injectPromptFeatures('separate', shouldSuppress);
-
         // Clear together mode injections
         setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
@@ -765,11 +721,6 @@ export async function onGenerationStarted(type, data, dryRun) {
         setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
         setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.BEFORE_LAST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-html', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-dialogue-coloring', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-deception', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-omniscience', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
-        setExtensionPrompt('rpg-companion-zzz-cyoa', '', extension_prompt_types.IN_CHAT, INJECTION_DEPTHS.FIRST_MESSAGE, false);
     }
 
     // Set suppression state for the historical context injection

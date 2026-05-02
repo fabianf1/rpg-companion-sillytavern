@@ -98,6 +98,39 @@ export function loadSettings() {
                 extensionSettings.settingsVersion = 6;
             }
 
+            // Migration to version 7: Remove HTML Prompt, Dialogue Coloring, Deception, Omniscience, and CYOA features
+            if (currentVersion < 7) {
+                console.log('[RPG Companion] Migrating to version 7: Removing removed features');
+                
+                // Remove orphaned settings keys
+                const keysToRemove = [
+                    'enableHtmlPrompt',
+                    'customHtmlPrompt',
+                    'enableDialogueColoring',
+                    'customDialogueColoringPrompt',
+                    'enableDeceptionSystem',
+                    'customDeceptionPrompt',
+                    'enableOmniscienceFilter',
+                    'customOmnisciencePrompt',
+                    'enableCYOA',
+                    'customCYOAPrompt',
+                    'showHtmlToggle',
+                    'showDialogueColoringToggle',
+                    'showDeceptionToggle',
+                    'showOmniscienceToggle',
+                    'showCYOAToggle'
+                ];
+                
+                keysToRemove.forEach(key => {
+                    if (extensionSettings[key] !== undefined) {
+                        delete extensionSettings[key];
+                        console.log(`[RPG Companion] Removed orphaned setting: ${key}`);
+                    }
+                });
+                
+                // extensionSettings.settingsVersion = 7; // Disabled until version stabilzed.
+            }
+
             saveSettings();
 
             // console.log('[RPG Companion] Settings loaded:', extensionSettings);
