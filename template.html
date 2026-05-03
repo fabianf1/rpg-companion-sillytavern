@@ -142,15 +142,28 @@
                     </label>
                 </div>
             </div>
-            <!-- Manual Update Button - Single button that shows cancel on hover during update -->
-            <button id="rpg-manual-update" class="rpg-btn-primary rpg-manual-update-btn">
-                <span class="rpg-btn-refresh-content">
-                    <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.mainPanel.refreshRpgInfo">Refresh RPG Info</span>
-                </span>
-                <span class="rpg-btn-cancel-content">
-                    <i class="fa-solid fa-stop"></i> <span data-i18n-key="template.mainPanel.cancelGeneration">Cancel</span>
-                </span>
-            </button>
+            <!-- Manual Update Buttons Row - Split Full/Partial Refresh -->
+            <div class="rpg-refresh-buttons-row">
+                <div id="rpg-refresh-split-btn" class="rpg-refresh-split-btn">
+                    <!-- Full Refresh (left half) -->
+                    <button id="rpg-full-refresh" class="rpg-split-half rpg-split-full">
+                        <span class="rpg-btn-refresh-content">
+                            <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.mainPanel.fullRefresh">Full Refresh</span>
+                        </span>
+                    </button>
+                    <!-- Partial Refresh (right half) -->
+                    <button id="rpg-partial-refresh" class="rpg-split-half rpg-split-partial">
+                        <span class="rpg-btn-partial-content">
+                            <i class="fa-solid fa-pen-ruler"></i> <span data-i18n-key="template.mainPanel.partialRefresh">Partial</span>
+                        </span>
+                    </button>
+                    <!-- Cancel button (replaces both during generation, shows "Refreshing..." by default, "Cancel" on hover) -->
+                    <button id="rpg-refresh-cancel" class="rpg-split-cancel" style="display: none;">
+                        <span class="rpg-cancel-refreshing-text"><i class="fa-solid fa-sync fa-spin"></i> <span data-i18n-key="template.mainPanel.refreshing">Refreshing...</span></span>
+                        <span class="rpg-cancel-action-text"><i class="fa-solid fa-stop"></i> <span data-i18n-key="template.mainPanel.cancelGeneration">Cancel</span></span>
+                    </button>
+                </div>
+            </div>
 
             <!-- Settings and Edit Trackers Buttons Row -->
             <div class="rpg-settings-buttons-row">
@@ -727,6 +740,64 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Partial Refresh Modal -->
+<div id="rpg-partial-refresh-popup" class="rpg-partial-refresh-popup" role="dialog" aria-modal="true" aria-labelledby="rpg-partial-refresh-title">
+    <div class="rpg-partial-refresh-popup-content">
+        <header class="rpg-partial-refresh-popup-header">
+            <h3 id="rpg-partial-refresh-title">
+                <i class="fa-solid fa-pen-ruler" aria-hidden="true"></i>
+                <span data-i18n-key="template.partialRefreshModal.title">Partial Refresh</span>
+            </h3>
+            <button id="rpg-partial-refresh-close" class="rpg-popup-close" type="button" aria-label="Close partial refresh">&times;</button>
+        </header>
+        <div class="rpg-partial-refresh-popup-body">
+            <p class="rpg-partial-refresh-description" data-i18n-key="template.partialRefreshModal.description">Select which sections to refresh:</p>
+            <div class="rpg-partial-refresh-sections">
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="stats" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.stats">Stats</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="status" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.status">Status</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="skills" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.skills">Skills</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="appearance" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.appearance">Appearance</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="inventory" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.inventory">Inventory</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="quests" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.quests">Quests</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="infoBox" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.infoBox">Info Box</span>
+                </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="characterThoughts" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.characterThoughts">Character Thoughts</span>
+                </label>
+            </div>
+        </div>
+        <footer class="rpg-partial-refresh-popup-footer">
+            <button id="rpg-partial-refresh-cancel" class="rpg-btn-secondary rpg-btn-half" type="button">
+                <span data-i18n-key="global.cancel">Cancel</span>
+            </button>
+            <button id="rpg-partial-refresh-execute" class="rpg-btn-primary rpg-btn-half" type="button">
+                <i class="fa-solid fa-sync"></i> <span data-i18n-key="template.partialRefreshModal.execute">Refresh Selected</span>
+            </button>
+        </footer>
     </div>
 </div>
 

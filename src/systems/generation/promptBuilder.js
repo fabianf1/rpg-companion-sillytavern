@@ -3,17 +3,22 @@
  * Handles all AI prompt generation for RPG tracker data
  */
 
-import { getContext } from '../../../../../../extensions.js';
-import { chat, characters, this_chid } from '../../../../../../../script.js';
-import { selected_group, getGroupMembers, getGroupChat, groups } from '../../../../../../group-chats.js';
-import { extensionSettings } from '../../core/state.js';
+import { getContext } from "../../../../../../extensions.js";
+import { chat, characters, this_chid } from "../../../../../../../script.js";
 import {
-    buildUserStatsJSONInstruction,
-    buildInfoBoxJSONInstruction,
-    buildCharactersJSONInstruction,
-    addLockInstruction
-} from './jsonPromptHelpers.js';
-import { applyLocks } from './lockManager.js';
+	selected_group,
+	getGroupMembers,
+	getGroupChat,
+	groups,
+} from "../../../../../../group-chats.js";
+import { extensionSettings } from "../../core/state.js";
+import {
+	buildUserStatsJSONInstruction,
+	buildInfoBoxJSONInstruction,
+	buildCharactersJSONInstruction,
+	addLockInstruction,
+} from "./jsonPromptHelpers.js";
+import { applyLocks } from "./lockManager.js";
 
 /**
  * Finds the last assistant message in a message array.
@@ -23,12 +28,12 @@ import { applyLocks } from './lockManager.js';
  * @returns {number} Index of the last assistant message, or -1 if not found
  */
 function findLastAssistantMessageIndex(messages) {
-    for (let i = messages.length - 1; i >= 0; i--) {
-        if (!messages[i].is_user && !messages[i].is_system) {
-            return i;
-        }
-    }
-    return -1;
+	for (let i = messages.length - 1; i >= 0; i--) {
+		if (!messages[i].is_user && !messages[i].is_system) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 /**
@@ -40,15 +45,16 @@ function findLastAssistantMessageIndex(messages) {
  * @returns {Object|null} The rpg_companion_swipes data for this swipe, or null
  */
 function getSwipeData(message, swipeId) {
-    // Primary: in-memory extra (current session or after recent write)
-    const fromExtra = message.extra?.rpg_companion_swipes?.[swipeId];
-    if (fromExtra) return fromExtra;
+	// Primary: in-memory extra (current session or after recent write)
+	const fromExtra = message.extra?.rpg_companion_swipes?.[swipeId];
+	if (fromExtra) return fromExtra;
 
-    // Fallback: swipe_info (populated by ST when loading from disk)
-    const fromSwipeInfo = message.swipe_info?.[swipeId]?.extra?.rpg_companion_swipes?.[swipeId];
-    if (fromSwipeInfo) return fromSwipeInfo;
+	// Fallback: swipe_info (populated by ST when loading from disk)
+	const fromSwipeInfo =
+		message.swipe_info?.[swipeId]?.extra?.rpg_companion_swipes?.[swipeId];
+	if (fromSwipeInfo) return fromSwipeInfo;
 
-    return null;
+	return null;
 }
 
 /**
@@ -60,33 +66,35 @@ function getSwipeData(message, swipeId) {
  * @returns {string|null} The tracker data for this key, or null if not found
  */
 export function getTrackerDataForContext(trackerKey, currentChat = null) {
-    const chatToSearch = currentChat || getContext().chat;
-    if (!chatToSearch) return null;
+	const chatToSearch = currentChat || getContext().chat;
+	if (!chatToSearch) return null;
 
-    // Reset last tracker message at the beginning of context gathering
-    extensionSettings.lastTrackerMessage = null;
+	// Reset last tracker message at the beginning of context gathering
+	extensionSettings.lastTrackerMessage = null;
 
-    // Walk backward to find the last assistant message with swipe data
-    for (let i = chatToSearch.length - 1; i >= 0; i--) {
-        const message = chatToSearch[i];
-        // Skip user and system messages
-        if (message.is_user || message.is_system) {
-            continue;
-        }
+	// Walk backward to find the last assistant message with swipe data
+	for (let i = chatToSearch.length - 1; i >= 0; i--) {
+		const message = chatToSearch[i];
+		// Skip user and system messages
+		if (message.is_user || message.is_system) {
+			continue;
+		}
 
-        // Found an assistant message - try to get its swipe data
-        const swipeId = message.swipe_id || 0;
-        //console.log(`[RPG Companion] Checking message ID ${message.id} for tracker data. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId} | ${message.swipe_id}`);
-        const swipeData = getSwipeData(message, swipeId);
-        if (swipeData && swipeData[trackerKey]) {
-            console.log(`[RPG Companion] Found tracker data for "${trackerKey}" in message ID ${message.id}. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId}`);
-            // Track the message ID of the last message with tracker data
-            extensionSettings.lastTrackerMessage = i;
-            return swipeData[trackerKey];
-        }
-    }
+		// Found an assistant message - try to get its swipe data
+		const swipeId = message.swipe_id || 0;
+		//console.log(`[RPG Companion] Checking message ID ${message.id} for tracker data. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId} | ${message.swipe_id}`);
+		const swipeData = getSwipeData(message, swipeId);
+		if (swipeData && swipeData[trackerKey]) {
+			console.log(
+				`[RPG Companion] Found tracker data for "${trackerKey}" in message ID ${message.id}. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId}`,
+			);
+			// Track the message ID of the last message with tracker data
+			extensionSettings.lastTrackerMessage = i;
+			return swipeData[trackerKey];
+		}
+	}
 
-    return null;
+	return null;
 }
 
 /**
@@ -114,88 +122,90 @@ export const DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT = `The context above is informa
  * @returns {string} Formatted character information
  */
 function getCharacterCardsInfo() {
-    let characterInfo = '';
+	let characterInfo = "";
 
-    // Narrator mode: use character card as narrator context, infer characters from story context
-    if (extensionSettings.narratorMode) {
-        if (this_chid !== undefined && characters && characters[this_chid]) {
-            const character = characters[this_chid];
-            characterInfo += 'You are acting as the narrator for this story. The narrator card provides context for the story tone and style:\n\n';
-            characterInfo += `<narrator>\n`;
+	// Narrator mode: use character card as narrator context, infer characters from story context
+	if (extensionSettings.narratorMode) {
+		if (this_chid !== undefined && characters && characters[this_chid]) {
+			const character = characters[this_chid];
+			characterInfo +=
+				"You are acting as the narrator for this story. The narrator card provides context for the story tone and style:\n\n";
+			characterInfo += `<narrator>\n`;
 
-            if (character.description) {
-                characterInfo += `${character.description}\n`;
-            }
+			if (character.description) {
+				characterInfo += `${character.description}\n`;
+			}
 
-            if (character.personality) {
-                characterInfo += `${character.personality}\n`;
-            }
+			if (character.personality) {
+				characterInfo += `${character.personality}\n`;
+			}
 
-            characterInfo += `</narrator>\n\n`;
+			characterInfo += `</narrator>\n\n`;
 
-            // Use custom narrator prompt if available, otherwise use default
-            const narratorPrompt = extensionSettings.customNarratorPrompt || DEFAULT_NARRATOR_PROMPT;
-            characterInfo += narratorPrompt + '\n\n';
-        }
-        return characterInfo;
-    }
+			// Use custom narrator prompt if available, otherwise use default
+			const narratorPrompt =
+				extensionSettings.customNarratorPrompt || DEFAULT_NARRATOR_PROMPT;
+			characterInfo += narratorPrompt + "\n\n";
+		}
+		return characterInfo;
+	}
 
-    // Check if in group chat
-    if (selected_group) {
-        // Find the current group directly from the groups array
-        const group = groups.find(g => g.id === selected_group);
-        const groupMembers = getGroupMembers(selected_group);
+	// Check if in group chat
+	if (selected_group) {
+		// Find the current group directly from the groups array
+		const group = groups.find((g) => g.id === selected_group);
+		const groupMembers = getGroupMembers(selected_group);
 
-        if (groupMembers && groupMembers.length > 0) {
-            characterInfo += 'Characters in this roleplay:\n\n';
+		if (groupMembers && groupMembers.length > 0) {
+			characterInfo += "Characters in this roleplay:\n\n";
 
-            // Filter out disabled (muted) members
-            const disabledMembers = group?.disabled_members || [];
-            // console.log('[RPG Companion] 🔍 Group ID:', selected_group, '| Disabled members:', disabledMembers);
-            let characterIndex = 0;
+			// Filter out disabled (muted) members
+			const disabledMembers = group?.disabled_members || [];
+			// console.log('[RPG Companion] 🔍 Group ID:', selected_group, '| Disabled members:', disabledMembers);
+			let characterIndex = 0;
 
-            groupMembers.forEach((member) => {
-                if (!member || !member.name) return;
+			groupMembers.forEach((member) => {
+				if (!member || !member.name) return;
 
-                // Skip muted characters - check against avatar filename
-                if (member.avatar && disabledMembers.includes(member.avatar)) {
-                    // console.log(`[RPG Companion] ❌ Skipping muted: ${member.name} (${member.avatar})`);
-                    return;
-                }
+				// Skip muted characters - check against avatar filename
+				if (member.avatar && disabledMembers.includes(member.avatar)) {
+					// console.log(`[RPG Companion] ❌ Skipping muted: ${member.name} (${member.avatar})`);
+					return;
+				}
 
-                characterIndex++;
-                characterInfo += `<character${characterIndex}="${member.name}">\n`;
+				characterIndex++;
+				characterInfo += `<character${characterIndex}="${member.name}">\n`;
 
-                if (member.description) {
-                    characterInfo += `${member.description}\n`;
-                }
+				if (member.description) {
+					characterInfo += `${member.description}\n`;
+				}
 
-                if (member.personality) {
-                    characterInfo += `${member.personality}\n`;
-                }
+				if (member.personality) {
+					characterInfo += `${member.personality}\n`;
+				}
 
-                characterInfo += `</character${characterIndex}>\n\n`;
-            });
-        }
-    } else if (this_chid !== undefined && characters && characters[this_chid]) {
-        // Single character chat
-        const character = characters[this_chid];
+				characterInfo += `</character${characterIndex}>\n\n`;
+			});
+		}
+	} else if (this_chid !== undefined && characters && characters[this_chid]) {
+		// Single character chat
+		const character = characters[this_chid];
 
-        characterInfo += 'Character in this roleplay:\n\n';
-        characterInfo += `<character="${character.name}">\n`;
+		characterInfo += "Character in this roleplay:\n\n";
+		characterInfo += `<character="${character.name}">\n`;
 
-        if (character.description) {
-            characterInfo += `${character.description}\n`;
-        }
+		if (character.description) {
+			characterInfo += `${character.description}\n`;
+		}
 
-        if (character.personality) {
-            characterInfo += `${character.personality}\n`;
-        }
+		if (character.personality) {
+			characterInfo += `${character.personality}\n`;
+		}
 
-        characterInfo += `</character>\n\n`;
-    }
+		characterInfo += `</character>\n\n`;
+	}
 
-    return characterInfo;
+	return characterInfo;
 }
 
 /**
@@ -204,11 +214,11 @@ function getCharacterCardsInfo() {
  * @returns {string} Formatted item string (e.g., "Sword" or "3x Potions")
  */
 function inventoryItemToString(item) {
-    if (!item?.name) return '';
-    if (item.quantity && item.quantity > 1) {
-        return `${item.quantity}x ${item.name}`;
-    }
-    return item.name;
+	if (!item?.name) return "";
+	if (item.quantity && item.quantity > 1) {
+		return `${item.quantity}x ${item.name}`;
+	}
+	return item.name;
 }
 
 /**
@@ -217,10 +227,10 @@ function inventoryItemToString(item) {
  * @returns {string} Comma-separated string of items, or 'None' if empty
  */
 function inventoryArrayToString(items) {
-    if (!Array.isArray(items) || items.length === 0) {
-        return 'None';
-    }
-    return items.map(inventoryItemToString).join(', ');
+	if (!Array.isArray(items) || items.length === 0) {
+		return "None";
+	}
+	return items.map(inventoryItemToString).join(", ");
 }
 
 /**
@@ -234,51 +244,51 @@ function inventoryArrayToString(items) {
  * // Returns: "On Person: Sword\nStored - Home: Gold\nAssets: Horse"
  */
 export function buildInventorySummary(inventory) {
-    // Handle legacy v1 string format
-    if (typeof inventory === 'string') {
-        return inventory;
-    }
+	// Handle legacy v1 string format
+	if (typeof inventory === "string") {
+		return inventory;
+	}
 
-    // Handle v2 object format (array-based)
-    let summary = '';
+	// Handle v2 object format (array-based)
+	let summary = "";
 
-    // Add On Person section
-    if (inventory.onPerson) {
-        const onPersonStr = inventoryArrayToString(inventory.onPerson);
-        if (onPersonStr !== 'None') {
-            summary += `On Person: ${onPersonStr}\n`;
-        }
-    }
+	// Add On Person section
+	if (inventory.onPerson) {
+		const onPersonStr = inventoryArrayToString(inventory.onPerson);
+		if (onPersonStr !== "None") {
+			summary += `On Person: ${onPersonStr}\n`;
+		}
+	}
 
-    // Add Clothing section
-    if (inventory.clothing) {
-        const clothingStr = inventoryArrayToString(inventory.clothing);
-        if (clothingStr !== 'None') {
-            summary += `Clothing: ${clothingStr}\n`;
-        }
-    }
+	// Add Clothing section
+	if (inventory.clothing) {
+		const clothingStr = inventoryArrayToString(inventory.clothing);
+		if (clothingStr !== "None") {
+			summary += `Clothing: ${clothingStr}\n`;
+		}
+	}
 
-    // Add Stored sections for each location
-    if (inventory.stored && Object.keys(inventory.stored).length > 0) {
-        for (const [location, items] of Object.entries(inventory.stored)) {
-            if (Array.isArray(items)) {
-                const itemsStr = inventoryArrayToString(items);
-                if (itemsStr !== 'None') {
-                    summary += `Stored - ${location}: ${itemsStr}\n`;
-                }
-            }
-        }
-    }
+	// Add Stored sections for each location
+	if (inventory.stored && Object.keys(inventory.stored).length > 0) {
+		for (const [location, items] of Object.entries(inventory.stored)) {
+			if (Array.isArray(items)) {
+				const itemsStr = inventoryArrayToString(items);
+				if (itemsStr !== "None") {
+					summary += `Stored - ${location}: ${itemsStr}\n`;
+				}
+			}
+		}
+	}
 
-    // Add Assets section
-    if (inventory.assets) {
-        const assetsStr = inventoryArrayToString(inventory.assets);
-        if (assetsStr !== 'None') {
-            summary += `Assets: ${assetsStr}`;
-        }
-    }
+	// Add Assets section
+	if (inventory.assets) {
+		const assetsStr = inventoryArrayToString(inventory.assets);
+		if (assetsStr !== "None") {
+			summary += `Assets: ${assetsStr}`;
+		}
+	}
 
-    return summary.trim();
+	return summary.trim();
 }
 
 /**
@@ -288,35 +298,39 @@ export function buildInventorySummary(inventory) {
  * @returns {string} Formatted attributes string (e.g., "STR 10, DEX 12, INT 15, LVL 5")
  */
 function buildAttributesString() {
-    const trackerConfig = extensionSettings.trackerConfig;
-    const classicStats = extensionSettings.classicStats;
-    const userStatsConfig = trackerConfig?.userStats;
+	const trackerConfig = extensionSettings.trackerConfig;
+	const classicStats = extensionSettings.classicStats;
+	const userStatsConfig = trackerConfig?.userStats;
 
-    // Get enabled attributes from config
-    const rpgAttributes = userStatsConfig?.rpgAttributes || [
-        { id: 'str', name: 'STR', enabled: true },
-        { id: 'dex', name: 'DEX', enabled: true },
-        { id: 'con', name: 'CON', enabled: true },
-        { id: 'int', name: 'INT', enabled: true },
-        { id: 'wis', name: 'WIS', enabled: true },
-        { id: 'cha', name: 'CHA', enabled: true }
-    ];
+	// Get enabled attributes from config
+	const rpgAttributes = userStatsConfig?.rpgAttributes || [
+		{ id: "str", name: "STR", enabled: true },
+		{ id: "dex", name: "DEX", enabled: true },
+		{ id: "con", name: "CON", enabled: true },
+		{ id: "int", name: "INT", enabled: true },
+		{ id: "wis", name: "WIS", enabled: true },
+		{ id: "cha", name: "CHA", enabled: true },
+	];
 
-    const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
+	const enabledAttributes = rpgAttributes.filter(
+		(attr) => attr && attr.enabled && attr.name && attr.id,
+	);
 
-    // Build attributes string dynamically
-    const attributeParts = enabledAttributes.map(attr => {
-        const value = classicStats[attr.id] !== undefined ? classicStats[attr.id] : 10;
-        return `${attr.name} ${value}`;
-    });
+	// Build attributes string dynamically
+	const attributeParts = enabledAttributes.map((attr) => {
+		const value =
+			classicStats[attr.id] !== undefined ? classicStats[attr.id] : 10;
+		return `${attr.name} ${value}`;
+	});
 
-    // Add level at the end (if enabled)
-    const showLevel = extensionSettings.trackerConfig?.userStats?.showLevel !== false; // Default to true
-    if (showLevel) {
-        attributeParts.push(`LVL ${extensionSettings.level}`);
-    }
+	// Add level at the end (if enabled)
+	const showLevel =
+		extensionSettings.trackerConfig?.userStats?.showLevel !== false; // Default to true
+	if (showLevel) {
+		attributeParts.push(`LVL ${extensionSettings.level}`);
+	}
 
-    return attributeParts.join(', ');
+	return attributeParts.join(", ");
 }
 
 /**
@@ -326,41 +340,41 @@ function buildAttributesString() {
  * @returns {string} Formatted example text with tracker data in code blocks
  */
 export function generateTrackerExample() {
-    let example = '';
+	let example = "";
 
-    // Use authoritative swipe store data for generation context
-    // Apply locks before sending to AI (for JSON format only)
-    // Build unified JSON structure with proper wrapper keys
-    const parts = [];
+	// Use authoritative swipe store data for generation context
+	// Apply locks before sending to AI (for JSON format only)
+	// Build unified JSON structure with proper wrapper keys
+	const parts = [];
 
-    const userStatsData = getTrackerDataForContext('userStats');
-    const infoBoxData = getTrackerDataForContext('infoBox');
-    const characterThoughtsData = getTrackerDataForContext('characterThoughts');
+	const userStatsData = getTrackerDataForContext("userStats");
+	const infoBoxData = getTrackerDataForContext("infoBox");
+	const characterThoughtsData = getTrackerDataForContext("characterThoughts");
 
-    if (extensionSettings.showUserStats && userStatsData) {
-        // Apply locks to object data
-        const lockedData = applyLocks(userStatsData, 'userStats');
-        parts.push(`  "userStats": ${JSON.stringify(lockedData, null, 2)}`);
-    }
+	if (extensionSettings.showUserStats && userStatsData) {
+		// Apply locks to object data
+		const lockedData = applyLocks(userStatsData, "userStats");
+		parts.push(`  "userStats": ${JSON.stringify(lockedData, null, 2)}`);
+	}
 
-    if (extensionSettings.showInfoBox && infoBoxData) {
-        // Apply locks to object data
-        const lockedData = applyLocks(infoBoxData, 'infoBox');
-        parts.push(`  "infoBox": ${JSON.stringify(lockedData, null, 2)}`);
-    }
+	if (extensionSettings.showInfoBox && infoBoxData) {
+		// Apply locks to object data
+		const lockedData = applyLocks(infoBoxData, "infoBox");
+		parts.push(`  "infoBox": ${JSON.stringify(lockedData, null, 2)}`);
+	}
 
-    if (extensionSettings.showCharacterThoughts && characterThoughtsData) {
-        // Apply locks to object data
-        const lockedData = applyLocks(characterThoughtsData, 'characters');
-        parts.push(`  "characters": ${JSON.stringify(lockedData, null, 2)}`);
-    }
+	if (extensionSettings.showCharacterThoughts && characterThoughtsData) {
+		// Apply locks to object data
+		const lockedData = applyLocks(characterThoughtsData, "characters");
+		parts.push(`  "characters": ${JSON.stringify(lockedData, null, 2)}`);
+	}
 
-    // If we have JSON parts, wrap them in unified structure
-    if (parts.length > 0) {
-        example = '{\n' + parts.join(',\n') + '\n}';
-    }
+	// If we have JSON parts, wrap them in unified structure
+	if (parts.length > 0) {
+		example = "{\n" + parts.join(",\n") + "\n}";
+	}
 
-    return example.trim();
+	return example.trim();
 }
 
 /**
@@ -372,114 +386,202 @@ export function generateTrackerExample() {
  * @param {boolean} includeAttributes - Whether to include RPG attributes (false for separate tracker generation)
  * @returns {string} Formatted instruction text for the AI
  */
-export function generateTrackerInstructions(includeHtmlPrompt = true, includeContinuation = true, includeAttributes = true) {
-    const userName = getContext().name1;
-    const classicStats = extensionSettings.classicStats;
-    const trackerConfig = extensionSettings.trackerConfig;
-    let instructions = '';
+export function generateTrackerInstructions(
+	includeHtmlPrompt = true,
+	includeContinuation = true,
+	includeAttributes = true,
+	selectedSections = null,
+) {
+	const userName = getContext().name1;
+	const classicStats = extensionSettings.classicStats;
+	const trackerConfig = extensionSettings.trackerConfig;
+	let instructions = "";
 
-    // Check if any trackers are enabled
-    const hasAnyTrackers = extensionSettings.showUserStats || extensionSettings.showInfoBox || extensionSettings.showCharacterThoughts;
+	// Determine which trackers are enabled based on selectedSections or show* settings
+	// Nested sub-sections (stats, status, skills, appearance, inventory, quests) are part of userStats
+	const nestedSubSections = [
+		"stats",
+		"status",
+		"skills",
+		"appearance",
+		"inventory",
+		"quests",
+	];
+	const hasNestedSections = selectedSections
+		? selectedSections.some((s) => nestedSubSections.includes(s))
+		: false;
 
-    // Only add tracker instructions if at least one tracker is enabled
-    if (hasAnyTrackers) {
-        // Universal instruction header
-        instructions += '\nAt the start of every reply, you must attach an update to the trackers in EXACTLY the JSON format shown below as a single unified JSON object containing all enabled tracker fields. ';
+	const shouldIncludeUserStats = selectedSections
+		? hasNestedSections
+		: extensionSettings.showUserStats;
+	const shouldIncludeInfoBox = selectedSections
+		? selectedSections.includes("infoBox")
+		: extensionSettings.showInfoBox;
+	const shouldIncludeCharacterThoughts = selectedSections
+		? selectedSections.includes("characterThoughts")
+		: extensionSettings.showCharacterThoughts;
 
-        // Append custom instruction portion if available
-        const customPrompt = extensionSettings.customTrackerInstructionsPrompt;
-        if (customPrompt) {
-            instructions += customPrompt.replace(/{userName}/g, userName);
-        } else {
-            instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: "Location" becomes "Forest Clearing", "Mood Emoji" becomes "😊". DO NOT include ${userName} in the characters section, only NPCs. `;
-            instructions += `Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user's actions, the passage of time, and logical consequences.`;
-        }
+	// Extract nested sub-sections from selectedSections
+	const userStatsSubSections = selectedSections
+		? selectedSections.filter((s) => nestedSubSections.includes(s))
+		: null;
 
-        // Add lock instruction
-        instructions += addLockInstruction('');
+	// Check if any trackers are enabled
+	const hasAnyTrackers =
+		shouldIncludeUserStats ||
+		shouldIncludeInfoBox ||
+		shouldIncludeCharacterThoughts;
 
-        // Add format specifications for each enabled tracker using JSON
-        // Wrap all trackers in a unified JSON structure
-        const enabledTrackers = [];
-        if (extensionSettings.showUserStats) {
-            enabledTrackers.push('userStats');
-        }
-        if (extensionSettings.showInfoBox) {
-            enabledTrackers.push('infoBox');
-        }
-        if (extensionSettings.showCharacterThoughts) {
-            enabledTrackers.push('characters');
-        }
+	// Only add tracker instructions if at least one tracker is enabled
+	if (hasAnyTrackers) {
+		// Universal instruction header
+		instructions +=
+			"\nAt the start of every reply, you must attach an update to the trackers in EXACTLY the JSON format shown below as a single unified JSON object containing all enabled tracker fields. ";
 
-        if (enabledTrackers.length > 0) {
-            instructions += '\n\nFORMAT:\n\nProvide EXACTLY ONE JSON code block with ALL tracker sections wrapped in a single object:\n\n```json\n{\n';
+		// If partial refresh, add a note about which sections to update
+		if (selectedSections) {
+			const sectionNames = [];
+			if (shouldIncludeUserStats) {
+				if (userStatsSubSections && userStatsSubSections.length > 0) {
+					// For nested sub-sections, be explicit about the JSON path
+					const pathParts = userStatsSubSections.map((s) => `userStats.${s}`);
+					sectionNames.push('"' + pathParts.join('" and "') + '"');
+				} else {
+					sectionNames.push('"userStats"');
+				}
+			}
+			if (shouldIncludeInfoBox) sectionNames.push('"infoBox"');
+			if (shouldIncludeCharacterThoughts) sectionNames.push('"characters"');
 
-            if (extensionSettings.showUserStats) {
-                instructions += '  "userStats": ';
-                const userStatsJSON = buildUserStatsJSONInstruction();
-                // Add 2 spaces to all lines after the first to properly nest within root object
-                instructions += userStatsJSON.split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n');
-                instructions += enabledTrackers.indexOf('userStats') < enabledTrackers.length - 1 ? ',\n' : '\n';
-            }
+			// For nested sub-sections within userStats, add extra clarity
+			if (userStatsSubSections && userStatsSubSections.length > 0) {
+				const pathDescriptions = userStatsSubSections.map(
+					(s) => `"userStats.${s}"`,
+				);
+				instructions += `\nThe JSON example below shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields (stats, status, skills, and any non-selected sub-sections) exactly as they appear in <previous> above. `;
+			}
+		}
 
-            if (extensionSettings.showInfoBox) {
-                instructions += '  "infoBox": ';
-                const infoBoxJSON = buildInfoBoxJSONInstruction();
-                // Add 2 spaces to all lines after the first to properly nest within root object
-                instructions += infoBoxJSON.split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n');
-                instructions += enabledTrackers.indexOf('infoBox') < enabledTrackers.length - 1 ? ',\n' : '\n';
-            }
+		// Append custom instruction portion if available
+		const customPrompt = extensionSettings.customTrackerInstructionsPrompt;
+		if (customPrompt) {
+			instructions += customPrompt.replace(/{userName}/g, userName);
+		} else {
+			instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: "Location" becomes "Forest Clearing", "Mood Emoji" becomes "😊". DO NOT include ${userName} in the characters section, only NPCs. `;
+			instructions += `Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user's actions, the passage of time, and logical consequences.`;
+		}
 
-            if (extensionSettings.showCharacterThoughts) {
-                instructions += '  "characters": ';
-                const charactersJSON = buildCharactersJSONInstruction();
-                // Add 2 spaces to all lines after the first to properly nest within root object
-                instructions += charactersJSON.split('\n').map((line, i) => i === 0 ? line : '  ' + line).join('\n');
-            }
+		// Add lock instruction
+		instructions += addLockInstruction("");
 
-            instructions += '\n}\n```\n\nDo NOT output multiple separate JSON objects. Everything must be in ONE unified object with the keys shown above.';
-        }
+		// Add format specifications for each enabled tracker using JSON
+		// Wrap all trackers in a unified JSON structure
+		const enabledTrackers = [];
+		if (shouldIncludeUserStats) {
+			enabledTrackers.push("userStats");
+		}
+		if (shouldIncludeInfoBox) {
+			enabledTrackers.push("infoBox");
+		}
+		if (shouldIncludeCharacterThoughts) {
+			enabledTrackers.push("characters");
+		}
 
-        // Only add continuation instruction if includeContinuation is true
-        if (includeContinuation) {
-            const customPrompt = extensionSettings.customTrackerContinuationPrompt;
-            if (customPrompt) {
-                instructions += '\n\n' + customPrompt + '\n\n';
-            } else {
-                instructions += `\n\nAfter updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting the protagonist's performance, low hygiene influencing their social interactions, environmental factors shaping the scene, a character's emotional state coloring their responses, and so on. Remember, all bracketed placeholders (e.g., [Location], [Mood Emoji]) MUST be replaced with actual content without the square brackets.\n\n`;
-            }
-        }
+		if (enabledTrackers.length > 0) {
+			instructions +=
+				"\n\nFORMAT:\n\nProvide EXACTLY ONE JSON code block with ALL tracker sections wrapped in a single object:\n\n```json\n{\n";
 
-        // Include attributes based on settings (only if includeAttributes is true)
-        if (includeAttributes) {
-            const alwaysSendAttributes = trackerConfig?.userStats?.alwaysSendAttributes;
-            const showRPGAttributes = trackerConfig?.userStats?.showRPGAttributes !== false;
-            const shouldSendAttributes = alwaysSendAttributes && showRPGAttributes;
+			if (shouldIncludeUserStats) {
+				instructions += '  "userStats": ';
+				const userStatsJSON = buildUserStatsJSONInstruction();
+				// Add 2 spaces to all lines after the first to properly nest within root object
+				instructions += userStatsJSON
+					.split("\n")
+					.map((line, i) => (i === 0 ? line : "  " + line))
+					.join("\n");
+				instructions +=
+					enabledTrackers.indexOf("userStats") < enabledTrackers.length - 1
+						? ",\n"
+						: "\n";
+			}
 
-            if (shouldSendAttributes) {
-                const attributesString = buildAttributesString();
-                instructions += `${userName}'s attributes: ${attributesString}\n`;
-            }
-        }
+			if (shouldIncludeInfoBox) {
+				instructions += '  "infoBox": ';
+				const infoBoxJSON = buildInfoBoxJSONInstruction();
+				// Add 2 spaces to all lines after the first to properly nest within root object
+				instructions += infoBoxJSON
+					.split("\n")
+					.map((line, i) => (i === 0 ? line : "  " + line))
+					.join("\n");
+				instructions +=
+					enabledTrackers.indexOf("infoBox") < enabledTrackers.length - 1
+						? ",\n"
+						: "\n";
+			}
 
-        // Add dice roll context if there was one (independent of attributes)
-        if (extensionSettings.lastDiceRoll) {
-            const roll = extensionSettings.lastDiceRoll;
-            const showRPGAttributes = trackerConfig?.userStats?.showRPGAttributes !== false;
-            const alwaysSendAttributes = trackerConfig?.userStats?.alwaysSendAttributes;
-            const hasAttributes = includeAttributes && (alwaysSendAttributes && showRPGAttributes);
+			if (shouldIncludeCharacterThoughts) {
+				instructions += '  "characters": ';
+				const charactersJSON = buildCharactersJSONInstruction();
+				// Add 2 spaces to all lines after the first to properly nest within root object
+				instructions += charactersJSON
+					.split("\n")
+					.map((line, i) => (i === 0 ? line : "  " + line))
+					.join("\n");
+			}
 
-            if (hasAttributes) {
-                instructions += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Based on their attributes, decide whether they succeeded or failed the action they attempted.\n\n`;
-            } else {
-                instructions += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Decide whether they succeeded or failed the action they attempted.\n\n`;
-            }
-        } else if (includeAttributes && trackerConfig?.userStats?.alwaysSendAttributes && trackerConfig?.userStats?.showRPGAttributes !== false) {
-            instructions += `\n`;
-        }
-    }
+			instructions +=
+				"\n}\n```\n\nDo NOT output multiple separate JSON objects. Everything must be in ONE unified object with the keys shown above.";
+		}
 
-    return instructions;
+		// Only add continuation instruction if includeContinuation is true
+		if (includeContinuation) {
+			const customPrompt = extensionSettings.customTrackerContinuationPrompt;
+			if (customPrompt) {
+				instructions += "\n\n" + customPrompt + "\n\n";
+			} else {
+				instructions += `\n\nAfter updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting the protagonist's performance, low hygiene influencing their social interactions, environmental factors shaping the scene, a character's emotional state coloring their responses, and so on. Remember, all bracketed placeholders (e.g., [Location], [Mood Emoji]) MUST be replaced with actual content without the square brackets.\n\n`;
+			}
+		}
+
+		// Include attributes based on settings (only if includeAttributes is true)
+		if (includeAttributes) {
+			const alwaysSendAttributes =
+				trackerConfig?.userStats?.alwaysSendAttributes;
+			const showRPGAttributes =
+				trackerConfig?.userStats?.showRPGAttributes !== false;
+			const shouldSendAttributes = alwaysSendAttributes && showRPGAttributes;
+
+			if (shouldSendAttributes) {
+				const attributesString = buildAttributesString();
+				instructions += `${userName}'s attributes: ${attributesString}\n`;
+			}
+		}
+
+		// Add dice roll context if there was one (independent of attributes)
+		if (extensionSettings.lastDiceRoll) {
+			const roll = extensionSettings.lastDiceRoll;
+			const showRPGAttributes =
+				trackerConfig?.userStats?.showRPGAttributes !== false;
+			const alwaysSendAttributes =
+				trackerConfig?.userStats?.alwaysSendAttributes;
+			const hasAttributes =
+				includeAttributes && alwaysSendAttributes && showRPGAttributes;
+
+			if (hasAttributes) {
+				instructions += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Based on their attributes, decide whether they succeeded or failed the action they attempted.\n\n`;
+			} else {
+				instructions += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Decide whether they succeeded or failed the action they attempted.\n\n`;
+			}
+		} else if (
+			includeAttributes &&
+			trackerConfig?.userStats?.alwaysSendAttributes &&
+			trackerConfig?.userStats?.showRPGAttributes !== false
+		) {
+			instructions += `\n`;
+		}
+	}
+
+	return instructions;
 }
 
 /**
@@ -491,367 +593,457 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
  * @returns {string} Formatted text summary
  */
 function formatTrackerDataForContext(jsonData, trackerType, userName) {
-    if (!jsonData) return '';
+	if (!jsonData) return "";
 
-    try {
-        const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-        let formatted = '';
+	try {
+		const data = typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
+		let formatted = "";
 
-// Helper to extract value from potentially locked fields and common object formats
-        const getValue = (field) => {
-            if (field === null || field === undefined) return '';
+		// Helper to extract value from potentially locked fields and common object formats
+		const getValue = (field) => {
+			if (field === null || field === undefined) return "";
 
-            // If it's a locked object with {value, locked}, extract the value
-            if (field && typeof field === 'object' && !Array.isArray(field) && 'value' in field) {
-                return getValue(field.value); // Recursively handle in case value itself is locked
-            }
+			// If it's a locked object with {value, locked}, extract the value
+			if (
+				field &&
+				typeof field === "object" &&
+				!Array.isArray(field) &&
+				"value" in field
+			) {
+				return getValue(field.value); // Recursively handle in case value itself is locked
+			}
 
-            // If it's a regular value, return as string
-            if (typeof field !== 'object') {
-                return String(field);
-            }
+			// If it's a regular value, return as string
+			if (typeof field !== "object") {
+				return String(field);
+			}
 
-            // For arrays of strings, join them
-            if (Array.isArray(field)) {
-                return field.map(item => getValue(item)).filter(Boolean).join(', ');
-            }
+			// For arrays of strings, join them
+			if (Array.isArray(field)) {
+				return field
+					.map((item) => getValue(item))
+					.filter(Boolean)
+					.join(", ");
+			}
 
-            // Handle common object formats
-            if (field && typeof field === 'object') {
-                // Status object: {mood, [customFields...]}
-                if ('mood' in field) {
-                    const statusParts = [];
-                    const mood = getValue(field.mood);
-                    if (mood) statusParts.push(mood);
+			// Handle common object formats
+			if (field && typeof field === "object") {
+				// Status object: {mood, [customFields...]}
+				if ("mood" in field) {
+					const statusParts = [];
+					const mood = getValue(field.mood);
+					if (mood) statusParts.push(mood);
 
-                    // Add all other status fields (custom fields)
-                    for (const [key, value] of Object.entries(field)) {
-                        if (key !== 'mood') {
-                            const fieldValue = getValue(value);
-                            if (fieldValue && fieldValue !== 'None') {
-                                statusParts.push(fieldValue);
-                            }
-                        }
-                    }
-                    return statusParts.join(' - ');
-                }
+					// Add all other status fields (custom fields)
+					for (const [key, value] of Object.entries(field)) {
+						if (key !== "mood") {
+							const fieldValue = getValue(value);
+							if (fieldValue && fieldValue !== "None") {
+								statusParts.push(fieldValue);
+							}
+						}
+					}
+					return statusParts.join(" - ");
+				}
 
-                // Skill/item/quest objects: {name}, {title}, {name, quantity}
-                if ('name' in field) {
-                    const name = getValue(field.name);
-                    if ('quantity' in field && field.quantity > 1) {
-                        return `${name} (x${field.quantity})`;
-                    }
-                    return name;
-                }
+				// Skill/item/quest objects: {name}, {title}, {name, quantity}
+				if ("name" in field) {
+					const name = getValue(field.name);
+					if ("quantity" in field && field.quantity > 1) {
+						return `${name} (x${field.quantity})`;
+					}
+					return name;
+				}
 
-                if ('title' in field) {
-                    return getValue(field.title);
-                }
+				if ("title" in field) {
+					return getValue(field.title);
+				}
 
-                // Time object: {start, end}
-                if ('start' in field && 'end' in field) {
-                    return `${getValue(field.start)} - ${getValue(field.end)}`;
-                }
+				// Time object: {start, end}
+				if ("start" in field && "end" in field) {
+					return `${getValue(field.start)} - ${getValue(field.end)}`;
+				}
 
-                // Weather object: {emoji, forecast}
-                if ('emoji' in field && 'forecast' in field) {
-                    return `${getValue(field.emoji)} ${getValue(field.forecast)}`;
-                }
+				// Weather object: {emoji, forecast}
+				if ("emoji" in field && "forecast" in field) {
+					return `${getValue(field.emoji)} ${getValue(field.forecast)}`;
+				}
 
-                // Generic object fallback: create key-value pairs
-                const keys = Object.keys(field);
-                if (keys.length > 0 && keys.length <= 3) {
-                    const values = keys.map(k => {
-                        const val = getValue(field[k]);
-                        return val ? `${k}: ${val}` : null;
-                    }).filter(Boolean);
+				// Generic object fallback: create key-value pairs
+				const keys = Object.keys(field);
+				if (keys.length > 0 && keys.length <= 3) {
+					const values = keys
+						.map((k) => {
+							const val = getValue(field[k]);
+							return val ? `${k}: ${val}` : null;
+						})
+						.filter(Boolean);
 
-                    if (values.length > 0) {
-                        return values.join(', ');
-                    }
-                }
-            }
+					if (values.length > 0) {
+						return values.join(", ");
+					}
+				}
+			}
 
-            return '';
-        };
+			return "";
+		};
 
-        if (trackerType === 'userStats') {
-            formatted += `${userName}'s Stats:\n`;
+		if (trackerType === "userStats") {
+			formatted += `${userName}'s Stats:\n`;
 
-            // Get display mode and custom stats config for maxValue lookup
-            const userStatsConfig = extensionSettings.trackerConfig?.userStats;
-            const displayMode = userStatsConfig?.statsDisplayMode || 'percentage';
-            const customStats = userStatsConfig?.customStats || [];
+			// Get display mode and custom stats config for maxValue lookup
+			const userStatsConfig = extensionSettings.trackerConfig?.userStats;
+			const displayMode = userStatsConfig?.statsDisplayMode || "percentage";
+			const customStats = userStatsConfig?.customStats || [];
 
-            // Helper to get maxValue for a stat by id
-            const getMaxValue = (statId) => {
-                const statConfig = customStats.find(s => s.id === statId);
-                return statConfig?.maxValue || 100;
-            };
+			// Helper to get maxValue for a stat by id
+			const getMaxValue = (statId) => {
+				const statConfig = customStats.find((s) => s.id === statId);
+				return statConfig?.maxValue || 100;
+			};
 
-            // Helper to format stat value based on display mode
-            const formatStatValue = (value, statId) => {
-                if (displayMode === 'number') {
-                    const maxValue = getMaxValue(statId);
-                    return `${value}/${maxValue}`;
-                }
-                return value;
-            };
+			// Helper to format stat value based on display mode
+			const formatStatValue = (value, statId) => {
+				if (displayMode === "number") {
+					const maxValue = getMaxValue(statId);
+					return `${value}/${maxValue}`;
+				}
+				return value;
+			};
 
-            // Handle stats array format: [{id, name, value}, ...]
-            if (data.stats && Array.isArray(data.stats)) {
-                for (const stat of data.stats) {
-                    if (stat && stat.value !== undefined) {
-                        const statName = stat.name || (stat.id ? stat.id.charAt(0).toUpperCase() + stat.id.slice(1) : 'Unknown');
-                        const statId = stat.id || statName.toLowerCase();
-                        formatted += `${statName}: ${formatStatValue(stat.value, statId)}\n`;
-                    }
-                }
-            } else {
-                // Fallback: handle flat format {health: 10, mana: 20, ...}
-                const statFieldOrder = ['health', 'mana', 'stamina', 'satiety', 'hygiene', 'energy', 'arousal'];
-                const specialFields = ['status', 'mood', 'skills', 'inventory', 'quests'];
+			// Handle stats array format: [{id, name, value}, ...]
+			if (data.stats && Array.isArray(data.stats)) {
+				for (const stat of data.stats) {
+					if (stat && stat.value !== undefined) {
+						const statName =
+							stat.name ||
+							(stat.id
+								? stat.id.charAt(0).toUpperCase() + stat.id.slice(1)
+								: "Unknown");
+						const statId = stat.id || statName.toLowerCase();
+						formatted += `${statName}: ${formatStatValue(stat.value, statId)}\n`;
+					}
+				}
+			} else {
+				// Fallback: handle flat format {health: 10, mana: 20, ...}
+				const statFieldOrder = [
+					"health",
+					"mana",
+					"stamina",
+					"satiety",
+					"hygiene",
+					"energy",
+					"arousal",
+				];
+				const specialFields = [
+					"status",
+					"mood",
+					"skills",
+					"inventory",
+					"quests",
+				];
 
-                for (const statName of statFieldOrder) {
-                    if (data[statName] !== undefined) {
-                        const value = getValue(data[statName]);
-                        if (value) {
-                            const displayName = statName.charAt(0).toUpperCase() + statName.slice(1);
-                            formatted += `${displayName}: ${formatStatValue(value, statName)}\n`;
-                        }
-                    }
-                }
+				for (const statName of statFieldOrder) {
+					if (data[statName] !== undefined) {
+						const value = getValue(data[statName]);
+						if (value) {
+							const displayName =
+								statName.charAt(0).toUpperCase() + statName.slice(1);
+							formatted += `${displayName}: ${formatStatValue(value, statName)}\n`;
+						}
+					}
+				}
 
-                // Custom numeric stats
-                for (const [key, value] of Object.entries(data)) {
-                    if (!statFieldOrder.includes(key) && !specialFields.includes(key) && typeof value === 'number') {
-                        const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-                        formatted += `${displayName}: ${formatStatValue(getValue(value), key)}\n`;
-                    }
-                }
-            }
+				// Custom numeric stats
+				for (const [key, value] of Object.entries(data)) {
+					if (
+						!statFieldOrder.includes(key) &&
+						!specialFields.includes(key) &&
+						typeof value === "number"
+					) {
+						const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+						formatted += `${displayName}: ${formatStatValue(getValue(value), key)}\n`;
+					}
+				}
+			}
 
-            // Status/mood
-            if (data.status) formatted += `Status: ${getValue(data.status)}\n`;
-            if (data.mood) formatted += `Mood: ${getValue(data.mood)}\n`;
+			// Status/mood
+			if (data.status) formatted += `Status: ${getValue(data.status)}\n`;
+			if (data.mood) formatted += `Mood: ${getValue(data.mood)}\n`;
 
-            // Skills - handle both array and object format
-            if (data.skills) {
-                if (Array.isArray(data.skills)) {
-                    // Array format: ["Combat", "Magic", "Stealth"]
-                    const skillsList = data.skills.map(s => getValue(s)).filter(s => s).join(', ');
-                    if (skillsList) formatted += `Skills: ${skillsList}\n`;
-                } else if (typeof data.skills === 'object') {
-                    // Object format: {Combat: 50, Magic: 30}
-                    const skillsList = Object.entries(data.skills)
-                        .map(([name, val]) => {
-                            const skillName = getValue(name);
-                            const skillVal = getValue(val);
-                            return skillVal ? `${skillName}: ${skillVal}` : skillName;
-                        })
-                        .filter(s => s)
-                        .join(', ');
-                    if (skillsList) formatted += `Skills: ${skillsList}\n`;
-                }
-            }
+			// Skills - handle both array and object format
+			if (data.skills) {
+				if (Array.isArray(data.skills)) {
+					// Array format: ["Combat", "Magic", "Stealth"]
+					const skillsList = data.skills
+						.map((s) => getValue(s))
+						.filter((s) => s)
+						.join(", ");
+					if (skillsList) formatted += `Skills: ${skillsList}\n`;
+				} else if (typeof data.skills === "object") {
+					// Object format: {Combat: 50, Magic: 30}
+					const skillsList = Object.entries(data.skills)
+						.map(([name, val]) => {
+							const skillName = getValue(name);
+							const skillVal = getValue(val);
+							return skillVal ? `${skillName}: ${skillVal}` : skillName;
+						})
+						.filter((s) => s)
+						.join(", ");
+					if (skillsList) formatted += `Skills: ${skillsList}\n`;
+				}
+			}
 
-            // Inventory sections
-            if (data.inventory) {
-                const inv = data.inventory;
+			// Inventory sections
+			if (data.inventory) {
+				const inv = data.inventory;
 
-                if (inv.onPerson && Array.isArray(inv.onPerson) && inv.onPerson.length > 0) {
-                    const items = inv.onPerson.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) formatted += `On Person: ${items.join(', ')}\n`;
-                } else {
-                    formatted += `On Person: None\n`;
-                }
+				if (
+					inv.onPerson &&
+					Array.isArray(inv.onPerson) &&
+					inv.onPerson.length > 0
+				) {
+					const items = inv.onPerson.map((i) => getValue(i)).filter((i) => i);
+					if (items.length > 0) formatted += `On Person: ${items.join(", ")}\n`;
+				} else {
+					formatted += `On Person: None\n`;
+				}
 
-                if (inv.clothing && Array.isArray(inv.clothing) && inv.clothing.length > 0) {
-                    const items = inv.clothing.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) formatted += `Clothing: ${items.join(', ')}\n`;
-                } else {
-                    formatted += `Clothing: Nothing worn\n`;
-                }
+				if (
+					inv.clothing &&
+					Array.isArray(inv.clothing) &&
+					inv.clothing.length > 0
+				) {
+					const items = inv.clothing.map((i) => getValue(i)).filter((i) => i);
+					if (items.length > 0) formatted += `Clothing: ${items.join(", ")}\n`;
+				} else {
+					formatted += `Clothing: Nothing worn\n`;
+				}
 
-                if (inv.stored && typeof inv.stored === 'object' && !Array.isArray(inv.stored)) {
-                    const locations = Object.keys(inv.stored);
-                    if (locations.length === 0) {
-                        formatted += `Stored: No storage locations\n`;
-                    } else {
-                        let hasStoredItems = false;
-                        for (const [location, items] of Object.entries(inv.stored)) {
-                            if (Array.isArray(items) && items.length > 0) {
-                                const itemsList = items.map(i => getValue(i)).filter(i => i);
-                                if (itemsList.length > 0) {
-                                    formatted += `${getValue(location)}: ${itemsList.join(', ')}\n`;
-                                    hasStoredItems = true;
-                                }
-                            }
-                        }
-                        if (!hasStoredItems) {
-                            formatted += `Stored: No stored items\n`;
-                        }
-                    }
-                } else {
-                    formatted += `Stored: No storage locations\n`;
-                }
+				if (
+					inv.stored &&
+					typeof inv.stored === "object" &&
+					!Array.isArray(inv.stored)
+				) {
+					const locations = Object.keys(inv.stored);
+					if (locations.length === 0) {
+						formatted += `Stored: No storage locations\n`;
+					} else {
+						let hasStoredItems = false;
+						for (const [location, items] of Object.entries(inv.stored)) {
+							if (Array.isArray(items) && items.length > 0) {
+								const itemsList = items
+									.map((i) => getValue(i))
+									.filter((i) => i);
+								if (itemsList.length > 0) {
+									formatted += `${getValue(location)}: ${itemsList.join(", ")}\n`;
+									hasStoredItems = true;
+								}
+							}
+						}
+						if (!hasStoredItems) {
+							formatted += `Stored: No stored items\n`;
+						}
+					}
+				} else {
+					formatted += `Stored: No storage locations\n`;
+				}
 
-                if (inv.assets && Array.isArray(inv.assets) && inv.assets.length > 0) {
-                    const items = inv.assets.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) formatted += `Assets: ${items.join(', ')}\n`;
-                } else {
-                    formatted += `Assets: None\n`;
-                }
-            }
+				if (inv.assets && Array.isArray(inv.assets) && inv.assets.length > 0) {
+					const items = inv.assets.map((i) => getValue(i)).filter((i) => i);
+					if (items.length > 0) formatted += `Assets: ${items.join(", ")}\n`;
+				} else {
+					formatted += `Assets: None\n`;
+				}
+			}
 
-            // Quests
-            if (data.quests) {
-                const quests = data.quests;
+			// Quests
+			if (data.quests) {
+				const quests = data.quests;
 
-                // Main quest - handle string, array, or object with {title, completed, date, location}
-                if (quests.main) {
-                    if (typeof quests.main === 'string') {
-                        const mainQuest = getValue(quests.main);
-                        if (mainQuest) formatted += `Main Quest: ${mainQuest}\n`;
-                    } else if (Array.isArray(quests.main) && quests.main.length > 0) {
-                        const questsList = quests.main.map(q => getValue(q)).filter(q => q);
-                        if (questsList.length > 0) formatted += `Main Quests: ${questsList.join(', ')}\n`;
-                    } else if (typeof quests.main === 'object') {
-                        // Handle {title, completed, date, location} format
-                        const questTitle = getValue(quests.main.title);
-                        const questCompleted = quests.main.completed !== undefined ? (quests.main.completed ? '✅' : '❌') : '';
-                        const questDate = getValue(quests.main.date);
-                        const questLocation = getValue(quests.main.location);
-                        
-                        let mainQuestDetails = [];
-                        if (questTitle) mainQuestDetails.push(questTitle);
-                        if (questCompleted) mainQuestDetails.push(questCompleted);
-                        if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
-                        if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
-                        
-                        if (mainQuestDetails.length > 0) {
-                            formatted += `Main Quest: ${mainQuestDetails.join(' - ')}\n`;
-                        }
-                    }
-                }
+				// Main quest - handle string, array, or object with {title, completed, date, location}
+				if (quests.main) {
+					if (typeof quests.main === "string") {
+						const mainQuest = getValue(quests.main);
+						if (mainQuest) formatted += `Main Quest: ${mainQuest}\n`;
+					} else if (Array.isArray(quests.main) && quests.main.length > 0) {
+						const questsList = quests.main
+							.map((q) => getValue(q))
+							.filter((q) => q);
+						if (questsList.length > 0)
+							formatted += `Main Quests: ${questsList.join(", ")}\n`;
+					} else if (typeof quests.main === "object") {
+						// Handle {title, completed, date, location} format
+						const questTitle = getValue(quests.main.title);
+						const questCompleted =
+							quests.main.completed !== undefined
+								? quests.main.completed
+									? "✅"
+									: "❌"
+								: "";
+						const questDate = getValue(quests.main.date);
+						const questLocation = getValue(quests.main.location);
 
-                // Optional quests
-                if (quests.optional && Array.isArray(quests.optional) && quests.optional.length > 0) {
-                    const questsList = quests.optional.map(q => {
-                        if (typeof q === 'string') {
-                            return getValue(q);
-                        } else if (q && typeof q === 'object') {
-                            // Handle {title, completed, date, location} format
-                            const questTitle = getValue(q.title);
-                            const questCompleted = q.completed !== undefined ? (q.completed ? '✅' : '❌') : '';
-                            const questDate = getValue(q.date);
-                            const questLocation = getValue(q.location);
-                            
-                            let questDetails = [];
-                            if (questTitle) questDetails.push(questTitle);
-                            if (questCompleted) questDetails.push(questCompleted);
-                            if (questDate) questDetails.push(`📅 ${questDate}`);
-                            if (questLocation) questDetails.push(`📍 ${questLocation}`);
-                            
-                            return questDetails.length > 0 ? questDetails.join(' - ') : null;
-                        }
-                        return null;
-                    }).filter(q => q);
-                    
-                    if (questsList.length > 0) formatted += `Optional Quests: ${questsList.join(', ')}\n`;
-                }
-            }
-        } else if (trackerType === 'infoBox') {
-            formatted += `Info Box:\n`;
-            if (data.location) formatted += `Location: ${getValue(data.location)}\n`;
-            if (data.date) formatted += `Date: ${getValue(data.date)}\n`;
-            if (data.time) formatted += `Time: ${getValue(data.time)}\n`;
-            if (data.weather) formatted += `Weather: ${getValue(data.weather)}\n`;
-            if (data.temperature) formatted += `Temperature: ${getValue(data.temperature)}\n`;
+						let mainQuestDetails = [];
+						if (questTitle) mainQuestDetails.push(questTitle);
+						if (questCompleted) mainQuestDetails.push(questCompleted);
+						if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
+						if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
 
-            // Custom fields
-            const knownFields = ['location', 'date', 'time', 'weather', 'temperature'];
-            for (const [key, value] of Object.entries(data)) {
-                if (!knownFields.includes(key)) {
-                    const val = getValue(value);
-                    if (val) {
-                        // Convert camelCase to Title Case with spaces (recentEvents -> Recent Events)
-                        const displayName = key
-                            .replace(/([A-Z])/g, ' $1')
-                            .replace(/^./, str => str.toUpperCase())
-                            .trim();
-                        formatted += `${displayName}: ${val}\n`;
-                    }
-                }
-            }
-        } else if (trackerType === 'characters') {
-            if (Array.isArray(data)) {
-                formatted += `Present Characters:\n`;
-                for (const char of data) {
-                    const charName = getValue(char.name) || 'Unknown';
-                    formatted += `- ${charName}:\n`;
+						if (mainQuestDetails.length > 0) {
+							formatted += `Main Quest: ${mainQuestDetails.join(" - ")}\n`;
+						}
+					}
+				}
 
-                    // Details section - parse all custom fields
-                    if (char.details && typeof char.details === 'object') {
-                        for (const [key, value] of Object.entries(char.details)) {
-                            const fieldValue = getValue(value);
-                            if (fieldValue) {
-                                // Convert camelCase/snake_case to Title Case with spaces
-                                const fieldName = key
-                                    .replace(/_/g, ' ')
-                                    .replace(/([A-Z])/g, ' $1')
-                                    .replace(/^./, str => str.toUpperCase())
-                                    .trim();
-                                formatted += `  ${fieldName}: ${fieldValue}\n`;
-                            }
-                        }
-                    }
+				// Optional quests
+				if (
+					quests.optional &&
+					Array.isArray(quests.optional) &&
+					quests.optional.length > 0
+				) {
+					const questsList = quests.optional
+						.map((q) => {
+							if (typeof q === "string") {
+								return getValue(q);
+							} else if (q && typeof q === "object") {
+								// Handle {title, completed, date, location} format
+								const questTitle = getValue(q.title);
+								const questCompleted =
+									q.completed !== undefined ? (q.completed ? "✅" : "❌") : "";
+								const questDate = getValue(q.date);
+								const questLocation = getValue(q.location);
 
-                    // Relationship - check both Relationship (new format) and relationship (old format)
-                    const relationshipValue = char.Relationship || char.relationship;
-                    if (relationshipValue) {
-                        let relValue;
-                        if (typeof relationshipValue === 'object' && !Array.isArray(relationshipValue) && 'status' in relationshipValue) {
-                            relValue = getValue(relationshipValue.status);
-                        } else {
-                            relValue = getValue(relationshipValue);
-                        }
-                        if (relValue) formatted += `  Relationship: ${relValue}\n`;
-                    }
+								let questDetails = [];
+								if (questTitle) questDetails.push(questTitle);
+								if (questCompleted) questDetails.push(questCompleted);
+								if (questDate) questDetails.push(`📅 ${questDate}`);
+								if (questLocation) questDetails.push(`📍 ${questLocation}`);
 
-                    // Thoughts
-                    if (char.thoughts) {
-                        let thoughtValue;
-                        if (typeof char.thoughts === 'object' && !Array.isArray(char.thoughts) && 'content' in char.thoughts) {
-                            thoughtValue = getValue(char.thoughts.content);
-                        } else {
-                            thoughtValue = getValue(char.thoughts);
-                        }
-                        if (thoughtValue) formatted += `  Thoughts: ${thoughtValue}\n`;
-                    }
+								return questDetails.length > 0
+									? questDetails.join(" - ")
+									: null;
+							}
+							return null;
+						})
+						.filter((q) => q);
 
-                    // Stats
-                    if (char.stats && typeof char.stats === 'object' && !Array.isArray(char.stats)) {
-                        const statsList = Object.entries(char.stats)
-                            .map(([name, val]) => {
-                                const statValue = getValue(val);
-                                return statValue ? `${name}: ${statValue}` : null;
-                            })
-                            .filter(s => s)
-                            .join(', ');
-                        if (statsList) formatted += `  Stats: ${statsList}\n`;
-                    }
-                }
-            }
-        }
+					if (questsList.length > 0)
+						formatted += `Optional Quests: ${questsList.join(", ")}\n`;
+				}
+			}
+		} else if (trackerType === "infoBox") {
+			formatted += `Info Box:\n`;
+			if (data.location) formatted += `Location: ${getValue(data.location)}\n`;
+			if (data.date) formatted += `Date: ${getValue(data.date)}\n`;
+			if (data.time) formatted += `Time: ${getValue(data.time)}\n`;
+			if (data.weather) formatted += `Weather: ${getValue(data.weather)}\n`;
+			if (data.temperature)
+				formatted += `Temperature: ${getValue(data.temperature)}\n`;
 
-        return formatted;
-    } catch (e) {
-        console.warn('[RPG Companion] Failed to format tracker data for context:', e);
-        console.warn('[RPG Companion] Error details:', e.stack);
-        return ''; // Return empty string on error to avoid breaking context
-    }
+			// Custom fields
+			const knownFields = [
+				"location",
+				"date",
+				"time",
+				"weather",
+				"temperature",
+			];
+			for (const [key, value] of Object.entries(data)) {
+				if (!knownFields.includes(key)) {
+					const val = getValue(value);
+					if (val) {
+						// Convert camelCase to Title Case with spaces (recentEvents -> Recent Events)
+						const displayName = key
+							.replace(/([A-Z])/g, " $1")
+							.replace(/^./, (str) => str.toUpperCase())
+							.trim();
+						formatted += `${displayName}: ${val}\n`;
+					}
+				}
+			}
+		} else if (trackerType === "characters") {
+			if (Array.isArray(data)) {
+				formatted += `Present Characters:\n`;
+				for (const char of data) {
+					const charName = getValue(char.name) || "Unknown";
+					formatted += `- ${charName}:\n`;
+
+					// Details section - parse all custom fields
+					if (char.details && typeof char.details === "object") {
+						for (const [key, value] of Object.entries(char.details)) {
+							const fieldValue = getValue(value);
+							if (fieldValue) {
+								// Convert camelCase/snake_case to Title Case with spaces
+								const fieldName = key
+									.replace(/_/g, " ")
+									.replace(/([A-Z])/g, " $1")
+									.replace(/^./, (str) => str.toUpperCase())
+									.trim();
+								formatted += `  ${fieldName}: ${fieldValue}\n`;
+							}
+						}
+					}
+
+					// Relationship - check both Relationship (new format) and relationship (old format)
+					const relationshipValue = char.Relationship || char.relationship;
+					if (relationshipValue) {
+						let relValue;
+						if (
+							typeof relationshipValue === "object" &&
+							!Array.isArray(relationshipValue) &&
+							"status" in relationshipValue
+						) {
+							relValue = getValue(relationshipValue.status);
+						} else {
+							relValue = getValue(relationshipValue);
+						}
+						if (relValue) formatted += `  Relationship: ${relValue}\n`;
+					}
+
+					// Thoughts
+					if (char.thoughts) {
+						let thoughtValue;
+						if (
+							typeof char.thoughts === "object" &&
+							!Array.isArray(char.thoughts) &&
+							"content" in char.thoughts
+						) {
+							thoughtValue = getValue(char.thoughts.content);
+						} else {
+							thoughtValue = getValue(char.thoughts);
+						}
+						if (thoughtValue) formatted += `  Thoughts: ${thoughtValue}\n`;
+					}
+
+					// Stats
+					if (
+						char.stats &&
+						typeof char.stats === "object" &&
+						!Array.isArray(char.stats)
+					) {
+						const statsList = Object.entries(char.stats)
+							.map(([name, val]) => {
+								const statValue = getValue(val);
+								return statValue ? `${name}: ${statValue}` : null;
+							})
+							.filter((s) => s)
+							.join(", ");
+						if (statsList) formatted += `  Stats: ${statsList}\n`;
+					}
+				}
+			}
+		}
+
+		return formatted;
+	} catch (e) {
+		console.warn(
+			"[RPG Companion] Failed to format tracker data for context:",
+			e,
+		);
+		console.warn("[RPG Companion] Error details:", e.stack);
+		return ""; // Return empty string on error to avoid breaking context
+	}
 }
 
 /**
@@ -866,299 +1058,386 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
  * @param {boolean} [useAllEnabled=false] - If true, include all enabled fields instead of only persistInHistory fields
  * @returns {string} Formatted historical context or empty string if nothing to include
  */
-export function formatHistoricalTrackerData(trackerData, trackerConfig, userName, useAllEnabled = false) {
-    if (!trackerData || !trackerConfig) {
-        return '';
-    }
+export function formatHistoricalTrackerData(
+	trackerData,
+	trackerConfig,
+	userName,
+	useAllEnabled = false,
+) {
+	if (!trackerData || !trackerConfig) {
+		return "";
+	}
 
-    // Helper to check if a field should be included
-    const shouldInclude = (config) => {
-        if (useAllEnabled) {
-            return config?.enabled !== false; // Include if enabled (default true for most fields)
-        }
-        return config?.persistInHistory === true;
-    };
+	// Helper to check if a field should be included
+	const shouldInclude = (config) => {
+		if (useAllEnabled) {
+			return config?.enabled !== false; // Include if enabled (default true for most fields)
+		}
+		return config?.persistInHistory === true;
+	};
 
-    // Helper to check if a stat/attribute should be included
-    const shouldIncludeStat = (configStat) => {
-        if (useAllEnabled) {
-            return configStat?.enabled !== false;
-        }
-        return configStat?.persistInHistory === true;
-    };
+	// Helper to check if a stat/attribute should be included
+	const shouldIncludeStat = (configStat) => {
+		if (useAllEnabled) {
+			return configStat?.enabled !== false;
+		}
+		return configStat?.persistInHistory === true;
+	};
 
-    let formatted = '';
+	let formatted = "";
 
-    // Helper to safely get values
-    const getValue = (field) => {
-        if (field === null || field === undefined) return '';
-        if (field && typeof field === 'object' && !Array.isArray(field) && 'value' in field) {
-            return getValue(field.value);
-        }
-        if (typeof field !== 'object') {
-            return String(field);
-        }
-        if (Array.isArray(field)) {
-            return field.map(item => getValue(item)).filter(Boolean).join(', ');
-        }
-        if (field && typeof field === 'object') {
-            if ('start' in field && 'end' in field) {
-                return `${getValue(field.start)} - ${getValue(field.end)}`;
-            }
-            if ('emoji' in field && 'forecast' in field) {
-                return `${getValue(field.emoji)} ${getValue(field.forecast)}`;
-            }
-            if ('name' in field) {
-                const name = getValue(field.name);
-                if ('quantity' in field && field.quantity > 1) {
-                    return `${name} (x${field.quantity})`;
-                }
-                return name;
-            }
-            if ('title' in field) {
-                return getValue(field.title);
-            }
-        }
-        return '';
-    };
+	// Helper to safely get values
+	const getValue = (field) => {
+		if (field === null || field === undefined) return "";
+		if (
+			field &&
+			typeof field === "object" &&
+			!Array.isArray(field) &&
+			"value" in field
+		) {
+			return getValue(field.value);
+		}
+		if (typeof field !== "object") {
+			return String(field);
+		}
+		if (Array.isArray(field)) {
+			return field
+				.map((item) => getValue(item))
+				.filter(Boolean)
+				.join(", ");
+		}
+		if (field && typeof field === "object") {
+			if ("start" in field && "end" in field) {
+				return `${getValue(field.start)} - ${getValue(field.end)}`;
+			}
+			if ("emoji" in field && "forecast" in field) {
+				return `${getValue(field.emoji)} ${getValue(field.forecast)}`;
+			}
+			if ("name" in field) {
+				const name = getValue(field.name);
+				if ("quantity" in field && field.quantity > 1) {
+					return `${name} (x${field.quantity})`;
+				}
+				return name;
+			}
+			if ("title" in field) {
+				return getValue(field.title);
+			}
+		}
+		return "";
+	};
 
-    try {
-        // Process userStats if present and has persistence-enabled fields
-        if (trackerData.userStats) {
-            const userStatsConfig = trackerConfig.userStats;
-            const userStatsData = trackerData.userStats;
+	try {
+		// Process userStats if present and has persistence-enabled fields
+		if (trackerData.userStats) {
+			const userStatsConfig = trackerConfig.userStats;
+			const userStatsData = trackerData.userStats;
 
-            let statsFormatted = '';
+			let statsFormatted = "";
 
-            // Custom stats with persistInHistory enabled (or enabled if useAllEnabled)
-            if (userStatsData.stats && Array.isArray(userStatsData.stats) && userStatsConfig.customStats) {
-                for (const stat of userStatsData.stats) {
-                    const configStat = userStatsConfig.customStats.find(s => s.id === stat.id);
-                    if (shouldIncludeStat(configStat) && stat.value !== undefined) {
-                        const statName = stat.name || configStat.name || stat.id;
-                        statsFormatted += `${statName}: ${stat.value}, `;
-                    }
-                }
-            }
+			// Custom stats with persistInHistory enabled (or enabled if useAllEnabled)
+			if (
+				userStatsData.stats &&
+				Array.isArray(userStatsData.stats) &&
+				userStatsConfig.customStats
+			) {
+				for (const stat of userStatsData.stats) {
+					const configStat = userStatsConfig.customStats.find(
+						(s) => s.id === stat.id,
+					);
+					if (shouldIncludeStat(configStat) && stat.value !== undefined) {
+						const statName = stat.name || configStat.name || stat.id;
+						statsFormatted += `${statName}: ${stat.value}, `;
+					}
+				}
+			}
 
-            // Status section
-            if (shouldInclude(userStatsConfig.statusSection) && userStatsData.status) {
-                const mood = getValue(userStatsData.status.mood || userStatsData.status);
-                if (mood && userStatsConfig.statusSection.showMoodEmoji) statsFormatted += `Mood: ${mood}, `;
+			// Status section
+			if (
+				shouldInclude(userStatsConfig.statusSection) &&
+				userStatsData.status
+			) {
+				const mood = getValue(
+					userStatsData.status.mood || userStatsData.status,
+				);
+				if (mood && userStatsConfig.statusSection.showMoodEmoji)
+					statsFormatted += `Mood: ${mood}, `;
 
-                // Add all custom status fields
-                const customFields = userStatsConfig.statusSection.customFields || [];
-                for (const fieldName of customFields) {
-                    const fieldKey = fieldName.toLowerCase();
-                    const fieldValue = getValue(userStatsData.status[fieldKey]);
-                    if (fieldValue && fieldValue !== 'None') {
-                        statsFormatted += `${fieldName}: ${fieldValue}, `;
-                    }
-                }
-            }
+				// Add all custom status fields
+				const customFields = userStatsConfig.statusSection.customFields || [];
+				for (const fieldName of customFields) {
+					const fieldKey = fieldName.toLowerCase();
+					const fieldValue = getValue(userStatsData.status[fieldKey]);
+					if (fieldValue && fieldValue !== "None") {
+						statsFormatted += `${fieldName}: ${fieldValue}, `;
+					}
+				}
+			}
 
-            // Skills section
-            if (shouldInclude(userStatsConfig.skillsSection) && userStatsData.skills) {
-                const skillsList = Array.isArray(userStatsData.skills)
-                    ? userStatsData.skills.map(s => getValue(s)).filter(s => s).join(', ')
-                    : getValue(userStatsData.skills);
-                if (skillsList) statsFormatted += `Skills: ${skillsList}, `;
-            }
+			// Skills section
+			if (
+				shouldInclude(userStatsConfig.skillsSection) &&
+				userStatsData.skills
+			) {
+				const skillsList = Array.isArray(userStatsData.skills)
+					? userStatsData.skills
+							.map((s) => getValue(s))
+							.filter((s) => s)
+							.join(", ")
+					: getValue(userStatsData.skills);
+				if (skillsList) statsFormatted += `Skills: ${skillsList}, `;
+			}
 
-            // Inventory
-            const shouldIncludeInventory = useAllEnabled || userStatsConfig.inventoryPersistInHistory;
-            if (shouldIncludeInventory && userStatsData.inventory) {
-                const inv = userStatsData.inventory;
-                if (inv.onPerson && Array.isArray(inv.onPerson) && inv.onPerson.length > 0) {
-                    const items = inv.onPerson.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) statsFormatted += `On Person: ${items.join(', ')}, `;
-                } else {
-                    statsFormatted += `On Person: No items, `;
-                }
-                if (inv.clothing && Array.isArray(inv.clothing) && inv.clothing.length > 0) {
-                    const items = inv.clothing.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) statsFormatted += `Clothing: ${items.join(', ')}, `;
-                } else {
-                    statsFormatted += `Clothing: Nothing worn, `;
-                }
-            }
+			// Inventory
+			const shouldIncludeInventory =
+				useAllEnabled || userStatsConfig.inventoryPersistInHistory;
+			if (shouldIncludeInventory && userStatsData.inventory) {
+				const inv = userStatsData.inventory;
+				if (
+					inv.onPerson &&
+					Array.isArray(inv.onPerson) &&
+					inv.onPerson.length > 0
+				) {
+					const items = inv.onPerson.map((i) => getValue(i)).filter((i) => i);
+					if (items.length > 0)
+						statsFormatted += `On Person: ${items.join(", ")}, `;
+				} else {
+					statsFormatted += `On Person: No items, `;
+				}
+				if (
+					inv.clothing &&
+					Array.isArray(inv.clothing) &&
+					inv.clothing.length > 0
+				) {
+					const items = inv.clothing.map((i) => getValue(i)).filter((i) => i);
+					if (items.length > 0)
+						statsFormatted += `Clothing: ${items.join(", ")}, `;
+				} else {
+					statsFormatted += `Clothing: Nothing worn, `;
+				}
+			}
 
-            // Quests
-            const shouldIncludeQuests = useAllEnabled || userStatsConfig.questsPersistInHistory;
-            if (shouldIncludeQuests && userStatsData.quests) {
-                const quests = userStatsData.quests;
-                if (quests.main) {
-                    let mainQuestDetails = [];
-                    
-                    if (typeof quests.main === 'string') {
-                        const mainQuest = getValue(quests.main);
-                        if (mainQuest && mainQuest !== 'None') mainQuestDetails.push(mainQuest);
-                    } else if (quests.main && typeof quests.main === 'object') {
-                        const questTitle = getValue(quests.main.title);
-                        const questCompleted = quests.main.completed !== undefined ? (quests.main.completed ? '✅' : '❌') : '';
-                        const questDate = getValue(quests.main.date);
-                        const questLocation = getValue(quests.main.location);
-                        
-                        if (questTitle) mainQuestDetails.push(questTitle);
-                        if (questCompleted) mainQuestDetails.push(questCompleted);
-                        if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
-                        if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
-                    }
-                    
-                    if (mainQuestDetails.length > 0 && mainQuestDetails.join(' - ') !== 'None') {
-                        statsFormatted += `Quest: ${mainQuestDetails.join(' - ')}, `;
-                    }
-                }
-            }
+			// Quests
+			const shouldIncludeQuests =
+				useAllEnabled || userStatsConfig.questsPersistInHistory;
+			if (shouldIncludeQuests && userStatsData.quests) {
+				const quests = userStatsData.quests;
+				if (quests.main) {
+					let mainQuestDetails = [];
 
-            if (statsFormatted) {
-                formatted += `${userName}: ${statsFormatted.slice(0, -2)}\n`;
-            }
-        }
+					if (typeof quests.main === "string") {
+						const mainQuest = getValue(quests.main);
+						if (mainQuest && mainQuest !== "None")
+							mainQuestDetails.push(mainQuest);
+					} else if (quests.main && typeof quests.main === "object") {
+						const questTitle = getValue(quests.main.title);
+						const questCompleted =
+							quests.main.completed !== undefined
+								? quests.main.completed
+									? "✅"
+									: "❌"
+								: "";
+						const questDate = getValue(quests.main.date);
+						const questLocation = getValue(quests.main.location);
 
-        // Process appearance if present and has persistence-enabled fields
-        if (trackerData.userStats && trackerData.userStats.appearance) {
-            const userStatsConfig = trackerConfig.userStats;
-            const appearanceData = trackerData.userStats.appearance;
-            const shouldIncludeAppearance = useAllEnabled || userStatsConfig.appearancePersistInHistory;
+						if (questTitle) mainQuestDetails.push(questTitle);
+						if (questCompleted) mainQuestDetails.push(questCompleted);
+						if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
+						if (questLocation) mainQuestDetails.push(`📍 ${questLocation}`);
+					}
 
-            if (shouldIncludeAppearance && appearanceData) {
-                let appearanceFormatted = '';
+					if (
+						mainQuestDetails.length > 0 &&
+						mainQuestDetails.join(" - ") !== "None"
+					) {
+						statsFormatted += `Quest: ${mainQuestDetails.join(" - ")}, `;
+					}
+				}
+			}
 
-                // Description (clothing, hair, physical features)
-                if (appearanceData.description) {
-                    const description = getValue(appearanceData.description);
-                    if (description) appearanceFormatted += `Appearance: ${description}, `;
-                }
+			if (statsFormatted) {
+				formatted += `${userName}: ${statsFormatted.slice(0, -2)}\n`;
+			}
+		}
 
-                // Hair
-                if (appearanceData.hair) {
-                    const hair = getValue(appearanceData.hair);
-                    if (hair) appearanceFormatted += `Hair: ${hair}, `;
-                }
+		// Process appearance if present and has persistence-enabled fields
+		if (trackerData.userStats && trackerData.userStats.appearance) {
+			const userStatsConfig = trackerConfig.userStats;
+			const appearanceData = trackerData.userStats.appearance;
+			const shouldIncludeAppearance =
+				useAllEnabled || userStatsConfig.appearancePersistInHistory;
 
-                // Scent
-                if (appearanceData.scent) {
-                    const scent = getValue(appearanceData.scent);
-                    if (scent) appearanceFormatted += `Scent: ${scent}, `;
-                }
+			if (shouldIncludeAppearance && appearanceData) {
+				let appearanceFormatted = "";
 
-                // Posture
-                if (appearanceData.posture) {
-                    const posture = getValue(appearanceData.posture);
-                    if (posture) appearanceFormatted += `Posture: ${posture}, `;
-                }
+				// Description (clothing, hair, physical features)
+				if (appearanceData.description) {
+					const description = getValue(appearanceData.description);
+					if (description)
+						appearanceFormatted += `Appearance: ${description}, `;
+				}
 
-                // Clothing (from appearance.clothing, not inventory.clothing)
-                if (appearanceData.clothing && Array.isArray(appearanceData.clothing) && appearanceData.clothing.length > 0) {
-                    const items = appearanceData.clothing.map(i => getValue(i)).filter(i => i);
-                    if (items.length > 0) appearanceFormatted += `Clothing: ${items.join(', ')}, `;
-                } else if (appearanceData.clothing && Array.isArray(appearanceData.clothing) && appearanceData.clothing.length === 0) {
-                    appearanceFormatted += `Clothing: Nothing worn, `;
-                }
+				// Hair
+				if (appearanceData.hair) {
+					const hair = getValue(appearanceData.hair);
+					if (hair) appearanceFormatted += `Hair: ${hair}, `;
+				}
 
-                // Features (physical features like scars, tattoos, etc.)
-                if (appearanceData.features && Array.isArray(appearanceData.features) && appearanceData.features.length > 0) {
-                    const features = appearanceData.features.map(f => getValue(f)).filter(f => f);
-                    if (features.length > 0) appearanceFormatted += `Features: ${features.join(', ')}, `;
-                }
+				// Scent
+				if (appearanceData.scent) {
+					const scent = getValue(appearanceData.scent);
+					if (scent) appearanceFormatted += `Scent: ${scent}, `;
+				}
 
-                if (appearanceFormatted) {
-                    formatted += `${userName}: ${appearanceFormatted.slice(0, -2)}\n`;
-                }
-            }
-        }
+				// Posture
+				if (appearanceData.posture) {
+					const posture = getValue(appearanceData.posture);
+					if (posture) appearanceFormatted += `Posture: ${posture}, `;
+				}
 
-        // Process infoBox if present and has persistence-enabled widgets
-        if (trackerData.infoBox) {
-            const infoBoxConfig = trackerConfig.infoBox;
-            const infoBoxData = trackerData.infoBox;
+				// Clothing (from appearance.clothing, not inventory.clothing)
+				if (
+					appearanceData.clothing &&
+					Array.isArray(appearanceData.clothing) &&
+					appearanceData.clothing.length > 0
+				) {
+					const items = appearanceData.clothing
+						.map((i) => getValue(i))
+						.filter((i) => i);
+					if (items.length > 0)
+						appearanceFormatted += `Clothing: ${items.join(", ")}, `;
+				} else if (
+					appearanceData.clothing &&
+					Array.isArray(appearanceData.clothing) &&
+					appearanceData.clothing.length === 0
+				) {
+					appearanceFormatted += `Clothing: Nothing worn, `;
+				}
 
-            let infoFormatted = '';
+				// Features (physical features like scars, tattoos, etc.)
+				if (
+					appearanceData.features &&
+					Array.isArray(appearanceData.features) &&
+					appearanceData.features.length > 0
+				) {
+					const features = appearanceData.features
+						.map((f) => getValue(f))
+						.filter((f) => f);
+					if (features.length > 0)
+						appearanceFormatted += `Features: ${features.join(", ")}, `;
+				}
 
-            // Date
-            if (shouldInclude(infoBoxConfig.widgets.date) && infoBoxData.date) {
-                const date = getValue(infoBoxData.date);
-                if (date) infoFormatted += `Date: ${date}, `;
-            }
+				if (appearanceFormatted) {
+					formatted += `${userName}: ${appearanceFormatted.slice(0, -2)}\n`;
+				}
+			}
+		}
 
-            // Time
-            if (shouldInclude(infoBoxConfig.widgets.time) && infoBoxData.time) {
-                const time = getValue(infoBoxData.time);
-                if (time) infoFormatted += `Time: ${time}, `;
-            }
+		// Process infoBox if present and has persistence-enabled widgets
+		if (trackerData.infoBox) {
+			const infoBoxConfig = trackerConfig.infoBox;
+			const infoBoxData = trackerData.infoBox;
 
-            // Weather
-            if (shouldInclude(infoBoxConfig.widgets.weather) && infoBoxData.weather) {
-                const weather = getValue(infoBoxData.weather);
-                if (weather) infoFormatted += `Weather: ${weather}, `;
-            }
+			let infoFormatted = "";
 
-            // Temperature
-            if (shouldInclude(infoBoxConfig.widgets.temperature) && infoBoxData.temperature) {
-                const temp = getValue(infoBoxData.temperature);
-                if (temp) infoFormatted += `Temp: ${temp}, `;
-            }
+			// Date
+			if (shouldInclude(infoBoxConfig.widgets.date) && infoBoxData.date) {
+				const date = getValue(infoBoxData.date);
+				if (date) infoFormatted += `Date: ${date}, `;
+			}
 
-            // Location
-            if (shouldInclude(infoBoxConfig.widgets.location) && infoBoxData.location) {
-                const location = getValue(infoBoxData.location);
-                if (location) infoFormatted += `Location: ${location}, `;
-            }
+			// Time
+			if (shouldInclude(infoBoxConfig.widgets.time) && infoBoxData.time) {
+				const time = getValue(infoBoxData.time);
+				if (time) infoFormatted += `Time: ${time}, `;
+			}
 
-            // Recent Events
-            if (shouldInclude(infoBoxConfig.widgets.recentEvents) && infoBoxData.recentEvents) {
-                const events = getValue(infoBoxData.recentEvents);
-                if (events) infoFormatted += `Events: ${events}, `;
-            }
+			// Weather
+			if (shouldInclude(infoBoxConfig.widgets.weather) && infoBoxData.weather) {
+				const weather = getValue(infoBoxData.weather);
+				if (weather) infoFormatted += `Weather: ${weather}, `;
+			}
 
-            if (infoFormatted) {
-                formatted += infoFormatted.slice(0, -2) + '\n';
-            }
-        }
+			// Temperature
+			if (
+				shouldInclude(infoBoxConfig.widgets.temperature) &&
+				infoBoxData.temperature
+			) {
+				const temp = getValue(infoBoxData.temperature);
+				if (temp) infoFormatted += `Temp: ${temp}, `;
+			}
 
-        // Process characterThoughts if present and has persistence-enabled fields
-        if (trackerData.characterThoughts) {
-            const charsConfig = trackerConfig.presentCharacters;
-            const charsData = trackerData.characterThoughts;
+			// Location
+			if (
+				shouldInclude(infoBoxConfig.widgets.location) &&
+				infoBoxData.location
+			) {
+				const location = getValue(infoBoxData.location);
+				if (location) infoFormatted += `Location: ${location}, `;
+			}
 
-            // Characters can be an array or wrapped in an object
-            const characters = Array.isArray(charsData) ? charsData : (charsData.characters || []);
+			// Recent Events
+			if (
+				shouldInclude(infoBoxConfig.widgets.recentEvents) &&
+				infoBoxData.recentEvents
+			) {
+				const events = getValue(infoBoxData.recentEvents);
+				if (events) infoFormatted += `Events: ${events}, `;
+			}
 
-            for (const char of characters) {
-                if (!char || !char.name) continue;
+			if (infoFormatted) {
+				formatted += infoFormatted.slice(0, -2) + "\n";
+			}
+		}
 
-                let charFormatted = '';
+		// Process characterThoughts if present and has persistence-enabled fields
+		if (trackerData.characterThoughts) {
+			const charsConfig = trackerConfig.presentCharacters;
+			const charsData = trackerData.characterThoughts;
 
-                // Custom fields (appearance, demeanor, etc.)
-                if (char.details && typeof char.details === 'object') {
-                    for (const field of charsConfig.customFields) {
-                        if (shouldIncludeStat(field) && char.details[field.id]) {
-                            const value = getValue(char.details[field.id]);
-                            if (value) charFormatted += `${field.name}: ${value}, `;
-                        }
-                    }
-                }
+			// Characters can be an array or wrapped in an object
+			const characters = Array.isArray(charsData)
+				? charsData
+				: charsData.characters || [];
 
-                // Thoughts
-                if (shouldInclude(charsConfig.thoughts) && char.thoughts) {
-                    const thoughts = typeof char.thoughts === 'object' && char.thoughts.content
-                        ? getValue(char.thoughts.content)
-                        : getValue(char.thoughts);
-                    if (thoughts) charFormatted += `Thinking: ${thoughts}, `;
-                }
+			for (const char of characters) {
+				if (!char || !char.name) continue;
 
-                if (charFormatted) {
-                    formatted += `${getValue(char.name)}: ${charFormatted.slice(0, -2)}\n`;
-                }
-            }
-        }
+				let charFormatted = "";
 
-        return formatted.trim();
-    } catch (e) {
-        console.warn('[RPG Companion] Failed to format historical tracker data:', e);
-        return '';
-    }
+				// Custom fields (appearance, demeanor, etc.)
+				if (char.details && typeof char.details === "object") {
+					for (const field of charsConfig.customFields) {
+						if (shouldIncludeStat(field) && char.details[field.id]) {
+							const value = getValue(char.details[field.id]);
+							if (value) charFormatted += `${field.name}: ${value}, `;
+						}
+					}
+				}
+
+				// Thoughts
+				if (shouldInclude(charsConfig.thoughts) && char.thoughts) {
+					const thoughts =
+						typeof char.thoughts === "object" && char.thoughts.content
+							? getValue(char.thoughts.content)
+							: getValue(char.thoughts);
+					if (thoughts) charFormatted += `Thinking: ${thoughts}, `;
+				}
+
+				if (charFormatted) {
+					formatted += `${getValue(char.name)}: ${charFormatted.slice(0, -2)}\n`;
+				}
+			}
+		}
+
+		return formatted.trim();
+	} catch (e) {
+		console.warn(
+			"[RPG Companion] Failed to format historical tracker data:",
+			e,
+		);
+		return "";
+	}
 }
 
 /**
@@ -1169,80 +1448,102 @@ export function formatHistoricalTrackerData(trackerData, trackerConfig, userName
  * @returns {string} Formatted contextual summary
  */
 export function generateContextualSummary() {
-    // Use COMMITTED data for generation context, not displayed data
-    const userName = getContext().name1;
-    const trackerConfig = extensionSettings.trackerConfig;
-    let summary = '';
+	// Use COMMITTED data for generation context, not displayed data
+	const userName = getContext().name1;
+	const trackerConfig = extensionSettings.trackerConfig;
+	let summary = "";
 
-    // Add User Stats tracker data if enabled
-    if (extensionSettings.showUserStats) {
-        const userStatsData = getTrackerDataForContext('userStats');
-        if (userStatsData) {
-            try {
-                const formatted = formatTrackerDataForContext(userStatsData, 'userStats', userName);
-                if (formatted) {
-                    summary += formatted + '\n';
-                }
-            } catch (e) {
-                console.warn('[RPG Companion] Failed to format userStats for context:', e);
-            }
-        }
-    }
+	// Add User Stats tracker data if enabled
+	if (extensionSettings.showUserStats) {
+		const userStatsData = getTrackerDataForContext("userStats");
+		if (userStatsData) {
+			try {
+				const formatted = formatTrackerDataForContext(
+					userStatsData,
+					"userStats",
+					userName,
+				);
+				if (formatted) {
+					summary += formatted + "\n";
+				}
+			} catch (e) {
+				console.warn(
+					"[RPG Companion] Failed to format userStats for context:",
+					e,
+				);
+			}
+		}
+	}
 
-    // Add Info Box tracker data if enabled
-    if (extensionSettings.showInfoBox) {
-        const infoBoxData = getTrackerDataForContext('infoBox');
-        if (infoBoxData) {
-            try {
-                const formatted = formatTrackerDataForContext(infoBoxData, 'infoBox', userName);
-                if (formatted) {
-                    summary += formatted + '\n';
-                }
-            } catch (e) {
-                console.warn('[RPG Companion] Failed to format infoBox for context:', e);
-            }
-        }
-    }
+	// Add Info Box tracker data if enabled
+	if (extensionSettings.showInfoBox) {
+		const infoBoxData = getTrackerDataForContext("infoBox");
+		if (infoBoxData) {
+			try {
+				const formatted = formatTrackerDataForContext(
+					infoBoxData,
+					"infoBox",
+					userName,
+				);
+				if (formatted) {
+					summary += formatted + "\n";
+				}
+			} catch (e) {
+				console.warn(
+					"[RPG Companion] Failed to format infoBox for context:",
+					e,
+				);
+			}
+		}
+	}
 
-    // Add Present Characters tracker data if enabled
-    if (extensionSettings.showCharacterThoughts) {
-        const characterThoughtsData = getTrackerDataForContext('characterThoughts');
-        if (characterThoughtsData) {
-            try {
-                const formatted = formatTrackerDataForContext(characterThoughtsData, 'characters', userName);
-                if (formatted) {
-                    summary += formatted + '\n';
-                }
-            } catch (e) {
-                console.warn('[RPG Companion] Failed to format characters for context:', e);
-            }
-        }
-    }
+	// Add Present Characters tracker data if enabled
+	if (extensionSettings.showCharacterThoughts) {
+		const characterThoughtsData = getTrackerDataForContext("characterThoughts");
+		if (characterThoughtsData) {
+			try {
+				const formatted = formatTrackerDataForContext(
+					characterThoughtsData,
+					"characters",
+					userName,
+				);
+				if (formatted) {
+					summary += formatted + "\n";
+				}
+			} catch (e) {
+				console.warn(
+					"[RPG Companion] Failed to format characters for context:",
+					e,
+				);
+			}
+		}
+	}
 
-    // Include attributes based on settings
-    const alwaysSendAttributes = trackerConfig?.userStats?.alwaysSendAttributes;
-    const showRPGAttributes = trackerConfig?.userStats?.showRPGAttributes !== false;
-    const shouldSendAttributes = alwaysSendAttributes && showRPGAttributes;
+	// Include attributes based on settings
+	const alwaysSendAttributes = trackerConfig?.userStats?.alwaysSendAttributes;
+	const showRPGAttributes =
+		trackerConfig?.userStats?.showRPGAttributes !== false;
+	const shouldSendAttributes = alwaysSendAttributes && showRPGAttributes;
 
-    if (shouldSendAttributes) {
-        const attributesString = buildAttributesString();
-        summary += `${userName}'s attributes: ${attributesString}\n`;
-    }
+	if (shouldSendAttributes) {
+		const attributesString = buildAttributesString();
+		summary += `${userName}'s attributes: ${attributesString}\n`;
+	}
 
-    // Add dice roll context if there was one (independent of attributes)
-    if (extensionSettings.lastDiceRoll) {
-        const roll = extensionSettings.lastDiceRoll;
+	// Add dice roll context if there was one (independent of attributes)
+	if (extensionSettings.lastDiceRoll) {
+		const roll = extensionSettings.lastDiceRoll;
 
-        if (shouldSendAttributes) {
-            summary += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Based on their attributes, decide whether they succeeded or failed the action they attempted.\n\n`;
-        } else {
-            summary += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Decide whether they succeeded or failed the action they attempted.\n\n`;
-        }
-    } else if (shouldSendAttributes) {
-        summary += `\n`;
-    }
+		if (shouldSendAttributes) {
+			summary += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Based on their attributes, decide whether they succeeded or failed the action they attempted.\n\n`;
+		} else {
+			summary += `${userName} rolled ${roll.total} on the last ${roll.formula} roll. Decide whether they succeeded or failed the action they attempted.\n\n`;
+		}
+	} else if (shouldSendAttributes) {
+		summary += `\n`;
+	}
 
-    return summary.trim();
+	return summary.trim();
 }
 
 /**
@@ -1251,60 +1552,64 @@ export function generateContextualSummary() {
  *
  * @returns {string} Full prompt text for separate tracker generation
  */
-export function generateRPGPromptText() {
-    // Use authoritative swipe store data for generation context
-    const userName = getContext().name1;
+export function generateRPGPromptText(selectedSections = null) {
+	// Use authoritative swipe store data for generation context
+	const userName = getContext().name1;
 
-    let promptText = '';
+	let promptText = "";
 
-    promptText += `Here are the previous trackers in the roleplay that you should consider when responding:\n`;
-    promptText += `<previous>\n`;
+	promptText += `Here are the previous trackers in the roleplay that you should consider when responding:\n`;
+	promptText += `<previous>\n`;
 
-    // Get data from authoritative swipe store
-    const userStatsData = getTrackerDataForContext('userStats');
-    const infoBoxData = getTrackerDataForContext('infoBox');
-    const characterThoughtsData = getTrackerDataForContext('characterThoughts');
+	// Get data from authoritative swipe store
+	const userStatsData = getTrackerDataForContext("userStats");
+	const infoBoxData = getTrackerDataForContext("infoBox");
+	const characterThoughtsData = getTrackerDataForContext("characterThoughts");
 
-    // Build unified JSON structure for previous trackers (v3.1 format)
-    const hasAnyPreviousData = userStatsData || infoBoxData || characterThoughtsData;
+	// Build unified JSON structure for previous trackers (v3.1 format)
+	// ALWAYS include ALL available data regardless of selectedSections
+	// so the LLM has full context about what to update
+	const hasAnyPreviousData =
+		userStatsData || infoBoxData || characterThoughtsData;
 
-    if (hasAnyPreviousData) {
-        const unifiedPrevious = {};
+	if (hasAnyPreviousData) {
+		const unifiedPrevious = {};
 
-        if (extensionSettings.showUserStats && userStatsData) {
-            // Apply locks and add to unified object
-            const lockedData = applyLocks(userStatsData, 'userStats');
-            unifiedPrevious.userStats = lockedData;
-        }
+		// Always include all available data for full context
+		if (userStatsData) {
+			const lockedData = applyLocks(userStatsData, "userStats");
+			unifiedPrevious.userStats = lockedData;
+		}
 
-        if (extensionSettings.showInfoBox && infoBoxData) {
-            // Apply locks and add to unified object
-            const lockedData = applyLocks(infoBoxData, 'infoBox');
-            unifiedPrevious.infoBox = lockedData;
-        }
+		if (infoBoxData) {
+			const lockedData = applyLocks(infoBoxData, "infoBox");
+			unifiedPrevious.infoBox = lockedData;
+		}
 
-        // Include Present Characters data if it exists, regardless of current showCharacterThoughts setting
-        // This ensures existing character data is preserved in context even if the setting is toggled off
-        if (characterThoughtsData) {
-            // Apply locks and add to unified object
-            const lockedData = applyLocks(characterThoughtsData, 'characters');
-            unifiedPrevious.characters = lockedData;
-        }
+		if (characterThoughtsData) {
+			const lockedData = applyLocks(characterThoughtsData, "characters");
+			unifiedPrevious.characters = lockedData;
+		}
 
-        // If we successfully built a unified structure, display it
-        if (Object.keys(unifiedPrevious).length > 0) {
-            promptText += JSON.stringify(unifiedPrevious, null, 2) + '\n';
-        }
-    } else {
-        promptText += `None - this is the first update.\n`;
-    }
+		// If we successfully built a unified structure, display it
+		if (Object.keys(unifiedPrevious).length > 0) {
+			promptText += JSON.stringify(unifiedPrevious, null, 2) + "\n";
+		}
+	} else {
+		promptText += `None - this is the first update.\n`;
+	}
 
-    promptText += `</previous>\n`;
+	promptText += `</previous>\n`;
 
-    // Don't include HTML prompt, continuation instruction, or attributes for separate tracker generation
-    promptText += generateTrackerInstructions(false, false, false);
+	// Don't include HTML prompt, continuation instruction, or attributes for separate tracker generation
+	promptText += generateTrackerInstructions(
+		false,
+		false,
+		false,
+		selectedSections,
+	);
 
-    return promptText;
+	return promptText;
 }
 
 /**
@@ -1313,42 +1618,50 @@ export function generateRPGPromptText() {
  *
  * @returns {Array<{role: string, content: string}>} Array of message objects for API
  */
-export function generateSeparateUpdatePrompt() {
-    const depth = extensionSettings.updateDepth;
-    const userName = getContext().name1;
-    const trackerConfig = extensionSettings.trackerConfig;
-    const historyPersistence = extensionSettings.historyPersistence;
+export function generateSeparateUpdatePrompt(selectedSections = null) {
+	const depth = extensionSettings.updateDepth;
+	const userName = getContext().name1;
+	const trackerConfig = extensionSettings.trackerConfig;
+	const historyPersistence = extensionSettings.historyPersistence;
 
-    const messages = [];
+	const messages = [];
 
-    // Build and add system message
-    const systemMessage = buildSeparateSystemMessage();
-    messages.push({
-        role: 'system',
-        content: systemMessage
-    });
+	// Build and add system message
+	const systemMessage = buildSeparateSystemMessage();
+	messages.push({
+		role: "system",
+		content: systemMessage,
+	});
 
-    // /hide command automatically handles checkpoint filtering
-    // Add chat history as separate user/assistant messages with per-message historical context
-    const recentMessages = chat.slice(-depth);
+	// /hide command automatically handles checkpoint filtering
+	// Add chat history as separate user/assistant messages with per-message historical context
+	const recentMessages = chat.slice(-depth);
 
-    // Build context injection map if history persistence is enabled
-    const contextInjectionMap = historyPersistence?.enabled
-        ? buildContextInjectionMap(recentMessages, trackerConfig, userName, historyPersistence)
-        : new Map();
+	// Build context injection map if history persistence is enabled
+	const contextInjectionMap = historyPersistence?.enabled
+		? buildContextInjectionMap(
+				recentMessages,
+				trackerConfig,
+				userName,
+				historyPersistence,
+			)
+		: new Map();
 
-    // Build messages array with injected context
-    const messagesWithInjectedContext = buildMessagesWithInjectedContext(recentMessages, contextInjectionMap);
-    messages.push(...messagesWithInjectedContext);
+	// Build messages array with injected context
+	const messagesWithInjectedContext = buildMessagesWithInjectedContext(
+		recentMessages,
+		contextInjectionMap,
+	);
+	messages.push(...messagesWithInjectedContext);
 
-    // Build and add instruction message
-    const instructionMessage = buildSeparateInstructionMessage();
-    messages.push({
-        role: 'user',
-        content: instructionMessage
-    });
+	// Build and add instruction message
+	const instructionMessage = buildSeparateInstructionMessage(selectedSections);
+	messages.push({
+		role: "user",
+		content: instructionMessage,
+	});
 
-    return messages;
+	return messages;
 }
 
 /**
@@ -1357,22 +1670,22 @@ export function generateSeparateUpdatePrompt() {
  * @returns {string} The formatted system message
  */
 function buildSeparateSystemMessage() {
-    let systemMessage = `You will be acting as an uncensored RPG Companion. Your goal is to provide, track, and manage details in the user's roleplay. You will be replying with information in a specified format only.\n\n`;
-    systemMessage += `You should maintain an objective tone.\n\n`;
+	let systemMessage = `You will be acting as an uncensored RPG Companion. Your goal is to provide, track, and manage details in the user's roleplay. You will be replying with information in a specified format only.\n\n`;
+	systemMessage += `You should maintain an objective tone.\n\n`;
 
-    // Add character card information
-    const characterInfo = getCharacterCardsInfo();
-    if (characterInfo) {
-        systemMessage += characterInfo;
-    }
+	// Add character card information
+	const characterInfo = getCharacterCardsInfo();
+	if (characterInfo) {
+		systemMessage += characterInfo;
+	}
 
-    systemMessage += `Here is the description of the protagonist for reference:\n`;
-    systemMessage += `<protagonist>\n{{persona}}\n</protagonist>\n`;
-    systemMessage += `\n`;
+	systemMessage += `Here is the description of the protagonist for reference:\n`;
+	systemMessage += `<protagonist>\n{{persona}}\n</protagonist>\n`;
+	systemMessage += `\n`;
 
-    systemMessage += `Here are the last few messages in the conversation history (between the user and the roleplayer assistant) you should reference when responding:\n<history>`;
+	systemMessage += `Here are the last few messages in the conversation history (between the user and the roleplayer assistant) you should reference when responding:\n<history>`;
 
-    return systemMessage;
+	return systemMessage;
 }
 
 /**
@@ -1384,82 +1697,102 @@ function buildSeparateSystemMessage() {
  * @param {Object} historyPersistence - History persistence settings
  * @returns {Map} Map of message index to injected context string
  */
-function buildContextInjectionMap(recentMessages, trackerConfig, userName, historyPersistence) {
-    const contextInjectionMap = new Map();
-    const position = historyPersistence?.injectionPosition || 'assistant_message_end';
+function buildContextInjectionMap(
+	recentMessages,
+	trackerConfig,
+	userName,
+	historyPersistence,
+) {
+	const contextInjectionMap = new Map();
+	const position =
+		historyPersistence?.injectionPosition || "assistant_message_end";
 
-    // Find the last assistant message index
-    const lastAssistantIdx = findLastAssistantMessageIndex(recentMessages);
+	// Find the last assistant message index
+	const lastAssistantIdx = findLastAssistantMessageIndex(recentMessages);
 
-    // Iterate through assistant messages to find tracker data
-    for (let i = 0; i < recentMessages.length; i++) {
-        const message = recentMessages[i];
+	// Iterate through assistant messages to find tracker data
+	for (let i = 0; i < recentMessages.length; i++) {
+		const message = recentMessages[i];
 
-        // Skip user and system messages - only assistant messages have tracker data
-        if (message.is_user || message.is_system) {
-            continue;
-        }
+		// Skip user and system messages - only assistant messages have tracker data
+		if (message.is_user || message.is_system) {
+			continue;
+		}
 
-        // Skip the last assistant message - it gets current context elsewhere
-        if (i === lastAssistantIdx) {
-            continue;
-        }
+		// Skip the last assistant message - it gets current context elsewhere
+		if (i === lastAssistantIdx) {
+			continue;
+		}
 
-        // Get the rpg_companion_swipes data for current swipe
-        const currentSwipeId = message.swipe_id || 0;
-        let swipeData = message.extra?.rpg_companion_swipes;
+		// Get the rpg_companion_swipes data for current swipe
+		const currentSwipeId = message.swipe_id || 0;
+		let swipeData = message.extra?.rpg_companion_swipes;
 
-        // If not in message.extra, check swipe_info
-        if (!swipeData && message.swipe_info && message.swipe_info[currentSwipeId]) {
-            swipeData = message.swipe_info[currentSwipeId].extra?.rpg_companion_swipes;
-        }
+		// If not in message.extra, check swipe_info
+		if (
+			!swipeData &&
+			message.swipe_info &&
+			message.swipe_info[currentSwipeId]
+		) {
+			swipeData =
+				message.swipe_info[currentSwipeId].extra?.rpg_companion_swipes;
+		}
 
-        if (!swipeData) {
-            continue;
-        }
+		if (!swipeData) {
+			continue;
+		}
 
-        const trackerData = swipeData[currentSwipeId];
-        if (!trackerData) {
-            continue;
-        }
+		const trackerData = swipeData[currentSwipeId];
+		if (!trackerData) {
+			continue;
+		}
 
-        // For Refresh RPG Info, use sendAllEnabledOnRefresh setting
-        const useAllEnabled = historyPersistence.sendAllEnabledOnRefresh === true;
-        const formattedContext = formatHistoricalTrackerData(trackerData, trackerConfig, userName, useAllEnabled);
-        if (!formattedContext) {
-            continue;
-        }
+		// For Refresh RPG Info, use sendAllEnabledOnRefresh setting
+		const useAllEnabled = historyPersistence.sendAllEnabledOnRefresh === true;
+		const formattedContext = formatHistoricalTrackerData(
+			trackerData,
+			trackerConfig,
+			userName,
+			useAllEnabled,
+		);
+		if (!formattedContext) {
+			continue;
+		}
 
-        const preamble = historyPersistence.contextPreamble || 'Context for that moment:';
-        const wrappedContext = `\n${preamble}\n${formattedContext}`;
+		const preamble =
+			historyPersistence.contextPreamble || "Context for that moment:";
+		const wrappedContext = `\n${preamble}\n${formattedContext}`;
 
-        // Determine target message based on position
-        let targetIdx = i;
+		// Determine target message based on position
+		let targetIdx = i;
 
-        if (position === 'user_message_end') {
-            // Find the preceding user message before this assistant message
-            for (let j = i - 1; j >= 0; j--) {
-                if (recentMessages[j].is_user && !recentMessages[j].is_system) {
-                    targetIdx = j;
-                    break;
-                }
-            }
-            // If no user message found before, skip
-            if (targetIdx === i) {
-                continue;
-            }
-        }
-        // For assistant_message_end: inject into the assistant message itself
+		if (position === "user_message_end") {
+			// Find the preceding user message before this assistant message
+			for (let j = i - 1; j >= 0; j--) {
+				if (recentMessages[j].is_user && !recentMessages[j].is_system) {
+					targetIdx = j;
+					break;
+				}
+			}
+			// If no user message found before, skip
+			if (targetIdx === i) {
+				continue;
+			}
+		}
+		// For assistant_message_end: inject into the assistant message itself
 
-        // Append to existing or create new entry
-        if (contextInjectionMap.has(targetIdx)) {
-            contextInjectionMap.set(targetIdx, contextInjectionMap.get(targetIdx) + wrappedContext);
-        } else {
-            contextInjectionMap.set(targetIdx, wrappedContext);
-        }
-    }
+		// Append to existing or create new entry
+		if (contextInjectionMap.has(targetIdx)) {
+			contextInjectionMap.set(
+				targetIdx,
+				contextInjectionMap.get(targetIdx) + wrappedContext,
+			);
+		} else {
+			contextInjectionMap.set(targetIdx, wrappedContext);
+		}
+	}
 
-    return contextInjectionMap;
+	return contextInjectionMap;
 }
 
 /**
@@ -1470,24 +1803,24 @@ function buildContextInjectionMap(recentMessages, trackerConfig, userName, histo
  * @returns {Array} Array of message objects with roles and content
  */
 function buildMessagesWithInjectedContext(recentMessages, contextInjectionMap) {
-    const messages = [];
+	const messages = [];
 
-    for (let i = 0; i < recentMessages.length; i++) {
-        const message = recentMessages[i];
-        let content = message.mes;
+	for (let i = 0; i < recentMessages.length; i++) {
+		const message = recentMessages[i];
+		let content = message.mes;
 
-        // Add historical context if this message is a target
-        if (contextInjectionMap.has(i)) {
-            content += contextInjectionMap.get(i);
-        }
+		// Add historical context if this message is a target
+		if (contextInjectionMap.has(i)) {
+			content += contextInjectionMap.get(i);
+		}
 
-        messages.push({
-            role: message.is_user ? 'user' : 'assistant',
-            content: content
-        });
-    }
+		messages.push({
+			role: message.is_user ? "user" : "assistant",
+			content: content,
+		});
+	}
 
-    return messages;
+	return messages;
 }
 
 /**
@@ -1495,12 +1828,54 @@ function buildMessagesWithInjectedContext(recentMessages, contextInjectionMap) {
  *
  * @returns {string} The instruction message content
  */
-function buildSeparateInstructionMessage() {
-    let instructionMessage = `</history>\n\n`;
-    instructionMessage += generateRPGPromptText().replace('start your response with', 'respond with');
-    instructionMessage += `\nProvide ONLY the requested data in the exact JSON format specified above. Do not include any roleplay response, other text, or commentary. Remember, all placeholders MUST be replaced with actual content. Do NOT wrap the JSON in code fences (\`\`\`json). Output the JSON object directly.`;
+function buildSeparateInstructionMessage(selectedSections = null) {
+	let instructionMessage = `</history>\n\n`;
+	instructionMessage += generateRPGPromptText(selectedSections).replace(
+		"start your response with",
+		"respond with",
+	);
 
-    return instructionMessage;
+	if (selectedSections) {
+		const sectionNames = [];
+		const nestedSubSections = [
+			"stats",
+			"status",
+			"skills",
+			"appearance",
+			"inventory",
+			"quests",
+		];
+		const hasNested = selectedSections.some((s) =>
+			nestedSubSections.includes(s),
+		);
+		const nestedParts = selectedSections.filter((s) =>
+			nestedSubSections.includes(s),
+		);
+
+		if (hasNested) {
+			if (nestedParts.length > 0) {
+				// Be explicit about the JSON path for nested sub-sections
+				const pathParts = nestedParts.map((s) => `userStats.${s}`);
+				sectionNames.push('"' + pathParts.join('" and "') + '"');
+			} else {
+				sectionNames.push('"userStats"');
+			}
+		}
+		if (selectedSections.includes("infoBox")) sectionNames.push('"infoBox"');
+		if (selectedSections.includes("characterThoughts"))
+			sectionNames.push('"characters"');
+		instructionMessage += `\nUpdate ONLY the ${sectionNames.join(" and ")} section(s) in the exact JSON format specified above. Return the full previous data for all other sections unchanged. `;
+
+		// For nested sub-sections within userStats, add extra clarity
+		if (nestedParts.length > 0) {
+			const pathDescriptions = nestedParts.map((s) => `"userStats.${s}"`);
+			instructionMessage += `\nThe JSON example shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields exactly as they appear in <previous> above. `;
+		}
+
+		instructionMessage += `Do not include any roleplay response, other text, or commentary. Remember, all placeholders MUST be replaced with actual content. Do NOT wrap the JSON in code fences (\`\`\`json). Output the JSON object directly.`;
+	} else {
+		instructionMessage += `\nProvide ONLY the requested data in the exact JSON format specified above. Do not include any roleplay response, other text, or commentary. Remember, all placeholders MUST be replaced with actual content. Do NOT wrap the JSON in code fences (\`\`\`json). Output the JSON object directly.`;
+	}
+
+	return instructionMessage;
 }
-
-
