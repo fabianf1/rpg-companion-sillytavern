@@ -1,32 +1,11 @@
 import {
-	getContext,
 	renderExtensionTemplateAsync,
 	extension_settings as st_extension_settings,
 } from "../../../extensions.js";
-import {
-	eventSource,
-	event_types,
-	substituteParams,
-	chat,
-	saveSettingsDebounced,
-	chat_metadata,
-	saveChatDebounced,
-	user_avatar,
-	getThumbnailUrl,
-	characters,
-	this_chid,
-	extension_prompt_types,
-	extension_prompt_roles,
-	setExtensionPrompt,
-	reloadCurrentChat,
-	Generate,
-	getRequestHeaders,
-} from "../../../../script.js";
-import { selected_group, getGroupMembers } from "../../../group-chats.js";
-import { power_user } from "../../../power-user.js";
+import { eventSource, event_types } from "../../../../script.js";
 
 // Core modules
-import { extensionName, extensionFolderPath } from "./src/core/config.js";
+import { extensionName } from "./src/core/config.js";
 import { i18n } from "./src/core/i18n.js";
 import { migrateToV3JSON } from "./src/utils/jsonMigration.js";
 import {
@@ -43,6 +22,7 @@ import {
 } from "./src/core/state.js";
 import { loadSettings, saveSettings } from "./src/core/persistence.js";
 import { registerAllEvents } from "./src/core/events.js";
+import { log, error as logError } from "./src/utils/logger.js";
 
 // Generation & Parsing modules
 import {
@@ -61,10 +41,7 @@ import {
 import { renderInventory } from "./src/systems/rendering/inventory.js";
 import { renderQuests } from "./src/systems/rendering/quests.js";
 import { renderAppearance } from "./src/systems/rendering/appearance.js";
-import {
-	toggleSnowflakes,
-	initSnowflakes,
-} from "./src/systems/ui/snowflakes.js";
+import { initSnowflakes } from "./src/systems/ui/snowflakes.js";
 import {
 	toggleDynamicWeather,
 	initWeatherEffects,
@@ -77,11 +54,9 @@ import { initInventoryEventListeners } from "./src/systems/interaction/inventory
 // UI Systems modules
 import {
 	applyTheme,
-	applyCustomTheme,
 	toggleCustomColors,
 	toggleAnimations,
 	updateFeatureTogglesVisibility,
-	updateSettingsPopupTheme,
 } from "./src/systems/ui/theme.js";
 import {
 	setupDiceRoller,
@@ -91,7 +66,6 @@ import {
 	getPartialRefreshModal,
 	updateDiceDisplay,
 	addDiceQuickReply,
-	getSettingsModal,
 } from "./src/systems/ui/modals.js";
 import { initTrackerEditor } from "./src/systems/ui/trackerEditor.js";
 import { initPromptsEditor } from "./src/systems/ui/promptsEditor.js";
@@ -115,6 +89,10 @@ import {
 	setupDesktopTabs,
 	updateStripWidgets,
 } from "./src/systems/ui/desktop.js";
+import {
+	bindSettingsUI,
+	syncSettingsUI,
+} from "./src/systems/ui/settingsBinder.js";
 
 // Feature modules
 import {
@@ -241,7 +219,7 @@ function populateConnectionProfileDropdown() {
 	$select.append('<option value="">Use Current</option>');
 
 	const profiles = getAvailableConnectionProfiles();
-	console.log("[RPG Companion] Available connection profiles:", profiles);
+	log("Available connection profiles:", profiles);
 	for (const profile of profiles) {
 		$select.append($("<option>").val(profile.id).text(profile.name));
 	}
@@ -265,7 +243,7 @@ async function initUI() {
 
 	// Only initialize UI if extension is enabled
 	if (!extensionSettings.enabled) {
-		// console.log('[RPG Companion] Extension disabled - skipping UI initialization');
+		log("Extension is disabled, skipping UI initialization.");
 		return;
 	}
 
@@ -307,379 +285,30 @@ async function initUI() {
 	// Set up min reply length input
 	$("#rpg-min-reply-length").val(extensionSettings.minReplyLength || 100);
 
-	// Set up event listeners (enable/disable is handled in Extensions tab)
-	$("#rpg-toggle-auto-update").on("change", function () {
-		extensionSettings.autoUpdate = $(this).prop("checked");
-		saveSettings();
-	});
+	// ── Bind all settings UI controls via data-driven bindings ──
+	bindSettingsUI();
 
-	$("#rpg-position-select").on("change", function () {
-		extensionSettings.panelPosition = String($(this).val());
-		saveSettings();
-		applyPanelPosition();
-		// Recreate thought bubbles to update their position
-		updateChatThoughts();
-	});
+	// ── Sync all settings UI controls to current values ──
+	syncSettingsUI();
 
-	$("#rpg-update-depth").on("change", function () {
-		const value = $(this).val();
-		extensionSettings.updateDepth = parseInt(String(value));
-		saveSettings();
-	});
+	// ── Manual bindings (non-settings actions) ──
 
-	$("#rpg-generation-mode").on("change", async function () {
-		extensionSettings.generationMode = String($(this).val());
-		saveSettings();
-		updateGenerationModeUI();
-	});
-
-	$("#rpg-retry-attempts").on("change", function () {
-		const value = $(this).val();
-		extensionSettings.retryAttempts = parseInt(String(value)) || 0;
-		saveSettings();
-	});
-
-	$("#rpg-retry-base-delay").on("change", function () {
-		const value = $(this).val();
-		extensionSettings.retryBaseDelay = parseInt(String(value)) || 2000;
-		saveSettings();
-	});
-
-	$("#rpg-min-reply-length").on("change", function () {
-		const value = $(this).val();
-		extensionSettings.minReplyLength = parseInt(String(value)) || 0;
-		saveSettings();
-	});
-
-	$("#rpg-toggle-user-stats").on("change", function () {
-		extensionSettings.showUserStats = $(this).prop("checked");
-		saveSettings();
-		updateSectionVisibility();
-	});
-
-	$("#rpg-toggle-info-box").on("change", function () {
-		extensionSettings.showInfoBox = $(this).prop("checked");
-		saveSettings();
-		updateSectionVisibility();
-	});
-
-	$("#rpg-toggle-thoughts").on("change", function () {
-		extensionSettings.showCharacterThoughts = $(this).prop("checked");
-		saveSettings();
-		updateSectionVisibility();
-	});
-
-	$("#rpg-toggle-inventory").on("change", function () {
-		extensionSettings.showInventory = $(this).prop("checked");
-		saveSettings();
-		updateSectionVisibility();
-	});
-
-	$("#rpg-toggle-quests").on("change", function () {
-		extensionSettings.showQuests = $(this).prop("checked");
-		saveSettings();
-		updateSectionVisibility();
-	});
-
-	$("#rpg-toggle-lock-icons").on("change", function () {
-		extensionSettings.showLockIcons = $(this).prop("checked");
-		saveSettings();
-		// Re-render all sections to show/hide lock icons
-		renderUserStats();
-		renderInfoBox();
-		renderThoughts();
-		renderInventory();
-		renderQuests();
-		renderAppearance();
-	});
-
-	$("#rpg-toggle-thoughts-in-chat").on("change", function () {
-		extensionSettings.showThoughtsInChat = $(this).prop("checked");
-		// console.log('[RPG Companion] Toggle showThoughtsInChat changed to:', extensionSettings.showThoughtsInChat);
-		saveSettings();
-		updateChatThoughts();
-	});
-
-	$("#rpg-toggle-dynamic-weather").on("change", function () {
-		extensionSettings.enableDynamicWeather = $(this).prop("checked");
-		saveSettings();
-		toggleDynamicWeather(extensionSettings.enableDynamicWeather);
-	});
-
-	$("#rpg-toggle-narrator").on("change", function () {
-		extensionSettings.narratorMode = $(this).prop("checked");
-		saveSettings();
-	});
-
-	// Connection Profile dropdown
-	$("#rpg-connection-profile").on("change", function () {
-		extensionSettings.connectionProfile = String($(this).val());
-		console.log(
-			"[RPG Companion] Connection profile changed to:",
-			extensionSettings.connectionProfile,
-		);
-		saveSettings();
-	});
-
-	$("#rpg-dismiss-promo").on("click", function () {
+	// Dismiss promo button
+	$("#rpg-dismiss-promo").on("click", () => {
 		extensionSettings.dismissedHolidayPromo = true;
 		saveSettings();
 		$("#rpg-holiday-promo").fadeOut(300);
 	});
 
-	$("#rpg-skip-guided-mode").on("change", function () {
-		extensionSettings.skipInjectionsForGuided = String($(this).val());
-		saveSettings();
-	});
-
-	$("#rpg-toggle-randomized-plot").on("change", function () {
-		extensionSettings.enableRandomizedPlot = $(this).prop("checked");
-		saveSettings();
-		togglePlotButtons();
-	});
-
-	$("#rpg-toggle-natural-plot").on("change", function () {
-		extensionSettings.enableNaturalPlot = $(this).prop("checked");
-		saveSettings();
-		togglePlotButtons();
-	});
-
-	// Feature toggle visibility controls
-
-	$("#rpg-toggle-show-dynamic-weather-toggle").on("change", function () {
-		extensionSettings.showDynamicWeatherToggle = $(this).prop("checked");
-		// Also disable the feature when hiding the toggle
-		if (!extensionSettings.showDynamicWeatherToggle) {
-			extensionSettings.enableDynamicWeather = false;
-			$("#rpg-toggle-dynamic-weather").prop("checked", false);
-			toggleDynamicWeather(false);
-		}
-		saveSettings();
-		updateFeatureTogglesVisibility();
-		updateWeatherSubOptionsVisibility();
-	});
-
-	// Weather sub-options (background and foreground) - radio buttons
-	$("#rpg-toggle-weather-background").on("change", function () {
-		if ($(this).prop("checked")) {
-			extensionSettings.weatherBackground = true;
-			extensionSettings.weatherForeground = false;
-			saveSettings();
-			// Re-apply weather effect
-			if (extensionSettings.enableDynamicWeather) {
-				toggleDynamicWeather(false);
-				toggleDynamicWeather(true);
-			}
-		}
-	});
-
-	$("#rpg-toggle-weather-foreground").on("change", function () {
-		if ($(this).prop("checked")) {
-			extensionSettings.weatherBackground = false;
-			extensionSettings.weatherForeground = true;
-			saveSettings();
-			// Re-apply weather effect
-			if (extensionSettings.enableDynamicWeather) {
-				toggleDynamicWeather(false);
-				toggleDynamicWeather(true);
-			}
-		}
-	});
-
-	$("#rpg-toggle-show-narrator-mode").on("change", function () {
-		extensionSettings.showNarratorMode = $(this).prop("checked");
-		// Also disable the feature when hiding the toggle
-		if (!extensionSettings.showNarratorMode) {
-			extensionSettings.narratorMode = false;
-			$("#rpg-toggle-narrator").prop("checked", false);
-		}
-		saveSettings();
-		updateFeatureTogglesVisibility();
-	});
-
-	$("#rpg-toggle-dice-display").on("change", function () {
-		extensionSettings.showDiceDisplay = $(this).prop("checked");
-		saveSettings();
-		updateDiceDisplay();
-	});
-
-	// Mobile FAB Widget toggles - simplified, no position saving (auto-positioned)
-	$("#rpg-toggle-fab-widgets-enabled").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		extensionSettings.mobileFabWidgets.enabled = $(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-		$("#rpg-fab-widget-options").toggle(
-			extensionSettings.mobileFabWidgets.enabled,
-		);
-	});
-
-	$("#rpg-toggle-fab-weather-icon").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.weatherIcon)
-			extensionSettings.mobileFabWidgets.weatherIcon = {};
-		extensionSettings.mobileFabWidgets.weatherIcon.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-weather-desc").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.weatherDesc)
-			extensionSettings.mobileFabWidgets.weatherDesc = {};
-		extensionSettings.mobileFabWidgets.weatherDesc.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-clock").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.clock)
-			extensionSettings.mobileFabWidgets.clock = {};
-		extensionSettings.mobileFabWidgets.clock.enabled = $(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-date").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.date)
-			extensionSettings.mobileFabWidgets.date = {};
-		extensionSettings.mobileFabWidgets.date.enabled = $(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-location").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.location)
-			extensionSettings.mobileFabWidgets.location = {};
-		extensionSettings.mobileFabWidgets.location.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-stats").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.stats)
-			extensionSettings.mobileFabWidgets.stats = {};
-		extensionSettings.mobileFabWidgets.stats.enabled = $(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	$("#rpg-toggle-fab-attributes").on("change", function () {
-		if (!extensionSettings.mobileFabWidgets)
-			extensionSettings.mobileFabWidgets = {};
-		if (!extensionSettings.mobileFabWidgets.attributes)
-			extensionSettings.mobileFabWidgets.attributes = {};
-		extensionSettings.mobileFabWidgets.attributes.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateFabWidgets();
-	});
-
-	// Desktop Strip Widget toggles
-	$("#rpg-toggle-strip-widgets-enabled").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		extensionSettings.desktopStripWidgets.enabled = $(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-		$("#rpg-strip-widget-options").toggle(
-			extensionSettings.desktopStripWidgets.enabled,
-		);
-	});
-
-	$("#rpg-toggle-strip-weather-icon").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.weatherIcon)
-			extensionSettings.desktopStripWidgets.weatherIcon = {};
-		extensionSettings.desktopStripWidgets.weatherIcon.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
-	$("#rpg-toggle-strip-clock").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.clock)
-			extensionSettings.desktopStripWidgets.clock = {};
-		extensionSettings.desktopStripWidgets.clock.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
-	$("#rpg-toggle-strip-date").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.date)
-			extensionSettings.desktopStripWidgets.date = {};
-		extensionSettings.desktopStripWidgets.date.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
-	$("#rpg-toggle-strip-location").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.location)
-			extensionSettings.desktopStripWidgets.location = {};
-		extensionSettings.desktopStripWidgets.location.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
-	$("#rpg-toggle-strip-stats").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.stats)
-			extensionSettings.desktopStripWidgets.stats = {};
-		extensionSettings.desktopStripWidgets.stats.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
-	$("#rpg-toggle-strip-attributes").on("change", function () {
-		if (!extensionSettings.desktopStripWidgets)
-			extensionSettings.desktopStripWidgets = {};
-		if (!extensionSettings.desktopStripWidgets.attributes)
-			extensionSettings.desktopStripWidgets.attributes = {};
-		extensionSettings.desktopStripWidgets.attributes.enabled =
-			$(this).prop("checked");
-		saveSettings();
-		updateStripWidgets();
-	});
-
 	// Full Refresh button (left half of split button)
-	$("#rpg-full-refresh").on("click", async function () {
-		if (!extensionSettings.enabled) {
-			return;
-		}
-		await updateRPGData(false, null); // Manual full update
+	$("#rpg-full-refresh").on("click", async () => {
+		if (!extensionSettings.enabled) return;
+		await updateRPGData(false, null);
 	});
 
 	// Partial Refresh button (right half of split button) - opens modal
-	$("#rpg-partial-refresh").on("click", function () {
-		if (!extensionSettings.enabled) {
-			return;
-		}
+	$("#rpg-partial-refresh").on("click", () => {
+		if (!extensionSettings.enabled) return;
 		const modal = getPartialRefreshModal();
 		if (modal) {
 			modal.onExecute = async (selectedSections) => {
@@ -690,358 +319,31 @@ async function initUI() {
 	});
 
 	// Cancel button (replaces split button during generation)
-	$("#rpg-refresh-cancel").on("click", function () {
-		console.log("[RPG Companion] Cancel button clicked");
+	$("#rpg-refresh-cancel").on("click", () => {
+		log("Cancel button clicked");
 		abortCurrentGeneration();
 	});
 
-	// Strip widget refresh button - same functionality as main refresh button
-	$("#rpg-strip-refresh").on("click", async function () {
-		if (!extensionSettings.enabled) {
-			return;
-		}
-		await updateRPGData(false); // Manual update
+	// Strip widget refresh button
+	$("#rpg-strip-refresh").on("click", async () => {
+		if (!extensionSettings.enabled) return;
+		await updateRPGData(false);
 	});
 
 	// Strip cancel button
-	$("#rpg-strip-cancel").on("click", function () {
-		console.log("[RPG Companion] Strip cancel button clicked");
+	$("#rpg-strip-cancel").on("click", () => {
+		log("Strip cancel button clicked");
 		abortCurrentGeneration();
 	});
-
-	$("#rpg-stat-bar-color-low").on("change", function () {
-		extensionSettings.statBarColorLow = String($(this).val());
-		saveSettings();
-		renderUserStats(); // Re-render with new colors
-	});
-
-	$("#rpg-stat-bar-color-low-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.statBarColorLowOpacity = opacity;
-			$("#rpg-stat-bar-color-low-opacity-value").text(opacity + "%");
-			renderUserStats();
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	$("#rpg-stat-bar-color-high").on("change", function () {
-		extensionSettings.statBarColorHigh = String($(this).val());
-		saveSettings();
-		renderUserStats(); // Re-render with new colors
-	});
-
-	$("#rpg-stat-bar-color-high-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.statBarColorHighOpacity = opacity;
-			$("#rpg-stat-bar-color-high-opacity-value").text(opacity + "%");
-			renderUserStats();
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	// Theme selection
-	$("#rpg-theme-select").on("change", function () {
-		extensionSettings.theme = String($(this).val());
-		saveSettings();
-		applyTheme();
-		toggleCustomColors();
-		updateSettingsPopupTheme(getSettingsModal()); // Update popup theme instantly
-		updateChatThoughts(); // Recreate thought bubbles with new theme
-	});
-
-	// Custom color pickers
-	$("#rpg-custom-bg").on("change", function () {
-		extensionSettings.customColors.bg = String($(this).val());
-		saveSettings();
-		if (extensionSettings.theme === "custom") {
-			applyCustomTheme();
-			updateSettingsPopupTheme(getSettingsModal()); // Update popup theme instantly
-			updateChatThoughts(); // Update thought bubbles
-		}
-	});
-
-	$("#rpg-custom-bg-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.customColors.bgOpacity = opacity;
-			$("#rpg-custom-bg-opacity-value").text(opacity + "%");
-			if (extensionSettings.theme === "custom") {
-				applyCustomTheme();
-				updateSettingsPopupTheme(getSettingsModal());
-				updateChatThoughts();
-			}
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	$("#rpg-custom-accent").on("change", function () {
-		extensionSettings.customColors.accent = String($(this).val());
-		saveSettings();
-		if (extensionSettings.theme === "custom") {
-			applyCustomTheme();
-			updateSettingsPopupTheme(getSettingsModal()); // Update popup theme instantly
-			updateChatThoughts(); // Update thought bubbles
-		}
-	});
-
-	$("#rpg-custom-accent-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.customColors.accentOpacity = opacity;
-			$("#rpg-custom-accent-opacity-value").text(opacity + "%");
-			if (extensionSettings.theme === "custom") {
-				applyCustomTheme();
-				updateSettingsPopupTheme(getSettingsModal());
-				updateChatThoughts();
-			}
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	$("#rpg-custom-text").on("change", function () {
-		extensionSettings.customColors.text = String($(this).val());
-		saveSettings();
-		if (extensionSettings.theme === "custom") {
-			applyCustomTheme();
-			updateSettingsPopupTheme(getSettingsModal()); // Update popup theme instantly
-			updateChatThoughts(); // Update thought bubbles
-		}
-	});
-
-	$("#rpg-custom-text-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.customColors.textOpacity = opacity;
-			$("#rpg-custom-text-opacity-value").text(opacity + "%");
-			if (extensionSettings.theme === "custom") {
-				applyCustomTheme();
-				updateSettingsPopupTheme(getSettingsModal());
-				updateChatThoughts();
-			}
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	$("#rpg-custom-highlight").on("change", function () {
-		extensionSettings.customColors.highlight = String($(this).val());
-		saveSettings();
-		if (extensionSettings.theme === "custom") {
-			applyCustomTheme();
-			updateSettingsPopupTheme(getSettingsModal()); // Update popup theme instantly
-			updateChatThoughts(); // Update thought bubbles
-		}
-	});
-
-	$("#rpg-custom-highlight-opacity")
-		.on("input", function () {
-			const opacity = Number($(this).val());
-			extensionSettings.customColors.highlightOpacity = opacity;
-			$("#rpg-custom-highlight-opacity-value").text(opacity + "%");
-			if (extensionSettings.theme === "custom") {
-				applyCustomTheme();
-				updateSettingsPopupTheme(getSettingsModal());
-				updateChatThoughts();
-			}
-		})
-		.on("change", function () {
-			saveSettings();
-		});
-
-	// Initialize UI state (enable/disable is in Extensions tab)
-	$("#rpg-toggle-auto-update").prop("checked", extensionSettings.autoUpdate);
-	$("#rpg-position-select").val(extensionSettings.panelPosition);
-	$("#rpg-update-depth").val(extensionSettings.updateDepth);
-	$("#rpg-toggle-user-stats").prop("checked", extensionSettings.showUserStats);
-	$("#rpg-toggle-info-box").prop("checked", extensionSettings.showInfoBox);
-	$("#rpg-toggle-thoughts").prop(
-		"checked",
-		extensionSettings.showCharacterThoughts,
-	);
-	$("#rpg-toggle-inventory").prop("checked", extensionSettings.showInventory);
-	$("#rpg-toggle-quests").prop("checked", extensionSettings.showQuests);
-	$("#rpg-toggle-lock-icons").prop(
-		"checked",
-		extensionSettings.showLockIcons ?? true,
-	);
-	$("#rpg-toggle-thoughts-in-chat").prop(
-		"checked",
-		extensionSettings.showThoughtsInChat,
-	);
-
-	$("#rpg-toggle-dynamic-weather").prop(
-		"checked",
-		extensionSettings.enableDynamicWeather,
-	);
-	$("#rpg-toggle-narrator").prop("checked", extensionSettings.narratorMode);
-
-	// Feature toggle visibility settings
-	$("#rpg-toggle-show-dynamic-weather-toggle").prop(
-		"checked",
-		extensionSettings.showDynamicWeatherToggle ?? true,
-	);
-	$("#rpg-toggle-weather-background").prop(
-		"checked",
-		extensionSettings.weatherBackground ?? true,
-	);
-	$("#rpg-toggle-weather-foreground").prop(
-		"checked",
-		extensionSettings.weatherForeground ?? false,
-	);
-	$("#rpg-toggle-show-narrator-mode").prop(
-		"checked",
-		extensionSettings.showNarratorMode ?? true,
-	);
 
 	// Hide holiday promo if previously dismissed
 	if (extensionSettings.dismissedHolidayPromo) {
 		$("#rpg-holiday-promo").hide();
 	}
 
-	$("#rpg-toggle-randomized-plot").prop(
-		"checked",
-		extensionSettings.enableRandomizedPlot ?? true,
-	);
-	$("#rpg-toggle-natural-plot").prop(
-		"checked",
-		extensionSettings.enableNaturalPlot ?? true,
-	);
-
-	// Initialize avatar options (panel toggle)
-
-	$("#rpg-toggle-dice-display").prop(
-		"checked",
-		extensionSettings.showDiceDisplay,
-	);
-
-	// Initialize Mobile FAB Widget checkboxes
-	const fabWidgets = extensionSettings.mobileFabWidgets || {};
-	$("#rpg-toggle-fab-widgets-enabled").prop(
-		"checked",
-		fabWidgets.enabled || false,
-	);
-	$("#rpg-toggle-fab-weather-icon").prop(
-		"checked",
-		fabWidgets.weatherIcon?.enabled || false,
-	);
-	$("#rpg-toggle-fab-weather-desc").prop(
-		"checked",
-		fabWidgets.weatherDesc?.enabled || false,
-	);
-	$("#rpg-toggle-fab-clock").prop(
-		"checked",
-		fabWidgets.clock?.enabled || false,
-	);
-	$("#rpg-toggle-fab-date").prop("checked", fabWidgets.date?.enabled || false);
-	$("#rpg-toggle-fab-location").prop(
-		"checked",
-		fabWidgets.location?.enabled || false,
-	);
-	$("#rpg-toggle-fab-stats").prop(
-		"checked",
-		fabWidgets.stats?.enabled || false,
-	);
-	$("#rpg-toggle-fab-attributes").prop(
-		"checked",
-		fabWidgets.attributes?.enabled || false,
-	);
-	// Toggle visibility of widget options based on master toggle
-	$("#rpg-fab-widget-options").toggle(fabWidgets.enabled || false);
-
-	// Initialize Desktop Strip Widget checkboxes
-	const stripWidgets = extensionSettings.desktopStripWidgets || {};
-	$("#rpg-toggle-strip-widgets-enabled").prop(
-		"checked",
-		stripWidgets.enabled || false,
-	);
-	$("#rpg-toggle-strip-weather-icon").prop(
-		"checked",
-		stripWidgets.weatherIcon?.enabled ?? true,
-	);
-	$("#rpg-toggle-strip-clock").prop(
-		"checked",
-		stripWidgets.clock?.enabled ?? true,
-	);
-	$("#rpg-toggle-strip-date").prop(
-		"checked",
-		stripWidgets.date?.enabled ?? true,
-	);
-	$("#rpg-toggle-strip-location").prop(
-		"checked",
-		stripWidgets.location?.enabled ?? true,
-	);
-	$("#rpg-toggle-strip-stats").prop(
-		"checked",
-		stripWidgets.stats?.enabled ?? true,
-	);
-	$("#rpg-toggle-strip-attributes").prop(
-		"checked",
-		stripWidgets.attributes?.enabled ?? true,
-	);
-	// Toggle visibility of strip widget options based on master toggle
-	$("#rpg-strip-widget-options").toggle(stripWidgets.enabled || false);
-
-	$("#rpg-stat-bar-color-low").val(extensionSettings.statBarColorLow);
-	$("#rpg-stat-bar-color-low-opacity").val(
-		extensionSettings.statBarColorLowOpacity ?? 100,
-	);
-	$("#rpg-stat-bar-color-low-opacity-value").text(
-		(extensionSettings.statBarColorLowOpacity ?? 100) + "%",
-	);
-
-	$("#rpg-stat-bar-color-high").val(extensionSettings.statBarColorHigh);
-	$("#rpg-stat-bar-color-high-opacity").val(
-		extensionSettings.statBarColorHighOpacity ?? 100,
-	);
-	$("#rpg-stat-bar-color-high-opacity-value").text(
-		(extensionSettings.statBarColorHighOpacity ?? 100) + "%",
-	);
-
-	$("#rpg-theme-select").val(extensionSettings.theme);
-	$("#rpg-custom-bg").val(extensionSettings.customColors.bg);
-	$("#rpg-custom-bg-opacity").val(
-		extensionSettings.customColors.bgOpacity ?? 100,
-	);
-	$("#rpg-custom-bg-opacity-value").text(
-		(extensionSettings.customColors.bgOpacity ?? 100) + "%",
-	);
-
-	$("#rpg-custom-accent").val(extensionSettings.customColors.accent);
-	$("#rpg-custom-accent-opacity").val(
-		extensionSettings.customColors.accentOpacity ?? 100,
-	);
-	$("#rpg-custom-accent-opacity-value").text(
-		(extensionSettings.customColors.accentOpacity ?? 100) + "%",
-	);
-
-	$("#rpg-custom-text").val(extensionSettings.customColors.text);
-	$("#rpg-custom-text-opacity").val(
-		extensionSettings.customColors.textOpacity ?? 100,
-	);
-	$("#rpg-custom-text-opacity-value").text(
-		(extensionSettings.customColors.textOpacity ?? 100) + "%",
-	);
-
-	$("#rpg-custom-highlight").val(extensionSettings.customColors.highlight);
-	$("#rpg-custom-highlight-opacity").val(
-		extensionSettings.customColors.highlightOpacity ?? 100,
-	);
-	$("#rpg-custom-highlight-opacity-value").text(
-		(extensionSettings.customColors.highlightOpacity ?? 100) + "%",
-	);
-
 	populateConnectionProfileDropdown();
-	$("#rpg-generation-mode").val(extensionSettings.generationMode);
-	$("#rpg-retry-attempts").val(extensionSettings.retryAttempts ?? 0);
-	$("#rpg-retry-base-delay").val(extensionSettings.retryBaseDelay ?? 2000);
-	$("#rpg-skip-guided-mode").val(extensionSettings.skipInjectionsForGuided);
 
+	// ── Post-init: update UI state and render ──
 	updatePanelVisibility();
 	updateSectionVisibility();
 	updateGenerationModeUI();
@@ -1050,23 +352,15 @@ async function initUI() {
 	toggleCustomColors();
 	toggleAnimations();
 	updateFeatureTogglesVisibility();
-	togglePlotButtons(); // Initialize plot buttons and encounter button visibility
-	initWeatherEffects(); // Initialize dynamic weather effects
-
-	// Setup mobile toggle button
+	togglePlotButtons();
+	initWeatherEffects();
 	setupMobileToggle();
-
-	// Setup tabs based on viewport
 	if (window.innerWidth > 1000) {
 		setupDesktopTabs();
 	} else {
 		setupMobileTabs();
 	}
-
-	// Setup collapse/expand toggle button
 	setupCollapseToggle();
-
-	// Render initial data if available
 	renderUserStats();
 	renderInfoBox();
 	renderThoughts();
@@ -1100,29 +394,24 @@ async function initUI() {
  */
 jQuery(async () => {
 	try {
-		console.log("[RPG Companion] Starting initialization...");
+		log("Starting initialization...");
 
 		// Load settings with validation
 		try {
 			loadSettings();
 		} catch (error) {
-			console.error(
-				"[RPG Companion] Settings load failed, continuing with defaults:",
-				error,
-			);
+			logError("Settings load failed, continuing with defaults:", error);
 		}
 
 		// Check if migration to v3 JSON format is needed
 		try {
 			if (extensionSettings.settingsVersion < 3) {
-				// console.log('[RPG Companion] Detected v2 format, migrating to v3 JSON...');
 				await migrateToV3JSON();
 				updateExtensionSettings({ settingsVersion: 3 });
 				await saveSettings();
-				// console.log('[RPG Companion] ✅ Migration to v3 complete');
 			}
 		} catch (error) {
-			console.error("[RPG Companion] Migration to v3 failed:", error);
+			logError("Migration to v3 failed:", error);
 			// Non-critical - extension can still work with v2 format
 		}
 
@@ -1136,10 +425,7 @@ jQuery(async () => {
 		try {
 			await addExtensionSettings();
 		} catch (error) {
-			console.error(
-				"[RPG Companion] Failed to add extension settings tab:",
-				error,
-			);
+			logError("Failed to add extension settings tab:", error);
 			// Don't throw - extension can still work without settings tab
 		}
 
@@ -1147,7 +433,7 @@ jQuery(async () => {
 		try {
 			await initUI();
 		} catch (error) {
-			console.error("[RPG Companion] UI initialization failed:", error);
+			logError("UI initialization failed:", error);
 			throw error; // This is critical - can't continue without UI
 		}
 
@@ -1158,7 +444,7 @@ jQuery(async () => {
 				saveSettingsDebounced,
 			);
 		} catch (error) {
-			console.error("[RPG Companion] HTML regex import failed:", error);
+			logError("HTML regex import failed:", error);
 			// Non-critical - continue without it
 		}
 
@@ -1169,10 +455,7 @@ jQuery(async () => {
 				saveSettingsDebounced,
 			);
 		} catch (error) {
-			console.error(
-				"[RPG Companion] Tracker cleaning regex import failed:",
-				error,
-			);
+			logError("Tracker cleaning regex import failed:", error);
 			// Non-critical - continue without it
 		}
 
@@ -1184,7 +467,7 @@ jQuery(async () => {
 				saveSettingsDebounced,
 			);
 		} catch (error) {
-			console.error("[RPG Companion] JSON cleaning regex setup failed:", error);
+			logError("JSON cleaning regex setup failed:", error);
 			// Non-critical - continue without it
 		}
 
@@ -1192,18 +475,13 @@ jQuery(async () => {
 		try {
 			const conflicts = detectConflictingRegexScripts(st_extension_settings);
 			if (conflicts.length > 0) {
-				// console.log('[RPG Companion] ⚠️ Detected old manual formatting regex scripts that may conflict:');
-				// conflicts.forEach(name => console.log(`  - ${name}`));
-				// console.log('[RPG Companion] Consider disabling these regexes as the extension now handles formatting automatically.');
-				// Show user-friendly warning (non-blocking)
-				// toastr.warning(
-				//     `Found ${conflicts.length} old RPG formatting regex script(s). These may conflict with the extension. Check console for details.`,
-				//     'RPG Companion Warning',
-				//     { timeOut: 8000 }
-				// );
+				log(
+					"Detected old manual formatting regex scripts that may conflict:",
+					conflicts,
+				);
 			}
 		} catch (error) {
-			console.error("[RPG Companion] Conflict detection failed:", error);
+			logError("Conflict detection failed:", error);
 			// Non-critical - continue anyway
 		}
 
@@ -1212,7 +490,7 @@ jQuery(async () => {
 		try {
 			initHistoryInjection();
 		} catch (error) {
-			console.error("[RPG Companion] History injection init failed:", error);
+			logError("History injection init failed:", error);
 			// Non-critical - continue without it
 		}
 
@@ -1231,17 +509,22 @@ jQuery(async () => {
 				[event_types.SETTINGS_UPDATED]: updatePersonaAvatar,
 			});
 			// Re-populate connection profile dropdown when profiles are created/deleted/updated
-			eventSource.on(event_types.CONNECTION_PROFILE_CREATED, () =>
-				populateConnectionProfileDropdown(),
+			const onConnectionProfileChanged = () =>
+				populateConnectionProfileDropdown();
+			eventSource.on(
+				event_types.CONNECTION_PROFILE_CREATED,
+				onConnectionProfileChanged,
 			);
-			eventSource.on(event_types.CONNECTION_PROFILE_DELETED, () =>
-				populateConnectionProfileDropdown(),
+			eventSource.on(
+				event_types.CONNECTION_PROFILE_DELETED,
+				onConnectionProfileChanged,
 			);
-			eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, () =>
-				populateConnectionProfileDropdown(),
+			eventSource.on(
+				event_types.CONNECTION_PROFILE_UPDATED,
+				onConnectionProfileChanged,
 			);
 		} catch (error) {
-			console.error("[RPG Companion] Event registration failed:", error);
+			logError("Event registration failed:", error);
 			throw error; // This is critical - can't continue without events
 		}
 
@@ -1249,14 +532,14 @@ jQuery(async () => {
 		try {
 			initSnowflakes();
 		} catch (error) {
-			console.error("[RPG Companion] Snowflakes initialization failed:", error);
+			logError("Snowflakes initialization failed:", error);
 			// Non-critical - continue without it
 		}
 
-		console.log("[RPG Companion] ✅ Extension loaded successfully.");
+		log("✅ Extension loaded successfully.");
 	} catch (error) {
-		console.error("[RPG Companion] ❌ Critical initialization failure:", error);
-		console.error("[RPG Companion] Error details:", error.message, error.stack);
+		logError("❌ Critical initialization failure:", error);
+		logError("Error details:", error.message, error.stack);
 
 		// Show user-friendly error message
 		toastr.error(
@@ -1266,18 +549,3 @@ jQuery(async () => {
 		);
 	}
 });
-
-/**
- * Updates the visibility of weather sub-options in settings based on dynamic weather toggle
- */
-function updateWeatherSubOptionsVisibility() {
-	const $weatherSubOptions = $("#rpg-weather-suboptions");
-	const isDynamicWeatherEnabled =
-		extensionSettings.showDynamicWeatherToggle ?? true;
-
-	if (isDynamicWeatherEnabled) {
-		$weatherSubOptions.show();
-	} else {
-		$weatherSubOptions.hide();
-	}
-}
