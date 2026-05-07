@@ -24,7 +24,7 @@ export const defaultSettings = {
 	enabled: true,
 	autoUpdate: true,
 	updateDepth: 4, // How many messages to include in the context
-	generationMode: "together", // 'separate' or 'together' - whether to generate with main response or separately
+	generationMode: "single", // 'single' - generates RPG data separately (manual or auto)
 	showUserStats: true,
 	showInfoBox: true,
 	showCharacterThoughts: true,

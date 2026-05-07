@@ -2,7 +2,11 @@ import {
 	renderExtensionTemplateAsync,
 	extension_settings as st_extension_settings,
 } from "../../../extensions.js";
-import { eventSource, event_types } from "../../../../script.js";
+import {
+	eventSource,
+	event_types,
+	saveSettingsDebounced,
+} from "../../../../script.js";
 
 // Core modules
 import { extensionName } from "./src/core/config.js";
@@ -75,7 +79,6 @@ import {
 	updatePanelVisibility,
 	updateSectionVisibility,
 	applyPanelPosition,
-	updateGenerationModeUI,
 } from "./src/systems/ui/layout.js";
 import {
 	setupMobileToggle,
@@ -346,7 +349,6 @@ async function initUI() {
 	// ── Post-init: update UI state and render ──
 	updatePanelVisibility();
 	updateSectionVisibility();
-	updateGenerationModeUI();
 	applyTheme();
 	applyPanelPosition();
 	toggleCustomColors();

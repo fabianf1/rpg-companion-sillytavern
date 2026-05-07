@@ -4,7 +4,7 @@
  */
 
 import { getContext } from '../../../../../../extensions.js';
-import { chat, user_avatar, setExtensionPrompt, extension_prompt_types, saveChatDebounced } from '../../../../../../../script.js';
+import { chat, user_avatar, setExtensionPrompt, extension_prompt_types } from '../../../../../../../script.js';
 
 // Core modules
 import {
@@ -20,9 +20,8 @@ import {
 import { saveChatData, autoSwitchPresetForEntity, migrateAppearanceData } from '../../core/persistence.js';
 
 // Generation & Parsing
-import { parseResponse } from '../generation/parser.js';
 import { updateRPGData } from '../generation/apiClient.js';
-import { removeLocks, restoreLockedContent, getLockedItemsFromSwipeStore } from '../generation/lockManager.js';
+import { getLockedItemsFromSwipeStore } from '../generation/lockManager.js';
 import { initHistoryInjectionListeners } from '../generation/injector.js';
 
 // Rendering
@@ -37,7 +36,7 @@ import { renderQuests } from '../rendering/quests.js';
 import { getSafeThumbnailUrl } from '../../utils/avatars.js';
 
 // UI
-import { setFabLoadingState, updateFabWidgets } from '../ui/mobile.js';
+import { updateFabWidgets } from '../ui/mobile.js';
 import { updateStripWidgets } from '../ui/desktop.js';
 
 /**
@@ -63,7 +62,6 @@ function reloadLocksFromSwipeStore() {
 /**
  * Event handler for when the user sends a message.
  * Sets the flag to indicate this is NOT a swipe.
- * In together mode, commits displayed data (only for real messages, not streaming placeholders).
  */
 export function onMessageSent() {
     if (!extensionSettings.enabled) return;
@@ -88,15 +86,13 @@ export function onMessageSent() {
     // This allows auto-update to distinguish between new generations and loading chat history
     setIsAwaitingNewMessage(true);
 
-    // Note: FAB spinning is NOT shown for together mode since no extra API request is made
-    // The RPG data comes embedded in the main response
-    // FAB spinning is handled by apiClient.js for separate mode when updateRPGData() is called
+    // FAB spinning is handled by apiClient.js when updateRPGData() is called
 }
 
 /**
  * Event handler for when a message is generated.
  */
-export async function onMessageReceived(data) {
+export async function onMessageReceived(_data) {
     // console.log('[RPG Companion] onMessageReceived called, lastActionWasSwipe:', lastActionWasSwipe);
 
     if (!extensionSettings.enabled) {
@@ -108,124 +104,12 @@ export async function onMessageReceived(data) {
     setLastActionWasSwipe(false);
     // console.log('[RPG Companion] 🟢 Reset lastActionWasSwipe = false (generation completed)');
 
-    if (extensionSettings.generationMode === 'together') {
-        // In together mode, parse the response to extract RPG data
-        // Commit happens in onMessageSent (when user sends message, before generation)
-        const lastMessage = chat[chat.length - 1];
-        if (lastMessage && !lastMessage.is_user) {
-            const responseText = lastMessage.mes;
-            const parsedData = parseResponse(responseText);
-
-            // Note: Don't show parsing error here - this event fires when loading chat history too
-            // Error notification is handled in apiClient.js for fresh generations only
-
-            // Remove locks from parsed data (JSON format only, text format is unaffected)
-            if (parsedData.userStats) {
-                parsedData.userStats = removeLocks(parsedData.userStats);
-            }
-            if (parsedData.infoBox) {
-                parsedData.infoBox = removeLocks(parsedData.infoBox);
-            }
-            if (parsedData.characterThoughts) {
-                parsedData.characterThoughts = removeLocks(parsedData.characterThoughts);
-            }
-
-            // Restore locked content that was removed or modified by the AI
-            // Get previous data from the last message's swipe (with locks still applied)
-            const previousSwipeData = lastMessage?.extra?.rpg_companion_swipes?.[currentSwipeId] || {};
-            
-            if (previousSwipeData) {
-                if (parsedData.userStats) {
-                    const previousUserStats = previousSwipeData.userStats;
-                    if (previousUserStats) {
-                        parsedData.userStats = restoreLockedContent(parsedData.userStats, previousUserStats, 'userStats');
-                    }
-                }
-                if (parsedData.infoBox) {
-                    const previousInfoBox = previousSwipeData.infoBox;
-                    if (previousInfoBox) {
-                        parsedData.infoBox = restoreLockedContent(parsedData.infoBox, previousInfoBox, 'infoBox');
-                    }
-                }
-                if (parsedData.characterThoughts) {
-                    const previousCharacterThoughts = previousSwipeData.characterThoughts;
-                    if (previousCharacterThoughts) {
-                        parsedData.characterThoughts = restoreLockedContent(parsedData.characterThoughts, previousCharacterThoughts, 'characters');
-                    }
-                }
-            }
-
-            // Store RPG data for this specific swipe in the message's extra field (authoritative source)
-            if (!lastMessage.extra) {
-                lastMessage.extra = {};
-            }
-            if (!lastMessage.extra.rpg_companion_swipes) {
-                lastMessage.extra.rpg_companion_swipes = {};
-            }
-
-            const currentSwipeId = lastMessage.swipe_id || 0;
-            lastMessage.extra.rpg_companion_swipes[currentSwipeId] = {
-                userStats: parsedData.userStats,
-                infoBox: parsedData.infoBox,
-                characterThoughts: parsedData.characterThoughts
-            };
-
-            // comment.log('[RPG Companion] Stored RPG data for swipe', currentSwipeId);
-
-            // Remove the tracker code blocks from the visible message
-            let cleanedMessage = responseText;
-
-            // Note: JSON code blocks are hidden from display by regex script (but preserved in message data)
-
-            // Remove old text format code blocks (legacy support)
-            cleanedMessage = cleanedMessage.replace(/```[^`]*?Stats\s*\n\s*---[^`]*?```\s*/gi, '');
-            cleanedMessage = cleanedMessage.replace(/```[^`]*?Info Box\s*\n\s*---[^`]*?```\s*/gi, '');
-            cleanedMessage = cleanedMessage.replace(/```[^`]*?Present Characters\s*\n\s*---[^`]*?```\s*/gi, '');
-            // Remove any stray "---" dividers that might appear after the code blocks
-            cleanedMessage = cleanedMessage.replace(/^\s*---\s*$/gm, '');
-            // Clean up multiple consecutive newlines
-            cleanedMessage = cleanedMessage.replace(/\n{3,}/g, '\n\n');
-            // Note: <trackers> XML tags are automatically hidden by SillyTavern
-            // Note: <Song - Artist/> tags are also automatically hidden by SillyTavern
-
-            // Update the message in chat history
-            lastMessage.mes = cleanedMessage.trim();
-
-            // Update the swipe text as well
-            if (lastMessage.swipes && lastMessage.swipes[currentSwipeId] !== undefined) {
-                lastMessage.swipes[currentSwipeId] = cleanedMessage.trim();
-            }
-
-            // Render the updated data FIRST (before cleaning DOM)
-            renderUserStats();
-            renderInfoBox();
-            renderThoughts();
-            renderInventory();
-            renderQuests();
-
-            // Update FAB widgets and strip widgets with newly parsed data
-            updateFabWidgets();
-            updateStripWidgets();
-
-            // Then update the DOM to reflect the cleaned message
-            // Using updateMessageBlock to perform macro substitutions + regex formatting
-            const messageId = chat.length - 1;
-            updateMessageBlock(messageId, lastMessage, { rerenderMessage: true });
-
-            // console.log('[RPG Companion] Cleaned message, removed tracker code blocks from DOM');
-
-            // Save to chat metadata
-            saveChatData();
-        }
-    } else if (extensionSettings.generationMode === 'separate') {
-
-        // Trigger auto-update if enabled (for separate mode)
-        // Only trigger if this is a newly generated message, not loading chat history
-        if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
-            setTimeout(async () => {
-                await updateRPGData(true); // Auto-update
-            }, 500);
-        }
+    // Trigger auto-update if enabled
+    // Only trigger if this is a newly generated message, not loading chat history
+    if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
+        setTimeout(async () => {
+            await updateRPGData(true); // Auto-update
+        }, 500);
     }
 
     // Reset the awaiting flag after processing the message
@@ -250,7 +134,7 @@ export async function onMessageReceived(data) {
  */
 export function onCharacterChanged() {
     console.log('[RPG Companion] 🟠 EVENT: onCharacterChanged');
-    // Abort any pending or in-flight separate-mode generation so
+    // Abort any pending or in-flight generation so
     // its result is not applied to the (now-changed) chat tail.
     abortCurrentGeneration();
     
@@ -262,10 +146,7 @@ export function onCharacterChanged() {
     $(document).off('click.thoughtPanel');
 
     // Auto-switch to the preset associated with this character/group (if any)
-    const presetSwitched = autoSwitchPresetForEntity();
-    // if (presetSwitched) {
-    //     console.log('[RPG Companion] Auto-switched preset for character');
-    // }
+    autoSwitchPresetForEntity();
 
     // Apply migration
     migrateAppearanceData();
@@ -300,7 +181,7 @@ export function onMessageSwiped(messageIndex) {
 
     // console.log('[RPG Companion] 🔵 EVENT: onMessageSwiped at index:', messageIndex);
 
-    // Abort any pending or in-flight separate-mode generation so
+    // Abort any pending or in-flight generation so
     // its result is not applied to the (now-changed) chat tail.
     abortCurrentGeneration();
 
@@ -355,7 +236,7 @@ export function onMessageDeleted() {
 
     console.log('[RPG Companion] 🗑️ EVENT: onMessageDeleted');
 
-    // Abort any pending or in-flight separate-mode generation so
+    // Abort any pending or in-flight generation so
     // its result is not applied to the (now-changed) chat tail.
     abortCurrentGeneration();
 
@@ -428,8 +309,7 @@ export function clearExtensionPrompts() {
 export async function onGenerationEnded() {
     // console.log('[RPG Companion] 🏁 onGenerationEnded called');
 
-    // Note: isGenerating flag is cleared in onMessageReceived after parsing (together mode)
-    // or in apiClient.js after separate generation completes (separate mode)
+    // Note: isGenerating flag is cleared in apiClient.js after generation completes
 
     // SillyTavern may auto-unhide messages when generation stops
     // Re-apply checkpoint if one exists

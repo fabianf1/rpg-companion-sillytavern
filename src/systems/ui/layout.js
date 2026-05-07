@@ -452,19 +452,7 @@ export function applyPanelPosition() {
  * Updates the UI based on generation mode selection.
  */
 export function updateGenerationModeUI() {
-	if (extensionSettings.generationMode === "together") {
-		// In "together" mode, manual update buttons are hidden
-		$("#rpg-refresh-split-btn").hide();
-		$("#rpg-strip-refresh").hide();
-		$("#rpg-separate-mode-settings").slideUp(200);
-		// Hide auto-update toggle (not applicable in together mode)
-		$("#rpg-auto-update-container").slideUp(200);
-	} else if (extensionSettings.generationMode === "separate") {
-		// In "separate" mode, manual update buttons are visible
-		$("#rpg-refresh-split-btn").show();
-		$("#rpg-strip-refresh").show();
-		$("#rpg-separate-mode-settings").slideDown(200);
-		// Show auto-update toggle
-		$("#rpg-auto-update-container").slideDown(200);
-	}
+	// In "single" mode, manual update buttons are visible
+	$("#rpg-refresh-split-btn").show();
+	$("#rpg-strip-refresh").show();
 }

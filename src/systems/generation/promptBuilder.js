@@ -388,7 +388,7 @@ export function generateTrackerExample() {
  */
 export function generateTrackerInstructions(
 	includeHtmlPrompt = true,
-	includeContinuation = true,
+	includeContinuation = false,
 	includeAttributes = true,
 	selectedSections = null,
 ) {
@@ -531,16 +531,6 @@ export function generateTrackerInstructions(
 
 			instructions +=
 				"\n}\n```\n\nDo NOT output multiple separate JSON objects. Everything must be in ONE unified object with the keys shown above.";
-		}
-
-		// Only add continuation instruction if includeContinuation is true
-		if (includeContinuation) {
-			const customPrompt = extensionSettings.customTrackerContinuationPrompt;
-			if (customPrompt) {
-				instructions += "\n\n" + customPrompt + "\n\n";
-			} else {
-				instructions += `\n\nAfter updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting the protagonist's performance, low hygiene influencing their social interactions, environmental factors shaping the scene, a character's emotional state coloring their responses, and so on. Remember, all bracketed placeholders (e.g., [Location], [Mood Emoji]) MUST be replaced with actual content without the square brackets.\n\n`;
-			}
 		}
 
 		// Include attributes based on settings (only if includeAttributes is true)

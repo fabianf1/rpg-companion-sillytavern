@@ -3,22 +3,26 @@
  * Handles saving/loading extension settings and chat data
  */
 
-import { saveSettingsDebounced, chat_metadata, saveChatDebounced } from '../../../../../../script.js';
-import { getContext } from '../../../../../extensions.js';
 import {
-    extensionSettings,
-    updateExtensionSettings
-} from './state.js';
-import { validateStoredInventory } from '../utils/security.js';
-import { updateDiceDisplay } from '../systems/features/dice.js';
-import { renderUserStats } from '../systems/rendering/userStats.js';
-import { renderInfoBox } from '../systems/rendering/infoBox.js';
-import { renderThoughts, updateChatThoughts } from '../systems/rendering/thoughts.js';
-import { renderQuests } from '../systems/rendering/quests.js';
-import { renderInventory } from '../systems/rendering/inventory.js';
-import { getTrackerDataForContext } from '../systems/generation/promptBuilder.js';
+	saveSettingsDebounced,
+	chat_metadata,
+	saveChatDebounced,
+} from "../../../../../../script.js";
+import { getContext } from "../../../../../extensions.js";
+import { extensionSettings, updateExtensionSettings } from "./state.js";
+import { validateStoredInventory } from "../utils/security.js";
+import { updateDiceDisplay } from "../systems/features/dice.js";
+import { renderUserStats } from "../systems/rendering/userStats.js";
+import { renderInfoBox } from "../systems/rendering/infoBox.js";
+import {
+	renderThoughts,
+	updateChatThoughts,
+} from "../systems/rendering/thoughts.js";
+import { renderQuests } from "../systems/rendering/quests.js";
+import { renderInventory } from "../systems/rendering/inventory.js";
+import { getTrackerDataForContext } from "../systems/generation/promptBuilder.js";
 
-const extensionName = 'third-party/rpg-companion-sillytavern';
+const extensionName = "third-party/rpg-companion-sillytavern";
 
 /**
  * Validates extension settings structure
@@ -26,28 +30,37 @@ const extensionName = 'third-party/rpg-companion-sillytavern';
  * @returns {boolean} True if valid, false otherwise
  */
 function validateSettings(settings) {
-    if (!settings || typeof settings !== 'object') {
-        return false;
-    }
+	if (!settings || typeof settings !== "object") {
+		return false;
+	}
 
-    // Check for required top-level properties
-    if (typeof settings.enabled !== 'boolean' ||
-        typeof settings.autoUpdate !== 'boolean' ||
-        !settings.userStats || typeof settings.userStats !== 'object') {
-        console.warn('[RPG Companion] Settings validation failed: missing required properties');
-        return false;
-    }
+	// Check for required top-level properties
+	if (
+		typeof settings.enabled !== "boolean" ||
+		typeof settings.autoUpdate !== "boolean" ||
+		!settings.userStats ||
+		typeof settings.userStats !== "object"
+	) {
+		console.warn(
+			"[RPG Companion] Settings validation failed: missing required properties",
+		);
+		return false;
+	}
 
-    // Validate userStats structure
-    const stats = settings.userStats;
-    if (typeof stats.health !== 'number' ||
-        typeof stats.satiety !== 'number' ||
-        typeof stats.energy !== 'number') {
-        console.warn('[RPG Companion] Settings validation failed: invalid userStats structure');
-        return false;
-    }
+	// Validate userStats structure
+	const stats = settings.userStats;
+	if (
+		typeof stats.health !== "number" ||
+		typeof stats.satiety !== "number" ||
+		typeof stats.energy !== "number"
+	) {
+		console.warn(
+			"[RPG Companion] Settings validation failed: invalid userStats structure",
+		);
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 /**
@@ -55,256 +68,283 @@ function validateSettings(settings) {
  * Automatically migrates v1 inventory to v2 format if needed.
  */
 export function loadSettings() {
-    try {
-        const context = getContext();
-        const extension_settings = context.extension_settings || context.extensionSettings;
+	try {
+		const context = getContext();
+		const extension_settings =
+			context.extension_settings || context.extensionSettings;
 
-        // Validate extension_settings structure
-        if (!extension_settings || typeof extension_settings !== 'object') {
-            console.warn('[RPG Companion] extension_settings is not available, using default settings');
-            return;
-        }
+		// Validate extension_settings structure
+		if (!extension_settings || typeof extension_settings !== "object") {
+			console.warn(
+				"[RPG Companion] extension_settings is not available, using default settings",
+			);
+			return;
+		}
 
-        if (extension_settings[extensionName]) {
-            const savedSettings = extension_settings[extensionName];
+		if (extension_settings[extensionName]) {
+			const savedSettings = extension_settings[extensionName];
 
-            // Validate loaded settings
-            if (!validateSettings(savedSettings)) {
-                console.warn('[RPG Companion] Loaded settings failed validation, using defaults');
-                console.warn('[RPG Companion] Invalid settings:', savedSettings);
-                // Save valid defaults to replace corrupt data
-                saveSettings();
-                return;
-            }
+			// Validate loaded settings
+			if (!validateSettings(savedSettings)) {
+				console.warn(
+					"[RPG Companion] Loaded settings failed validation, using defaults",
+				);
+				console.warn("[RPG Companion] Invalid settings:", savedSettings);
+				// Save valid defaults to replace corrupt data
+				saveSettings();
+				return;
+			}
 
-            updateExtensionSettings(savedSettings);
+			updateExtensionSettings(savedSettings);
 
-            // Perform settings migrations based on version
-            const currentVersion = extensionSettings.settingsVersion || 1;
+			// Perform settings migrations based on version
+			const currentVersion = extensionSettings.settingsVersion || 1;
 
-            // Migration to version 5: Add opacity properties for all colors
-            if (currentVersion < 5) {
-                console.error('[RPG Companion] Below version 6 not supported. Some settings may not be migrated correctly. Please update to the latest version to ensure all features work properly.');
-            }
+			// Migration to version 5: Add opacity properties for all colors
+			if (currentVersion < 5) {
+				console.error(
+					"[RPG Companion] Below version 6 not supported. Some settings may not be migrated correctly. Please update to the latest version to ensure all features work properly.",
+				);
+			}
 
-            // Migration to version 6
-            if (currentVersion < 6) {
-                // Remove externalApiSettings from settings
-                if(extensionSettings.externalApiSettings){
-                    delete extensionSettings.externalApiSettings;
-                    localStorage.removeItem('rpg_companion_external_api_key'); // Clear the API key
-                }
+			// Migration to version 6
+			if (currentVersion < 6) {
+				// Remove externalApiSettings from settings
+				if (extensionSettings.externalApiSettings) {
+					delete extensionSettings.externalApiSettings;
+					localStorage.removeItem("rpg_companion_external_api_key"); // Clear the API key
+				}
 
-                extensionSettings.settingsVersion = 6;
-            }
+				extensionSettings.settingsVersion = 6;
+			}
 
-            // Migration to version 7: Remove HTML Prompt, Dialogue Coloring, Deception, Omniscience, and CYOA features
-            if (currentVersion < 7) {
-                console.log('[RPG Companion] Migrating to version 7: Removing removed features');
-                
-                // Remove orphaned settings keys
-                const keysToRemove = [
-                    'enableHtmlPrompt',
-                    'customHtmlPrompt',
-                    'enableDialogueColoring',
-                    'customDialogueColoringPrompt',
-                    'enableDeceptionSystem',
-                    'customDeceptionPrompt',
-                    'enableOmniscienceFilter',
-                    'customOmnisciencePrompt',
-                    'enableCYOA',
-                    'customCYOAPrompt',
-                    'showHtmlToggle',
-                    'showDialogueColoringToggle',
-                    'showDeceptionToggle',
-                    'showOmniscienceToggle',
-                    'showCYOAToggle'
-                ];
-                
-                keysToRemove.forEach(key => {
-                    if (extensionSettings[key] !== undefined) {
-                        delete extensionSettings[key];
-                        console.log(`[RPG Companion] Removed orphaned setting: ${key}`);
-                    }
-                });
-                
-                // extensionSettings.settingsVersion = 7; // Disabled until version stabilzed.
-            }
+			// Migration to version 7: Remove HTML Prompt, Dialogue Coloring, Deception, Omniscience, and CYOA features
+			if (currentVersion < 7) {
+				console.log(
+					"[RPG Companion] Migrating to version 7: Removing removed features",
+				);
 
-            saveSettings();
+				// Remove orphaned settings keys
+				const keysToRemove = [
+					"enableHtmlPrompt",
+					"customHtmlPrompt",
+					"enableDialogueColoring",
+					"customDialogueColoringPrompt",
+					"enableDeceptionSystem",
+					"customDeceptionPrompt",
+					"enableOmniscienceFilter",
+					"customOmnisciencePrompt",
+					"enableCYOA",
+					"customCYOAPrompt",
+					"showHtmlToggle",
+					"showDialogueColoringToggle",
+					"showDeceptionToggle",
+					"showOmniscienceToggle",
+					"showCYOAToggle",
+				];
 
-            // console.log('[RPG Companion] Settings loaded:', extensionSettings);
-        } else {
-            // console.log('[RPG Companion] No saved settings found, using defaults');
-        }
+				keysToRemove.forEach((key) => {
+					if (extensionSettings[key] !== undefined) {
+						delete extensionSettings[key];
+						console.log(`[RPG Companion] Removed orphaned setting: ${key}`);
+					}
+				});
 
-        // Migrate to trackerConfig if it doesn't exist
-        if (!extensionSettings.trackerConfig) {
-            // console.log('[RPG Companion] Migrating to trackerConfig format');
-            migrateToTrackerConfig();
-            saveSettings(); // Persist migration
-        }
+				// Update generation mode to 'single'
+				extensionSettings.generationMode = "single";
 
-        // Migrate to preset manager system if presets don't exist
-        migrateToPresetManager();
+				// extensionSettings.settingsVersion = 7; // Disabled until version stabilzed.
+			}
 
-        // Ensure all stats have maxValue (for number display mode)
-        ensureStatsHaveMaxValue();
-    } catch (error) {
-        console.error('[RPG Companion] Error loading settings:', error);
-        console.error('[RPG Companion] Error details:', error.message, error.stack);
-        console.warn('[RPG Companion] Using default settings due to load error');
-        // Settings will remain at defaults from state.js
-    }
+			saveSettings();
 
-    // Validate inventory structure (Bug #3 fix)
-    validateInventoryStructure(extensionSettings.userStats.inventory, 'settings');
+			// console.log('[RPG Companion] Settings loaded:', extensionSettings);
+		} else {
+			// console.log('[RPG Companion] No saved settings found, using defaults');
+		}
+
+		// Migrate to trackerConfig if it doesn't exist
+		if (!extensionSettings.trackerConfig) {
+			// console.log('[RPG Companion] Migrating to trackerConfig format');
+			migrateToTrackerConfig();
+			saveSettings(); // Persist migration
+		}
+
+		// Migrate to preset manager system if presets don't exist
+		migrateToPresetManager();
+
+		// Ensure all stats have maxValue (for number display mode)
+		ensureStatsHaveMaxValue();
+	} catch (error) {
+		console.error("[RPG Companion] Error loading settings:", error);
+		console.error("[RPG Companion] Error details:", error.message, error.stack);
+		console.warn("[RPG Companion] Using default settings due to load error");
+		// Settings will remain at defaults from state.js
+	}
+
+	// Validate inventory structure (Bug #3 fix)
+	validateInventoryStructure(extensionSettings.userStats.inventory, "settings");
 }
 
 /**
  * Saves the extension settings to the global settings object.
  */
 export function saveSettings() {
-    const context = getContext();
-    const extension_settings = context.extension_settings || context.extensionSettings;
+	const context = getContext();
+	const extension_settings =
+		context.extension_settings || context.extensionSettings;
 
-    if (!extension_settings) {
-        console.error('[RPG Companion] extension_settings is not available, cannot save');
-        return;
-    }
+	if (!extension_settings) {
+		console.error(
+			"[RPG Companion] extension_settings is not available, cannot save",
+		);
+		return;
+	}
 
-    extension_settings[extensionName] = extensionSettings;
-    saveSettingsDebounced();
+	extension_settings[extensionName] = extensionSettings;
+	saveSettingsDebounced();
 }
 
 /**
  * Saves RPG data to the current chat's metadata.
  */
 export function saveChatData() {
-    saveChatDebounced();
+	saveChatDebounced();
 }
 
 /**
  * Updates the last assistant message's swipe data with current tracker data.
  * Called when user edits tracker fields (stats, conditions, etc).
  * Reads current swipe data, updates it with extensionSettings, and writes back.
- * 
+ *
  * @param {string} [trackerType] - Optional tracker type to update ('userStats', 'characterThoughts', 'infoBox', etc.)
  * @param {string|Object} [data] - Optional data to set for the tracker. If not provided, reads from extensionSettings.
  */
 export function updateMessageSwipeData(trackerType, data) {
-    const chat = getContext().chat;
-    if (!chat || chat.length === 0) {
-        console.warn('[RPG Companion] No chat messages found, cannot update swipe data');
-        return;
-    }
+	const chat = getContext().chat;
+	if (!chat || chat.length === 0) {
+		console.warn(
+			"[RPG Companion] No chat messages found, cannot update swipe data",
+		);
+		return;
+	}
 
-    // Find the last assistant message
-    console.log(`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}, trackerType:`, trackerType);
-    for (let i = chat.length - 1; i >= 0; i--) {
-        const message = chat[i];
-        if (!message.is_user && !message.is_system) {
-            if (!message.extra) {
-                continue; // No extra field, skip this message
-            }
-            if (!message.extra.rpg_companion_swipes) {
-                continue; // No extra field, skip this message
-            }
+	// Find the last assistant message
+	console.log(
+		`[RPG Companion] Updating message swipe data. Chat length: ${chat.length}, trackerType:`,
+		trackerType,
+	);
+	for (let i = chat.length - 1; i >= 0; i--) {
+		const message = chat[i];
+		if (!message.is_user && !message.is_system) {
+			if (!message.extra) {
+				continue; // No extra field, skip this message
+			}
+			if (!message.extra.rpg_companion_swipes) {
+				continue; // No extra field, skip this message
+			}
 
-            const swipeId = message.swipe_id || 0;
-            const currentSwipeData = message.extra.rpg_companion_swipes[swipeId] || {};
-            console.log(`[RPG Companion] Updating message:`, i, 'Swipe:', swipeId);
-            
-            // If trackerType and data are provided, use them directly
-            if (trackerType && data !== undefined) {
-                console.log(`[RPG Companion] Using provided data for ${trackerType}`);
-                currentSwipeData[trackerType] = data;
-            } else {
-                // Otherwise, build from tracker data (Pattern 2: tracker data is source of truth)
-                console.log('[RPG Companion] Building data from tracker data');
-                
-                // Build updated user stats data
-                // Data is now stored as objects, so we just need to update the values
-                let userStatsData = null;
-                if (currentSwipeData.userStats) {
-                    try {
-                        // Ensure we have an object to work with
-                        const jsonData = typeof currentSwipeData.userStats === 'object' ? currentSwipeData.userStats : JSON.parse(currentSwipeData.userStats);
-                        if (jsonData && typeof jsonData === 'object') {
-                            // Get current tracker data from swipe store
-                            const trackerData = getTrackerDataForContext('userStats');
-                            
-                            // Update stats array values from tracker data
-                            if (jsonData.stats && Array.isArray(jsonData.stats)) {
-                                jsonData.stats = jsonData.stats.map(stat => ({
-                                    ...stat,
-                                    value: trackerData?.[stat.id] ?? stat.value
-                                }));
-                            }
-                            
-                            // Update status fields
-                            if (jsonData.status) {
-                                jsonData.status.mood = trackerData?.mood || '😐';
-                                const customFields = extensionSettings.trackerConfig?.userStats?.statusSection?.customFields || [];
-                                for (const fieldName of customFields) {
-                                    const fieldKey = fieldName.toLowerCase().replace(/\s+/g, '_');
-                                    jsonData.status[fieldKey] = trackerData?.[fieldKey] || 'None';
-                                }
-                            }
-                            
-                            // Update inventory
-                            if (trackerData?.inventory) {
-                                jsonData.inventory = trackerData.inventory;
-                            }
-                            
-                            // Update quests
-                            if (trackerData?.quests) {
-                                jsonData.quests = trackerData.quests;
-                            }
-                            
-                            // Update skills
-                            if (trackerData?.skills !== undefined) {
-                                jsonData.skills = trackerData.skills;
-                            }
-                            
-                            // Store as object (not JSON string)
-                            userStatsData = jsonData;
-                        }
-                    } catch (e) {
-                        console.warn('[RPG Companion] Failed to update userStats:', e);
-                        // Fall through to use existing data
-                    }
-                }
-                // Infobox
-                if (currentSwipeData.infoBox) {
-                    currentSwipeData.infoBox = extensionSettings.infoBox;
-                }
-                
-                // LockedItems
-                if (currentSwipeData.lockedItems) {
-                    currentSwipeData.lockedItems = {
-                        userStats: extensionSettings.lockedItems.userStats,
-                        infoBox: extensionSettings.lockedItems.infoBox,
-                        characters: extensionSettings.lockedItems.characters
-                    };
-                }
-                
-                // Update swipe data with current tracker information
-                message.extra.rpg_companion_swipes[swipeId] = {
-                    userStats: userStatsData !== null ? userStatsData : currentSwipeData.userStats,
-                    infoBox: currentSwipeData.infoBox,
-                    characterThoughts: currentSwipeData.characterThoughts,
-                    quests: currentSwipeData.quests,
-                    lockedItems: currentSwipeData.lockedItems
-                };
-            }
+			const swipeId = message.swipe_id || 0;
+			const currentSwipeData =
+				message.extra.rpg_companion_swipes[swipeId] || {};
+			console.log(`[RPG Companion] Updating message:`, i, "Swipe:", swipeId);
 
-            // console.log('[RPG Companion] Updated message swipe data after user edit');
-            break;
-        }
-    }
-    
-    saveChatData();
+			// If trackerType and data are provided, use them directly
+			if (trackerType && data !== undefined) {
+				console.log(`[RPG Companion] Using provided data for ${trackerType}`);
+				currentSwipeData[trackerType] = data;
+			} else {
+				// Otherwise, build from tracker data (Pattern 2: tracker data is source of truth)
+				console.log("[RPG Companion] Building data from tracker data");
+
+				// Build updated user stats data
+				// Data is now stored as objects, so we just need to update the values
+				let userStatsData = null;
+				if (currentSwipeData.userStats) {
+					try {
+						// Ensure we have an object to work with
+						const jsonData =
+							typeof currentSwipeData.userStats === "object"
+								? currentSwipeData.userStats
+								: JSON.parse(currentSwipeData.userStats);
+						if (jsonData && typeof jsonData === "object") {
+							// Get current tracker data from swipe store
+							const trackerData = getTrackerDataForContext("userStats");
+
+							// Update stats array values from tracker data
+							if (jsonData.stats && Array.isArray(jsonData.stats)) {
+								jsonData.stats = jsonData.stats.map((stat) => ({
+									...stat,
+									value: trackerData?.[stat.id] ?? stat.value,
+								}));
+							}
+
+							// Update status fields
+							if (jsonData.status) {
+								jsonData.status.mood = trackerData?.mood || "😐";
+								const customFields =
+									extensionSettings.trackerConfig?.userStats?.statusSection
+										?.customFields || [];
+								for (const fieldName of customFields) {
+									const fieldKey = fieldName.toLowerCase().replace(/\s+/g, "_");
+									jsonData.status[fieldKey] = trackerData?.[fieldKey] || "None";
+								}
+							}
+
+							// Update inventory
+							if (trackerData?.inventory) {
+								jsonData.inventory = trackerData.inventory;
+							}
+
+							// Update quests
+							if (trackerData?.quests) {
+								jsonData.quests = trackerData.quests;
+							}
+
+							// Update skills
+							if (trackerData?.skills !== undefined) {
+								jsonData.skills = trackerData.skills;
+							}
+
+							// Store as object (not JSON string)
+							userStatsData = jsonData;
+						}
+					} catch (e) {
+						console.warn("[RPG Companion] Failed to update userStats:", e);
+						// Fall through to use existing data
+					}
+				}
+				// Infobox
+				if (currentSwipeData.infoBox) {
+					currentSwipeData.infoBox = extensionSettings.infoBox;
+				}
+
+				// LockedItems
+				if (currentSwipeData.lockedItems) {
+					currentSwipeData.lockedItems = {
+						userStats: extensionSettings.lockedItems.userStats,
+						infoBox: extensionSettings.lockedItems.infoBox,
+						characters: extensionSettings.lockedItems.characters,
+					};
+				}
+
+				// Update swipe data with current tracker information
+				message.extra.rpg_companion_swipes[swipeId] = {
+					userStats:
+						userStatsData !== null ? userStatsData : currentSwipeData.userStats,
+					infoBox: currentSwipeData.infoBox,
+					characterThoughts: currentSwipeData.characterThoughts,
+					quests: currentSwipeData.quests,
+					lockedItems: currentSwipeData.lockedItems,
+				};
+			}
+
+			// console.log('[RPG Companion] Updated message swipe data after user edit');
+			break;
+		}
+	}
+
+	saveChatData();
 }
 
 /**
@@ -317,67 +357,81 @@ export function updateMessageSwipeData(trackerType, data) {
  * @private
  */
 function validateInventoryStructure(inventory, source) {
-    if (!inventory || typeof inventory !== 'object') {
-        console.error(`[RPG Companion] Invalid inventory from ${source}, resetting to defaults`);
-        // Get tracker data first
-        const trackerData = getTrackerDataForContext('userStats');
-        // Use tracker inventory if available, otherwise use defaults
-        const defaultInventory = trackerData?.inventory ?? {
-            version: 2,
-            onPerson: [],
-            stored: {},
-            assets: []
-        };
-        extensionSettings.userStats.inventory = defaultInventory;
-        saveSettings();
-        return;
-    }
+	if (!inventory || typeof inventory !== "object") {
+		console.error(
+			`[RPG Companion] Invalid inventory from ${source}, resetting to defaults`,
+		);
+		// Get tracker data first
+		const trackerData = getTrackerDataForContext("userStats");
+		// Use tracker inventory if available, otherwise use defaults
+		const defaultInventory = trackerData?.inventory ?? {
+			version: 2,
+			onPerson: [],
+			stored: {},
+			assets: [],
+		};
+		extensionSettings.userStats.inventory = defaultInventory;
+		saveSettings();
+		return;
+	}
 
-    let needsSave = false;
+	let needsSave = false;
 
-    // Ensure v2 structure
-    if (inventory.version !== 2) {
-        console.warn(`[RPG Companion] Inventory from ${source} missing version, setting to 2`);
-        inventory.version = 2;
-        needsSave = true;
-    }
+	// Ensure v2 structure
+	if (inventory.version !== 2) {
+		console.warn(
+			`[RPG Companion] Inventory from ${source} missing version, setting to 2`,
+		);
+		inventory.version = 2;
+		needsSave = true;
+	}
 
-    // Validate onPerson field - should be an array
-    if (!Array.isArray(inventory.onPerson)) {
-        console.warn(`[RPG Companion] Invalid onPerson from ${source}, resetting to empty array`);
-        inventory.onPerson = [];
-        needsSave = true;
-    }
+	// Validate onPerson field - should be an array
+	if (!Array.isArray(inventory.onPerson)) {
+		console.warn(
+			`[RPG Companion] Invalid onPerson from ${source}, resetting to empty array`,
+		);
+		inventory.onPerson = [];
+		needsSave = true;
+	}
 
-    // Validate stored field (CRITICAL for Bug #3)
-    if (!inventory.stored || typeof inventory.stored !== 'object' || Array.isArray(inventory.stored)) {
-        console.error(`[RPG Companion] Corrupted stored inventory from ${source}, resetting to empty object`);
-        inventory.stored = {};
-        needsSave = true;
-    } else {
-        // Validate stored object keys/values - each should be an array
-        const storedNeedsSave = validateStoredInventoryStructure(inventory.stored);
-        if (storedNeedsSave) {
-            console.warn(`[RPG Companion] Cleaned stored inventory from ${source}`);
-            needsSave = true;
-        }
-    }
+	// Validate stored field (CRITICAL for Bug #3)
+	if (
+		!inventory.stored ||
+		typeof inventory.stored !== "object" ||
+		Array.isArray(inventory.stored)
+	) {
+		console.error(
+			`[RPG Companion] Corrupted stored inventory from ${source}, resetting to empty object`,
+		);
+		inventory.stored = {};
+		needsSave = true;
+	} else {
+		// Validate stored object keys/values - each should be an array
+		const storedNeedsSave = validateStoredInventoryStructure(inventory.stored);
+		if (storedNeedsSave) {
+			console.warn(`[RPG Companion] Cleaned stored inventory from ${source}`);
+			needsSave = true;
+		}
+	}
 
-    // Validate assets field - should be an array
-    if (!Array.isArray(inventory.assets)) {
-        console.warn(`[RPG Companion] Invalid assets from ${source}, resetting to empty array`);
-        inventory.assets = [];
-        needsSave = true;
-    }
+	// Validate assets field - should be an array
+	if (!Array.isArray(inventory.assets)) {
+		console.warn(
+			`[RPG Companion] Invalid assets from ${source}, resetting to empty array`,
+		);
+		inventory.assets = [];
+		needsSave = true;
+	}
 
-    // Persist repairs if needed
-    if (needsSave) {
-        // console.log(`[RPG Companion] Repaired inventory structure from ${source}, saving...`);
-        saveSettings();
-        if (source === 'chat') {
-            saveChatData();
-        }
-    }
+	// Persist repairs if needed
+	if (needsSave) {
+		// console.log(`[RPG Companion] Repaired inventory structure from ${source}, saving...`);
+		saveSettings();
+		if (source === "chat") {
+			saveChatData();
+		}
+	}
 }
 
 /**
@@ -386,24 +440,29 @@ function validateInventoryStructure(inventory, source) {
  * @returns {boolean} True if validation failed and needs save
  */
 function validateStoredInventoryStructure(stored) {
-    let needsSave = false;
-    
-    for (const location in stored) {
-        if (!Array.isArray(stored[location])) {
-            console.warn(`[RPG Companion] Stored location "${location}" is not an array, converting to array`);
-            // Convert string to array
-            if (typeof stored[location] === 'string') {
-                const items = stored[location].split(',').map(s => s.trim()).filter(s => s);
-                // Convert to object format
-                stored[location] = items.map(item => ({ name: item, quantity: 1 }));
-            } else {
-                stored[location] = [];
-            }
-            needsSave = true;
-        }
-    }
-    
-    return needsSave;
+	let needsSave = false;
+
+	for (const location in stored) {
+		if (!Array.isArray(stored[location])) {
+			console.warn(
+				`[RPG Companion] Stored location "${location}" is not an array, converting to array`,
+			);
+			// Convert string to array
+			if (typeof stored[location] === "string") {
+				const items = stored[location]
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s);
+				// Convert to object format
+				stored[location] = items.map((item) => ({ name: item, quantity: 1 }));
+			} else {
+				stored[location] = [];
+			}
+			needsSave = true;
+		}
+	}
+
+	return needsSave;
 }
 
 /**
@@ -411,188 +470,238 @@ function validateStoredInventoryStructure(stored) {
  * Converts statNames to customStats array and sets up default config
  */
 function migrateToTrackerConfig() {
-    // Initialize trackerConfig if it doesn't exist
-    if (!extensionSettings.trackerConfig) {
-        extensionSettings.trackerConfig = {
-            userStats: {
-                customStats: [],
-                showRPGAttributes: true,
-                rpgAttributes: [
-                    { id: 'str', name: 'STR', enabled: true },
-                    { id: 'dex', name: 'DEX', enabled: true },
-                    { id: 'con', name: 'CON', enabled: true },
-                    { id: 'int', name: 'INT', enabled: true },
-                    { id: 'wis', name: 'WIS', enabled: true },
-                    { id: 'cha', name: 'CHA', enabled: true }
-                ],
-                statusSection: {
-                    enabled: true,
-                    showMoodEmoji: true,
-                    customFields: ['Conditions']
-                },
-                skillsSection: {
-                    enabled: false,
-                    label: 'Skills'
-                }
-            },
-            infoBox: {
-                widgets: {
-                    date: { enabled: true, format: 'Weekday, Month, Year' },
-                    weather: { enabled: true },
-                    temperature: { enabled: true, unit: 'C' },
-                    time: { enabled: true },
-                    location: { enabled: true },
-                    recentEvents: { enabled: true }
-                }
-            },
-            presentCharacters: {
-                showEmoji: true,
-                showName: true,
-                customFields: [
-                    { id: 'physicalState', label: 'Physical State', enabled: true, placeholder: 'Visible Physical State (up to three traits)' },
-                    { id: 'demeanor', label: 'Demeanor Cue', enabled: true, placeholder: 'Observable Demeanor Cue (one trait)' },
-                    { id: 'relationship', label: 'Relationship', enabled: true, type: 'relationship', placeholder: 'Enemy/Neutral/Friend/Lover' },
-                    { id: 'internalMonologue', label: 'Internal Monologue', enabled: true, placeholder: 'Internal Monologue (in first person from character\'s POV, up to three sentences long)' }
-                ],
-                characterStats: {
-                    enabled: false,
-                    stats: []
-                }
-            }
-        };
-    }
+	// Initialize trackerConfig if it doesn't exist
+	if (!extensionSettings.trackerConfig) {
+		extensionSettings.trackerConfig = {
+			userStats: {
+				customStats: [],
+				showRPGAttributes: true,
+				rpgAttributes: [
+					{ id: "str", name: "STR", enabled: true },
+					{ id: "dex", name: "DEX", enabled: true },
+					{ id: "con", name: "CON", enabled: true },
+					{ id: "int", name: "INT", enabled: true },
+					{ id: "wis", name: "WIS", enabled: true },
+					{ id: "cha", name: "CHA", enabled: true },
+				],
+				statusSection: {
+					enabled: true,
+					showMoodEmoji: true,
+					customFields: ["Conditions"],
+				},
+				skillsSection: {
+					enabled: false,
+					label: "Skills",
+				},
+			},
+			infoBox: {
+				widgets: {
+					date: { enabled: true, format: "Weekday, Month, Year" },
+					weather: { enabled: true },
+					temperature: { enabled: true, unit: "C" },
+					time: { enabled: true },
+					location: { enabled: true },
+					recentEvents: { enabled: true },
+				},
+			},
+			presentCharacters: {
+				showEmoji: true,
+				showName: true,
+				customFields: [
+					{
+						id: "physicalState",
+						label: "Physical State",
+						enabled: true,
+						placeholder: "Visible Physical State (up to three traits)",
+					},
+					{
+						id: "demeanor",
+						label: "Demeanor Cue",
+						enabled: true,
+						placeholder: "Observable Demeanor Cue (one trait)",
+					},
+					{
+						id: "relationship",
+						label: "Relationship",
+						enabled: true,
+						type: "relationship",
+						placeholder: "Enemy/Neutral/Friend/Lover",
+					},
+					{
+						id: "internalMonologue",
+						label: "Internal Monologue",
+						enabled: true,
+						placeholder:
+							"Internal Monologue (in first person from character's POV, up to three sentences long)",
+					},
+				],
+				characterStats: {
+					enabled: false,
+					stats: [],
+				},
+			},
+		};
+	}
 
-    // Migrate old statNames to customStats if statNames exists
-    if (extensionSettings.statNames && extensionSettings.trackerConfig.userStats.customStats.length === 0) {
-        const statOrder = ['health', 'satiety', 'energy', 'hygiene', 'arousal'];
-        extensionSettings.trackerConfig.userStats.customStats = statOrder.map(id => ({
-            id: id,
-            name: extensionSettings.statNames[id] || id.charAt(0).toUpperCase() + id.slice(1),
-            enabled: true
-        }));
-        // console.log('[RPG Companion] Migrated statNames to customStats array');
-    }
+	// Migrate old statNames to customStats if statNames exists
+	if (
+		extensionSettings.statNames &&
+		extensionSettings.trackerConfig.userStats.customStats.length === 0
+	) {
+		const statOrder = ["health", "satiety", "energy", "hygiene", "arousal"];
+		extensionSettings.trackerConfig.userStats.customStats = statOrder.map(
+			(id) => ({
+				id: id,
+				name:
+					extensionSettings.statNames[id] ||
+					id.charAt(0).toUpperCase() + id.slice(1),
+				enabled: true,
+			}),
+		);
+		// console.log('[RPG Companion] Migrated statNames to customStats array');
+	}
 
-    // Migrate old showRPGAttributes boolean to rpgAttributes array
-    if (extensionSettings.trackerConfig.userStats.showRPGAttributes !== undefined) {
-        const shouldShow = extensionSettings.trackerConfig.userStats.showRPGAttributes;
-        extensionSettings.trackerConfig.userStats.rpgAttributes = [
-            { id: 'str', name: 'STR', enabled: shouldShow },
-            { id: 'dex', name: 'DEX', enabled: shouldShow },
-            { id: 'con', name: 'CON', enabled: shouldShow },
-            { id: 'int', name: 'INT', enabled: shouldShow },
-            { id: 'wis', name: 'WIS', enabled: shouldShow },
-            { id: 'cha', name: 'CHA', enabled: shouldShow }
-        ];
-        delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
-        // console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
-    }
+	// Migrate old showRPGAttributes boolean to rpgAttributes array
+	if (
+		extensionSettings.trackerConfig.userStats.showRPGAttributes !== undefined
+	) {
+		const shouldShow =
+			extensionSettings.trackerConfig.userStats.showRPGAttributes;
+		extensionSettings.trackerConfig.userStats.rpgAttributes = [
+			{ id: "str", name: "STR", enabled: shouldShow },
+			{ id: "dex", name: "DEX", enabled: shouldShow },
+			{ id: "con", name: "CON", enabled: shouldShow },
+			{ id: "int", name: "INT", enabled: shouldShow },
+			{ id: "wis", name: "WIS", enabled: shouldShow },
+			{ id: "cha", name: "CHA", enabled: shouldShow },
+		];
+		delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
+		// console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
+	}
 
-    // Ensure rpgAttributes exists even if no migration was needed
-    if (!extensionSettings.trackerConfig.userStats.rpgAttributes) {
-        extensionSettings.trackerConfig.userStats.rpgAttributes = [
-            { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
-            { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
-        ];
-    }
+	// Ensure rpgAttributes exists even if no migration was needed
+	if (!extensionSettings.trackerConfig.userStats.rpgAttributes) {
+		extensionSettings.trackerConfig.userStats.rpgAttributes = [
+			{ id: "str", name: "STR", enabled: true },
+			{ id: "dex", name: "DEX", enabled: true },
+			{ id: "con", name: "CON", enabled: true },
+			{ id: "int", name: "INT", enabled: true },
+			{ id: "wis", name: "WIS", enabled: true },
+			{ id: "cha", name: "CHA", enabled: true },
+		];
+	}
 
-    // Ensure showRPGAttributes exists (defaults to true)
-    if (extensionSettings.trackerConfig.userStats.showRPGAttributes === undefined) {
-        extensionSettings.trackerConfig.userStats.showRPGAttributes = true;
-    }
+	// Ensure showRPGAttributes exists (defaults to true)
+	if (
+		extensionSettings.trackerConfig.userStats.showRPGAttributes === undefined
+	) {
+		extensionSettings.trackerConfig.userStats.showRPGAttributes = true;
+	}
 
-    // Ensure all rpgAttributes have corresponding values in classicStats
-    if (extensionSettings.classicStats) {
-        for (const attr of extensionSettings.trackerConfig.userStats.rpgAttributes) {
-            if (extensionSettings.classicStats[attr.id] === undefined) {
-                extensionSettings.classicStats[attr.id] = 10;
-            }
-        }
-    }
+	// Ensure all rpgAttributes have corresponding values in classicStats
+	if (extensionSettings.classicStats) {
+		for (const attr of extensionSettings.trackerConfig.userStats
+			.rpgAttributes) {
+			if (extensionSettings.classicStats[attr.id] === undefined) {
+				extensionSettings.classicStats[attr.id] = 10;
+			}
+		}
+	}
 
-    // Migrate old presentCharacters structure to new format
-    if (extensionSettings.trackerConfig.presentCharacters) {
-        const pc = extensionSettings.trackerConfig.presentCharacters;
+	// Migrate old presentCharacters structure to new format
+	if (extensionSettings.trackerConfig.presentCharacters) {
+		const pc = extensionSettings.trackerConfig.presentCharacters;
 
-        // Check if using old flat customFields structure (has 'label' or 'placeholder' keys)
-        if (pc.customFields && pc.customFields.length > 0) {
-            const hasOldFormat = pc.customFields.some(f => f.label || f.placeholder || f.type === 'relationship');
+		// Check if using old flat customFields structure (has 'label' or 'placeholder' keys)
+		if (pc.customFields && pc.customFields.length > 0) {
+			const hasOldFormat = pc.customFields.some(
+				(f) => f.label || f.placeholder || f.type === "relationship",
+			);
 
-            if (hasOldFormat) {
-                // console.log('[RPG Companion] Migrating Present Characters to new structure');
+			if (hasOldFormat) {
+				// console.log('[RPG Companion] Migrating Present Characters to new structure');
 
-                // Extract relationship fields from old customFields
-                const relationshipFields = ['Lover', 'Friend', 'Ally', 'Enemy', 'Neutral'];
+				// Extract relationship fields from old customFields
+				const relationshipFields = [
+					"Lover",
+					"Friend",
+					"Ally",
+					"Enemy",
+					"Neutral",
+				];
 
-                // Extract non-relationship fields and convert to new format
-                const newCustomFields = pc.customFields
-                    .filter(f => f.type !== 'relationship' && f.id !== 'internalMonologue')
-                    .map(f => ({
-                        id: f.id,
-                        name: f.label || f.name || 'Field',
-                        enabled: f.enabled !== false,
-                        description: f.placeholder || f.description || ''
-                    }));
+				// Extract non-relationship fields and convert to new format
+				const newCustomFields = pc.customFields
+					.filter(
+						(f) => f.type !== "relationship" && f.id !== "internalMonologue",
+					)
+					.map((f) => ({
+						id: f.id,
+						name: f.label || f.name || "Field",
+						enabled: f.enabled !== false,
+						description: f.placeholder || f.description || "",
+					}));
 
-                // Extract thoughts config from old Internal Monologue field
-                const thoughtsField = pc.customFields.find(f => f.id === 'internalMonologue');
-                const thoughts = {
-                    enabled: thoughtsField ? (thoughtsField.enabled !== false) : true,
-                    name: 'Thoughts',
-                    description: thoughtsField?.placeholder || 'Internal Monologue (in first person from character\'s POV, up to three sentences long)'
-                };
+				// Extract thoughts config from old Internal Monologue field
+				const thoughtsField = pc.customFields.find(
+					(f) => f.id === "internalMonologue",
+				);
+				const thoughts = {
+					enabled: thoughtsField ? thoughtsField.enabled !== false : true,
+					name: "Thoughts",
+					description:
+						thoughtsField?.placeholder ||
+						"Internal Monologue (in first person from character's POV, up to three sentences long)",
+				};
 
-                // Update to new structure
-                pc.relationshipFields = relationshipFields;
-                pc.customFields = newCustomFields;
-                pc.thoughts = thoughts;
+				// Update to new structure
+				pc.relationshipFields = relationshipFields;
+				pc.customFields = newCustomFields;
+				pc.thoughts = thoughts;
 
-                // console.log('[RPG Companion] Present Characters migration complete');
-                saveSettings(); // Persist the migration
-            }
-        }
+				// console.log('[RPG Companion] Present Characters migration complete');
+				saveSettings(); // Persist the migration
+			}
+		}
 
-        // Ensure new structure exists even if migration wasn't needed
-        if (!pc.relationshipFields) {
-            pc.relationshipFields = ['Lover', 'Friend', 'Ally', 'Enemy', 'Neutral'];
-        }
-        if (!pc.relationshipEmojis) {
-            // Create default emoji mapping from relationshipFields
-            pc.relationshipEmojis = {
-                'Lover': '❤️',
-                'Friend': '⭐',
-                'Ally': '🤝',
-                'Enemy': '⚔️',
-                'Neutral': '⚖️'
-            };
-        }
+		// Ensure new structure exists even if migration wasn't needed
+		if (!pc.relationshipFields) {
+			pc.relationshipFields = ["Lover", "Friend", "Ally", "Enemy", "Neutral"];
+		}
+		if (!pc.relationshipEmojis) {
+			// Create default emoji mapping from relationshipFields
+			pc.relationshipEmojis = {
+				Lover: "❤️",
+				Friend: "⭐",
+				Ally: "🤝",
+				Enemy: "⚔️",
+				Neutral: "⚖️",
+			};
+		}
 
-        // Migrate to new relationships structure if not already present
-        if (!pc.relationships) {
-            pc.relationships = {
-                enabled: true, // Default to enabled for backward compatibility
-                relationshipEmojis: pc.relationshipEmojis || {
-                    'Lover': '❤️',
-                    'Friend': '⭐',
-                    'Ally': '🤝',
-                    'Enemy': '⚔️',
-                    'Neutral': '⚖️'
-                }
-            };
-        }
+		// Migrate to new relationships structure if not already present
+		if (!pc.relationships) {
+			pc.relationships = {
+				enabled: true, // Default to enabled for backward compatibility
+				relationshipEmojis: pc.relationshipEmojis || {
+					Lover: "❤️",
+					Friend: "⭐",
+					Ally: "🤝",
+					Enemy: "⚔️",
+					Neutral: "⚖️",
+				},
+			};
+		}
 
-        if (!pc.thoughts) {
-            pc.thoughts = {
-                enabled: true,
-                name: 'Thoughts',
-                description: 'Internal Monologue (in first person from character\'s POV, up to three sentences long)'
-            };
-        }
-    }
+		if (!pc.thoughts) {
+			pc.thoughts = {
+				enabled: true,
+				name: "Thoughts",
+				description:
+					"Internal Monologue (in first person from character's POV, up to three sentences long)",
+			};
+		}
+	}
 }
 
 // ============================================================================
@@ -604,13 +713,16 @@ function migrateToTrackerConfig() {
  * @returns {string|null} Entity key in format "char_{id}" or "group_{id}", or null if no character selected
  */
 export function getCurrentEntityKey() {
-    const context = getContext();
-    if (context.groupId) {
-        return `group_${context.groupId}`;
-    } else if (context.characterId !== undefined && context.characterId !== null) {
-        return `char_${context.characterId}`;
-    }
-    return null;
+	const context = getContext();
+	if (context.groupId) {
+		return `group_${context.groupId}`;
+	} else if (
+		context.characterId !== undefined &&
+		context.characterId !== null
+	) {
+		return `char_${context.characterId}`;
+	}
+	return null;
 }
 
 /**
@@ -618,14 +730,17 @@ export function getCurrentEntityKey() {
  * @returns {string} Display name for the current entity
  */
 export function getCurrentEntityName() {
-    const context = getContext();
-    if (context.groupId) {
-        const group = context.groups?.find(g => g.id === context.groupId);
-        return group?.name || 'Group Chat';
-    } else if (context.characterId !== undefined && context.characterId !== null) {
-        return context.name2 || 'Character';
-    }
-    return 'No Character';
+	const context = getContext();
+	if (context.groupId) {
+		const group = context.groups?.find((g) => g.id === context.groupId);
+		return group?.name || "Group Chat";
+	} else if (
+		context.characterId !== undefined &&
+		context.characterId !== null
+	) {
+		return context.name2 || "Character";
+	}
+	return "No Character";
 }
 
 /**
@@ -633,32 +748,37 @@ export function getCurrentEntityName() {
  * Creates a "Default" preset from the current trackerConfig
  */
 export function migrateToPresetManager() {
-    if (!extensionSettings.presetManager || Object.keys(extensionSettings.presetManager.presets || {}).length === 0) {
-        // console.log('[RPG Companion] Migrating to preset manager system');
+	if (
+		!extensionSettings.presetManager ||
+		Object.keys(extensionSettings.presetManager.presets || {}).length === 0
+	) {
+		// console.log('[RPG Companion] Migrating to preset manager system');
 
-        // Initialize presetManager if it doesn't exist
-        if (!extensionSettings.presetManager) {
-            extensionSettings.presetManager = {
-                presets: {},
-                characterAssociations: {},
-                activePresetId: null,
-                defaultPresetId: null
-            };
-        }
+		// Initialize presetManager if it doesn't exist
+		if (!extensionSettings.presetManager) {
+			extensionSettings.presetManager = {
+				presets: {},
+				characterAssociations: {},
+				activePresetId: null,
+				defaultPresetId: null,
+			};
+		}
 
-        // Create default preset from existing trackerConfig
-        const defaultPresetId = 'preset_default';
-        extensionSettings.presetManager.presets[defaultPresetId] = {
-            id: defaultPresetId,
-            name: 'Default',
-            trackerConfig: JSON.parse(JSON.stringify(extensionSettings.trackerConfig))
-        };
-        extensionSettings.presetManager.activePresetId = defaultPresetId;
-        extensionSettings.presetManager.defaultPresetId = defaultPresetId;
+		// Create default preset from existing trackerConfig
+		const defaultPresetId = "preset_default";
+		extensionSettings.presetManager.presets[defaultPresetId] = {
+			id: defaultPresetId,
+			name: "Default",
+			trackerConfig: JSON.parse(
+				JSON.stringify(extensionSettings.trackerConfig),
+			),
+		};
+		extensionSettings.presetManager.activePresetId = defaultPresetId;
+		extensionSettings.presetManager.defaultPresetId = defaultPresetId;
 
-        // console.log('[RPG Companion] Created Default preset from existing trackerConfig');
-        saveSettings();
-    }
+		// console.log('[RPG Companion] Created Default preset from existing trackerConfig');
+		saveSettings();
+	}
 }
 
 /**
@@ -666,21 +786,24 @@ export function migrateToPresetManager() {
  * This migration supports the number display mode feature
  */
 function ensureStatsHaveMaxValue() {
-    const customStats = extensionSettings.trackerConfig?.userStats?.customStats || [];
+	const customStats =
+		extensionSettings.trackerConfig?.userStats?.customStats || [];
 
-    for (const stat of customStats) {
-        if (stat && stat.maxValue === undefined) {
-            stat.maxValue = 100; // Default to 100 for backward compatibility
-            // console.log(`[RPG Companion] Added maxValue to stat: ${stat.id || stat.name}`);
-        }
-    }
+	for (const stat of customStats) {
+		if (stat && stat.maxValue === undefined) {
+			stat.maxValue = 100; // Default to 100 for backward compatibility
+			// console.log(`[RPG Companion] Added maxValue to stat: ${stat.id || stat.name}`);
+		}
+	}
 
-    // Ensure statsDisplayMode is set (default to percentage)
-    if (extensionSettings.trackerConfig?.userStats &&
-        extensionSettings.trackerConfig.userStats.statsDisplayMode === undefined) {
-        extensionSettings.trackerConfig.userStats.statsDisplayMode = 'percentage';
-        // console.log('[RPG Companion] Initialized statsDisplayMode to percentage');
-    }
+	// Ensure statsDisplayMode is set (default to percentage)
+	if (
+		extensionSettings.trackerConfig?.userStats &&
+		extensionSettings.trackerConfig.userStats.statsDisplayMode === undefined
+	) {
+		extensionSettings.trackerConfig.userStats.statsDisplayMode = "percentage";
+		// console.log('[RPG Companion] Initialized statsDisplayMode to percentage');
+	}
 }
 
 /**
@@ -688,46 +811,56 @@ function ensureStatsHaveMaxValue() {
  * This migration moves clothing data from the old inventory structure to the new appearance structure
  */
 export function migrateAppearanceData() {
-    // Check if we already have appearance data
-    const currentData = getTrackerDataForContext('userStats') || {};
-    if (currentData.appearance && (currentData.appearance.clothing ||
-        currentData.appearance.scent || currentData.appearance.posture)) {
-        // Appearance data already exists, skip migration
-        console.log('[RPG Companion] Appearance data already exists, skipping migration');
-        return;
-    }
+	// Check if we already have appearance data
+	const currentData = getTrackerDataForContext("userStats") || {};
+	if (
+		currentData.appearance &&
+		(currentData.appearance.clothing ||
+			currentData.appearance.scent ||
+			currentData.appearance.posture)
+	) {
+		// Appearance data already exists, skip migration
+		console.log(
+			"[RPG Companion] Appearance data already exists, skipping migration",
+		);
+		return;
+	}
 
-    // Check if we have clothing in inventory; Empty clothing means no clothing, so migrate anyway in that case
-    const inventoryData = currentData.inventory;
-    if (!inventoryData || !inventoryData.clothing) {
-        // No clothing data to migrate
-        console.log('[RPG Companion] No clothing data found in inventory, skipping appearance migration');
-        return;
-    }
+	// Check if we have clothing in inventory; Empty clothing means no clothing, so migrate anyway in that case
+	const inventoryData = currentData.inventory;
+	if (!inventoryData || !inventoryData.clothing) {
+		// No clothing data to migrate
+		console.log(
+			"[RPG Companion] No clothing data found in inventory, skipping appearance migration",
+		);
+		return;
+	}
 
-    console.log('[RPG Companion] Migrating appearance data from inventory to userStats.appearance');
+	console.log(
+		"[RPG Companion] Migrating appearance data from inventory to userStats.appearance",
+	);
 
-    // Create appearance data with migrated clothing
-    const appearanceData = {
-        description: currentData.description || '',
-        hair: currentData.hair || '',
-        scent: currentData.scent || '',
-        posture: currentData.posture || '',
-        clothing: inventoryData.clothing,
-        features: currentData.features || []
-    };
+	// Create appearance data with migrated clothing
+	const appearanceData = {
+		description: currentData.description || "",
+		hair: currentData.hair || "",
+		scent: currentData.scent || "",
+		posture: currentData.posture || "",
+		clothing: inventoryData.clothing,
+		features: currentData.features || [],
+	};
 
-    // Update the userStats data with appearance
-    let updatedData = {
-        ...currentData,
-        appearance: appearanceData,
-    };
-    delete updatedData.inventory.clothing; // Remove clothing from inventory since it's now in appearance
+	// Update the userStats data with appearance
+	let updatedData = {
+		...currentData,
+		appearance: appearanceData,
+	};
+	delete updatedData.inventory.clothing; // Remove clothing from inventory since it's now in appearance
 
-    // Update swipe store with migrated data
-    updateMessageSwipeData('userStats', updatedData);
+	// Update swipe store with migrated data
+	updateMessageSwipeData("userStats", updatedData);
 
-    console.log('[RPG Companion] Appearance data migration complete');
+	console.log("[RPG Companion] Appearance data migration complete");
 }
 
 /**
@@ -735,7 +868,7 @@ export function migrateAppearanceData() {
  * @returns {Object} Map of preset ID to preset data
  */
 export function getPresets() {
-    return extensionSettings.presetManager?.presets || {};
+	return extensionSettings.presetManager?.presets || {};
 }
 
 /**
@@ -744,7 +877,7 @@ export function getPresets() {
  * @returns {Object|null} The preset object or null if not found
  */
 export function getPreset(presetId) {
-    return extensionSettings.presetManager?.presets?.[presetId] || null;
+	return extensionSettings.presetManager?.presets?.[presetId] || null;
 }
 
 /**
@@ -752,7 +885,7 @@ export function getPreset(presetId) {
  * @returns {string|null} The active preset ID or null
  */
 export function getActivePresetId() {
-    return extensionSettings.presetManager?.activePresetId || null;
+	return extensionSettings.presetManager?.activePresetId || null;
 }
 
 /**
@@ -760,7 +893,7 @@ export function getActivePresetId() {
  * @returns {string|null} The default preset ID or null
  */
 export function getDefaultPresetId() {
-    return extensionSettings.presetManager?.defaultPresetId || null;
+	return extensionSettings.presetManager?.defaultPresetId || null;
 }
 
 /**
@@ -768,11 +901,11 @@ export function getDefaultPresetId() {
  * @param {string} presetId - The preset ID to set as default
  */
 export function setDefaultPreset(presetId) {
-    if (extensionSettings.presetManager.presets[presetId]) {
-        extensionSettings.presetManager.defaultPresetId = presetId;
-        saveSettings();
-        // console.log(`[RPG Companion] Set preset ${presetId} as default`);
-    }
+	if (extensionSettings.presetManager.presets[presetId]) {
+		extensionSettings.presetManager.defaultPresetId = presetId;
+		saveSettings();
+		// console.log(`[RPG Companion] Set preset ${presetId} as default`);
+	}
 }
 
 /**
@@ -781,7 +914,7 @@ export function setDefaultPreset(presetId) {
  * @returns {boolean} True if it's the default preset
  */
 export function isDefaultPreset(presetId) {
-    return extensionSettings.presetManager?.defaultPresetId === presetId;
+	return extensionSettings.presetManager?.defaultPresetId === presetId;
 }
 
 /**
@@ -790,20 +923,20 @@ export function isDefaultPreset(presetId) {
  * @returns {string} The ID of the newly created preset
  */
 export function createPreset(name) {
-    const presetId = `preset_${Date.now()}`;
-    extensionSettings.presetManager.presets[presetId] = {
-        id: presetId,
-        name: name,
-        trackerConfig: JSON.parse(JSON.stringify(extensionSettings.trackerConfig)),
-        historyPersistence: extensionSettings.historyPersistence
-            ? JSON.parse(JSON.stringify(extensionSettings.historyPersistence))
-            : null
-    };
-    // Also set it as the active preset so edits go to the new preset
-    extensionSettings.presetManager.activePresetId = presetId;
-    saveSettings();
-    // console.log(`[RPG Companion] Created preset "${name}" with ID ${presetId}`);
-    return presetId;
+	const presetId = `preset_${Date.now()}`;
+	extensionSettings.presetManager.presets[presetId] = {
+		id: presetId,
+		name: name,
+		trackerConfig: JSON.parse(JSON.stringify(extensionSettings.trackerConfig)),
+		historyPersistence: extensionSettings.historyPersistence
+			? JSON.parse(JSON.stringify(extensionSettings.historyPersistence))
+			: null,
+	};
+	// Also set it as the active preset so edits go to the new preset
+	extensionSettings.presetManager.activePresetId = presetId;
+	saveSettings();
+	// console.log(`[RPG Companion] Created preset "${name}" with ID ${presetId}`);
+	return presetId;
 }
 
 /**
@@ -811,15 +944,17 @@ export function createPreset(name) {
  * @param {string} presetId - The preset ID to save to
  */
 export function saveToPreset(presetId) {
-    const preset = extensionSettings.presetManager.presets[presetId];
-    if (preset) {
-        preset.trackerConfig = JSON.parse(JSON.stringify(extensionSettings.trackerConfig));
-        preset.historyPersistence = extensionSettings.historyPersistence
-            ? JSON.parse(JSON.stringify(extensionSettings.historyPersistence))
-            : null;
-        saveSettings();
-        // console.log(`[RPG Companion] Saved current config to preset "${preset.name}"`);
-    }
+	const preset = extensionSettings.presetManager.presets[presetId];
+	if (preset) {
+		preset.trackerConfig = JSON.parse(
+			JSON.stringify(extensionSettings.trackerConfig),
+		);
+		preset.historyPersistence = extensionSettings.historyPersistence
+			? JSON.parse(JSON.stringify(extensionSettings.historyPersistence))
+			: null;
+		saveSettings();
+		// console.log(`[RPG Companion] Saved current config to preset "${preset.name}"`);
+	}
 }
 
 /**
@@ -828,27 +963,31 @@ export function saveToPreset(presetId) {
  * @returns {boolean} True if loaded successfully, false otherwise
  */
 export function loadPreset(presetId) {
-    const preset = extensionSettings.presetManager.presets[presetId];
-    if (preset && preset.trackerConfig) {
-        extensionSettings.trackerConfig = JSON.parse(JSON.stringify(preset.trackerConfig));
-        // Load historyPersistence if present, otherwise use defaults
-        if (preset.historyPersistence) {
-            extensionSettings.historyPersistence = JSON.parse(JSON.stringify(preset.historyPersistence));
-        } else {
-            // Default values for presets that don't have historyPersistence yet
-            extensionSettings.historyPersistence = {
-                enabled: false,
-                messageCount: 5,
-                injectionPosition: 'assistant_message_end',
-                contextPreamble: ''
-            };
-        }
-        extensionSettings.presetManager.activePresetId = presetId;
-        saveSettings();
-        // console.log(`[RPG Companion] Loaded preset "${preset.name}"`);
-        return true;
-    }
-    return false;
+	const preset = extensionSettings.presetManager.presets[presetId];
+	if (preset && preset.trackerConfig) {
+		extensionSettings.trackerConfig = JSON.parse(
+			JSON.stringify(preset.trackerConfig),
+		);
+		// Load historyPersistence if present, otherwise use defaults
+		if (preset.historyPersistence) {
+			extensionSettings.historyPersistence = JSON.parse(
+				JSON.stringify(preset.historyPersistence),
+			);
+		} else {
+			// Default values for presets that don't have historyPersistence yet
+			extensionSettings.historyPersistence = {
+				enabled: false,
+				messageCount: 5,
+				injectionPosition: "assistant_message_end",
+				contextPreamble: "",
+			};
+		}
+		extensionSettings.presetManager.activePresetId = presetId;
+		saveSettings();
+		// console.log(`[RPG Companion] Loaded preset "${preset.name}"`);
+		return true;
+	}
+	return false;
 }
 
 /**
@@ -857,12 +996,12 @@ export function loadPreset(presetId) {
  * @param {string} newName - The new name for the preset
  */
 export function renamePreset(presetId, newName) {
-    const preset = extensionSettings.presetManager.presets[presetId];
-    if (preset) {
-        preset.name = newName;
-        saveSettings();
-        // console.log(`[RPG Companion] Renamed preset to "${newName}"`);
-    }
+	const preset = extensionSettings.presetManager.presets[presetId];
+	if (preset) {
+		preset.name = newName;
+		saveSettings();
+		// console.log(`[RPG Companion] Renamed preset to "${newName}"`);
+	}
 }
 
 /**
@@ -871,63 +1010,67 @@ export function renamePreset(presetId, newName) {
  * @returns {boolean} True if deleted, false if it's the last preset (can't delete)
  */
 export function deletePreset(presetId) {
-    const presets = extensionSettings.presetManager.presets;
-    const presetIds = Object.keys(presets);
+	const presets = extensionSettings.presetManager.presets;
+	const presetIds = Object.keys(presets);
 
-    // Don't delete if it's the last preset
-    if (presetIds.length <= 1) {
-        // console.warn('[RPG Companion] Cannot delete the last preset');
-        return false;
-    }
+	// Don't delete if it's the last preset
+	if (presetIds.length <= 1) {
+		// console.warn('[RPG Companion] Cannot delete the last preset');
+		return false;
+	}
 
-    // Remove any character associations using this preset
-    const associations = extensionSettings.presetManager.characterAssociations;
-    for (const entityKey of Object.keys(associations)) {
-        if (associations[entityKey] === presetId) {
-            delete associations[entityKey];
-        }
-    }
+	// Remove any character associations using this preset
+	const associations = extensionSettings.presetManager.characterAssociations;
+	for (const entityKey of Object.keys(associations)) {
+		if (associations[entityKey] === presetId) {
+			delete associations[entityKey];
+		}
+	}
 
-    // Delete the preset
-    delete presets[presetId];
+	// Delete the preset
+	delete presets[presetId];
 
-    // If the deleted preset was active, switch to the first available preset
-    if (extensionSettings.presetManager.activePresetId === presetId) {
-        const remainingIds = Object.keys(presets);
-        if (remainingIds.length > 0) {
-            loadPreset(remainingIds[0]);
-        }
-    }
+	// If the deleted preset was active, switch to the first available preset
+	if (extensionSettings.presetManager.activePresetId === presetId) {
+		const remainingIds = Object.keys(presets);
+		if (remainingIds.length > 0) {
+			loadPreset(remainingIds[0]);
+		}
+	}
 
-    saveSettings();
-    // console.log(`[RPG Companion] Deleted preset ${presetId}`);
-    return true;
+	saveSettings();
+	// console.log(`[RPG Companion] Deleted preset ${presetId}`);
+	return true;
 }
 
 /**
  * Associates the current preset with the current character/group
  */
 export function associatePresetWithCurrentEntity() {
-    const entityKey = getCurrentEntityKey();
-    const activePresetId = extensionSettings.presetManager.activePresetId;
+	const entityKey = getCurrentEntityKey();
+	const activePresetId = extensionSettings.presetManager.activePresetId;
 
-    if (entityKey && activePresetId) {
-        extensionSettings.presetManager.characterAssociations[entityKey] = activePresetId;
-        saveSettings();
-        // console.log(`[RPG Companion] Associated preset ${activePresetId} with ${entityKey}`);
-    }
+	if (entityKey && activePresetId) {
+		extensionSettings.presetManager.characterAssociations[entityKey] =
+			activePresetId;
+		saveSettings();
+		// console.log(`[RPG Companion] Associated preset ${activePresetId} with ${entityKey}`);
+	}
 }
 
 /**
  * Removes the preset association for the current character/group
  */
 export function removePresetAssociationForCurrentEntity() {
-    const entityKey = getCurrentEntityKey();
-    if (entityKey && extensionSettings.presetManager.characterAssociations[entityKey]) {
-        delete extensionSettings.presetManager.characterAssociations[entityKey];
-        saveSettings();
-        // console.log(`[RPG Companion] Removed preset association for ${entityKey}`);
-    }
+	const entityKey = getCurrentEntityKey();
+	if (
+		entityKey &&
+		extensionSettings.presetManager.characterAssociations[entityKey]
+	) {
+		delete extensionSettings.presetManager.characterAssociations[entityKey];
+		saveSettings();
+		// console.log(`[RPG Companion] Removed preset association for ${entityKey}`);
+	}
 }
 
 /**
@@ -935,11 +1078,13 @@ export function removePresetAssociationForCurrentEntity() {
  * @returns {string|null} The associated preset ID or null
  */
 export function getPresetForCurrentEntity() {
-    const entityKey = getCurrentEntityKey();
-    if (entityKey) {
-        return extensionSettings.presetManager.characterAssociations[entityKey] || null;
-    }
-    return null;
+	const entityKey = getCurrentEntityKey();
+	if (entityKey) {
+		return (
+			extensionSettings.presetManager.characterAssociations[entityKey] || null
+		);
+	}
+	return null;
 }
 
 /**
@@ -947,8 +1092,12 @@ export function getPresetForCurrentEntity() {
  * @returns {boolean} True if there's an association
  */
 export function hasPresetAssociation() {
-    const entityKey = getCurrentEntityKey();
-    return entityKey && extensionSettings.presetManager.characterAssociations[entityKey] !== undefined;
+	const entityKey = getCurrentEntityKey();
+	return (
+		entityKey &&
+		extensionSettings.presetManager.characterAssociations[entityKey] !==
+			undefined
+	);
 }
 
 /**
@@ -956,10 +1105,13 @@ export function hasPresetAssociation() {
  * @returns {boolean} True if the current entity is associated with the active preset
  */
 export function isAssociatedWithCurrentPreset() {
-    const entityKey = getCurrentEntityKey();
-    const activePresetId = extensionSettings.presetManager?.activePresetId;
-    if (!entityKey || !activePresetId) return false;
-    return extensionSettings.presetManager.characterAssociations[entityKey] === activePresetId;
+	const entityKey = getCurrentEntityKey();
+	const activePresetId = extensionSettings.presetManager?.activePresetId;
+	if (!entityKey || !activePresetId) return false;
+	return (
+		extensionSettings.presetManager.characterAssociations[entityKey] ===
+		activePresetId
+	);
 }
 
 /**
@@ -968,30 +1120,35 @@ export function isAssociatedWithCurrentPreset() {
  * @returns {boolean} True if a preset was switched, false otherwise
  */
 export function autoSwitchPresetForEntity() {
-    const associatedPresetId = getPresetForCurrentEntity();
+	const associatedPresetId = getPresetForCurrentEntity();
 
-    // If there's a character-specific preset, use it
-    if (associatedPresetId && associatedPresetId !== extensionSettings.presetManager.activePresetId) {
-        // Check if the preset still exists
-        if (extensionSettings.presetManager.presets[associatedPresetId]) {
-            return loadPreset(associatedPresetId);
-        } else {
-            // Preset was deleted, remove the stale association
-            removePresetAssociationForCurrentEntity();
-        }
-    }
+	// If there's a character-specific preset, use it
+	if (
+		associatedPresetId &&
+		associatedPresetId !== extensionSettings.presetManager.activePresetId
+	) {
+		// Check if the preset still exists
+		if (extensionSettings.presetManager.presets[associatedPresetId]) {
+			return loadPreset(associatedPresetId);
+		} else {
+			// Preset was deleted, remove the stale association
+			removePresetAssociationForCurrentEntity();
+		}
+	}
 
-    // No character association - fall back to default preset if set
-    if (!associatedPresetId) {
-        const defaultPresetId = extensionSettings.presetManager.defaultPresetId;
-        if (defaultPresetId &&
-            defaultPresetId !== extensionSettings.presetManager.activePresetId &&
-            extensionSettings.presetManager.presets[defaultPresetId]) {
-            return loadPreset(defaultPresetId);
-        }
-    }
+	// No character association - fall back to default preset if set
+	if (!associatedPresetId) {
+		const defaultPresetId = extensionSettings.presetManager.defaultPresetId;
+		if (
+			defaultPresetId &&
+			defaultPresetId !== extensionSettings.presetManager.activePresetId &&
+			extensionSettings.presetManager.presets[defaultPresetId]
+		) {
+			return loadPreset(defaultPresetId);
+		}
+	}
 
-    return false;
+	return false;
 }
 
 /**
@@ -1000,28 +1157,29 @@ export function autoSwitchPresetForEntity() {
  * @returns {Object} Export data object
  */
 export function exportPresets(presetIds = []) {
-    const presetsToExport = {};
-    const allPresets = extensionSettings.presetManager.presets;
+	const presetsToExport = {};
+	const allPresets = extensionSettings.presetManager.presets;
 
-    // If no specific IDs provided, export all
-    const idsToExport = presetIds.length > 0 ? presetIds : Object.keys(allPresets);
+	// If no specific IDs provided, export all
+	const idsToExport =
+		presetIds.length > 0 ? presetIds : Object.keys(allPresets);
 
-    for (const id of idsToExport) {
-        if (allPresets[id]) {
-            presetsToExport[id] = {
-                id: allPresets[id].id,
-                name: allPresets[id].name,
-                trackerConfig: allPresets[id].trackerConfig
-            };
-        }
-    }
+	for (const id of idsToExport) {
+		if (allPresets[id]) {
+			presetsToExport[id] = {
+				id: allPresets[id].id,
+				name: allPresets[id].name,
+				trackerConfig: allPresets[id].trackerConfig,
+			};
+		}
+	}
 
-    return {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        presets: presetsToExport
-        // Note: characterAssociations are intentionally NOT exported
-    };
+	return {
+		version: "1.0",
+		exportDate: new Date().toISOString(),
+		presets: presetsToExport,
+		// Note: characterAssociations are intentionally NOT exported
+	};
 }
 
 /**
@@ -1031,59 +1189,63 @@ export function exportPresets(presetIds = []) {
  * @returns {number} Number of presets imported
  */
 export function importPresets(importData, overwrite = false) {
-    if (!importData.presets || typeof importData.presets !== 'object') {
-        throw new Error('Invalid import data: missing presets');
-    }
+	if (!importData.presets || typeof importData.presets !== "object") {
+		throw new Error("Invalid import data: missing presets");
+	}
 
-    let importCount = 0;
-    const existingNames = new Set(
-        Object.values(extensionSettings.presetManager.presets).map(p => p.name.toLowerCase())
-    );
+	let importCount = 0;
+	const existingNames = new Set(
+		Object.values(extensionSettings.presetManager.presets).map((p) =>
+			p.name.toLowerCase(),
+		),
+	);
 
-    for (const [originalId, preset] of Object.entries(importData.presets)) {
-        if (!preset.name || !preset.trackerConfig) {
-            continue; // Skip invalid presets
-        }
+	for (const [originalId, preset] of Object.entries(importData.presets)) {
+		if (!preset.name || !preset.trackerConfig) {
+			continue; // Skip invalid presets
+		}
 
-        let name = preset.name;
-        const nameLower = name.toLowerCase();
+		let name = preset.name;
+		const nameLower = name.toLowerCase();
 
-        // Check for name collision
-        if (existingNames.has(nameLower)) {
-            if (overwrite) {
-                // Find and delete the existing preset with this name
-                for (const [existingId, existingPreset] of Object.entries(extensionSettings.presetManager.presets)) {
-                    if (existingPreset.name.toLowerCase() === nameLower) {
-                        delete extensionSettings.presetManager.presets[existingId];
-                        break;
-                    }
-                }
-            } else {
-                // Generate a unique name
-                let counter = 1;
-                while (existingNames.has(`${nameLower} (${counter})`)) {
-                    counter++;
-                }
-                name = `${preset.name} (${counter})`;
-            }
-        }
+		// Check for name collision
+		if (existingNames.has(nameLower)) {
+			if (overwrite) {
+				// Find and delete the existing preset with this name
+				for (const [existingId, existingPreset] of Object.entries(
+					extensionSettings.presetManager.presets,
+				)) {
+					if (existingPreset.name.toLowerCase() === nameLower) {
+						delete extensionSettings.presetManager.presets[existingId];
+						break;
+					}
+				}
+			} else {
+				// Generate a unique name
+				let counter = 1;
+				while (existingNames.has(`${nameLower} (${counter})`)) {
+					counter++;
+				}
+				name = `${preset.name} (${counter})`;
+			}
+		}
 
-        // Create new preset with new ID
-        const newId = `preset_${Date.now()}_${importCount}`;
-        extensionSettings.presetManager.presets[newId] = {
-            id: newId,
-            name: name,
-            trackerConfig: JSON.parse(JSON.stringify(preset.trackerConfig))
-        };
-        existingNames.add(name.toLowerCase());
-        importCount++;
-    }
+		// Create new preset with new ID
+		const newId = `preset_${Date.now()}_${importCount}`;
+		extensionSettings.presetManager.presets[newId] = {
+			id: newId,
+			name: name,
+			trackerConfig: JSON.parse(JSON.stringify(preset.trackerConfig)),
+		};
+		existingNames.add(name.toLowerCase());
+		importCount++;
+	}
 
-    if (importCount > 0) {
-        saveSettings();
-    }
+	if (importCount > 0) {
+		saveSettings();
+	}
 
-    return importCount;
+	return importCount;
 }
 
 /**
@@ -1095,135 +1257,173 @@ export function importPresets(importData, overwrite = false) {
  * @param {boolean} [options.resetDefaultValues=false] - Whether to reset to default values (only for 'reset-default' scope)
  */
 export function clearCache(options) {
-    const { scope, dataType, customSelection = [] } = options;
-    const context = getContext();
-    const chat = context.chat;
+	const { scope, dataType, customSelection = [] } = options;
+	const context = getContext();
+	const chat = context.chat;
 
-    console.log('[RPG Companion] Clearing cache with options:', options);
+	console.log("[RPG Companion] Clearing cache with options:", options);
 
-    // Determine which message to clear based on scope
-    let messageIndexToClear = -1;
-    if (scope === 'all') {
-        console.log('[RPG Companion] Clearing all cache data from chat messages');
-        // Clear all messages
-        for (let i = 0; i < chat.length; i++) {
-            const message = chat[i];
-            const swipeId = message.swipe_id || 0;
-            if (message.extra && message.extra.rpg_companion_swipes) {
-                // Clear only selected items from each message
-                if (customSelection.includes('userStats') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].userStats;
-                }
-                if (customSelection.includes('infoBox') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].infoBox;
-                }
-                if (customSelection.includes('characterThoughts') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
-                }
-                if (customSelection.includes('locks') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
-                }
-                if (customSelection.includes('diceRoll') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
-                }
-            }
-        }
-    } else if (scope === 'last' || scope === 'reset-default') {
-        console.log(`[RPG Companion] Clearing cache data from the last message for scope: ${scope}`);
-        // Clear only the last message
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-            if (!message.is_user && !message.is_system) {
-                messageIndexToClear = i;
-                break;
-            }
-        }
-        
-        if (messageIndexToClear !== -1 && chat[messageIndexToClear].extra && chat[messageIndexToClear].extra.rpg_companion_swipes) {
-            const message = chat[messageIndexToClear];
-            const swipeId = message.swipe_id || 0;
-            if(scope === 'reset-default') {
-                if (customSelection.includes('userStats') || dataType === 'all') {
-                    const data = JSON.stringify({
-                        stats: [
-                            { id: 'health', name: 'Health', value: 100 },
-                            { id: 'satiety', name: 'Satiety', value: 100 },
-                            { id: 'energy', name: 'Energy', value: 100 },
-                            { id: 'hygiene', name: 'Hygiene', value: 100 },
-                            { id: 'arousal', name: 'Arousal', value: 0 }
-                        ],
-                        status: {
-                            mood: '😐',
-                            conditions: 'None'
-                        },
-                        inventory: {
-                            onPerson: [],
-                            stored: []
-                        },
-                        quests: {
-                            main: null,
-                            optional: []
-                        }
-                    }, null, 2);
-                    updateMessageSwipeData('userStats', data)
-                }
-                if (customSelection.includes('infoBox') || dataType === 'all') {
-                    const data = JSON.stringify({
-                        date: { value: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) },
-                        weather: { emoji: '☀️', forecast: 'Clear skies' },
-                        temperature: { value: 20, unit: 'C' },
-                        time: { start: '00:00', end: '00:00' },
-                        location: { value: 'Unknown Location' }
-                    }, null, 2);
-                    updateMessageSwipeData('infoBox', data)
-                }
-                if (customSelection.includes('characterThoughts') || dataType === 'all') {
-                    const data = JSON.stringify({
-                        characters: []
-                    }, null, 2)
-                    updateMessageSwipeData('characterThoughts', data)
-                }
-                if (customSelection.includes('locks') || dataType === 'all') {
-                    updateMessageSwipeData('lockedItems', {userStats: {}, infoBox: {}, characters: {}});
-                }
-                if (customSelection.includes('diceRoll') || dataType === 'all') {
-                    updateMessageSwipeData('lastDiceRoll', null);
-                }
-            }
-            else{
-                if (customSelection.includes('userStats') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].userStats;
-                }
-                if (customSelection.includes('infoBox') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].infoBox;
-                }
-                if (customSelection.includes('characterThoughts') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
-                }
-                if (customSelection.includes('locks') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
-                }
-                if (customSelection.includes('diceRoll') || dataType === 'all') {
-                    delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
-                }
-            }
-        }
-    }
+	// Determine which message to clear based on scope
+	let messageIndexToClear = -1;
+	if (scope === "all") {
+		console.log("[RPG Companion] Clearing all cache data from chat messages");
+		// Clear all messages
+		for (let i = 0; i < chat.length; i++) {
+			const message = chat[i];
+			const swipeId = message.swipe_id || 0;
+			if (message.extra && message.extra.rpg_companion_swipes) {
+				// Clear only selected items from each message
+				if (customSelection.includes("userStats") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].userStats;
+				}
+				if (customSelection.includes("infoBox") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].infoBox;
+				}
+				if (
+					customSelection.includes("characterThoughts") ||
+					dataType === "all"
+				) {
+					delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
+				}
+				if (customSelection.includes("locks") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
+				}
+				if (customSelection.includes("diceRoll") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
+				}
+			}
+		}
+	} else if (scope === "last" || scope === "reset-default") {
+		console.log(
+			`[RPG Companion] Clearing cache data from the last message for scope: ${scope}`,
+		);
+		// Clear only the last message
+		for (let i = chat.length - 1; i >= 0; i--) {
+			const message = chat[i];
+			if (!message.is_user && !message.is_system) {
+				messageIndexToClear = i;
+				break;
+			}
+		}
 
-    // Save changes
-    saveChatData();
-    saveSettings();
+		if (
+			messageIndexToClear !== -1 &&
+			chat[messageIndexToClear].extra &&
+			chat[messageIndexToClear].extra.rpg_companion_swipes
+		) {
+			const message = chat[messageIndexToClear];
+			const swipeId = message.swipe_id || 0;
+			if (scope === "reset-default") {
+				if (customSelection.includes("userStats") || dataType === "all") {
+					const data = JSON.stringify(
+						{
+							stats: [
+								{ id: "health", name: "Health", value: 100 },
+								{ id: "satiety", name: "Satiety", value: 100 },
+								{ id: "energy", name: "Energy", value: 100 },
+								{ id: "hygiene", name: "Hygiene", value: 100 },
+								{ id: "arousal", name: "Arousal", value: 0 },
+							],
+							status: {
+								mood: "😐",
+								conditions: "None",
+							},
+							inventory: {
+								onPerson: [],
+								stored: [],
+							},
+							quests: {
+								main: null,
+								optional: [],
+							},
+						},
+						null,
+						2,
+					);
+					updateMessageSwipeData("userStats", data);
+				}
+				if (customSelection.includes("infoBox") || dataType === "all") {
+					const data = JSON.stringify(
+						{
+							date: {
+								value: new Date().toLocaleDateString("en-US", {
+									weekday: "long",
+									year: "numeric",
+									month: "long",
+									day: "numeric",
+								}),
+							},
+							weather: { emoji: "☀️", forecast: "Clear skies" },
+							temperature: { value: 20, unit: "C" },
+							time: { start: "00:00", end: "00:00" },
+							location: { value: "Unknown Location" },
+						},
+						null,
+						2,
+					);
+					updateMessageSwipeData("infoBox", data);
+				}
+				if (
+					customSelection.includes("characterThoughts") ||
+					dataType === "all"
+				) {
+					const data = JSON.stringify(
+						{
+							characters: [],
+						},
+						null,
+						2,
+					);
+					updateMessageSwipeData("characterThoughts", data);
+				}
+				if (customSelection.includes("locks") || dataType === "all") {
+					updateMessageSwipeData("lockedItems", {
+						userStats: {},
+						infoBox: {},
+						characters: {},
+					});
+				}
+				if (customSelection.includes("diceRoll") || dataType === "all") {
+					updateMessageSwipeData("lastDiceRoll", null);
+				}
+			} else {
+				if (customSelection.includes("userStats") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].userStats;
+				}
+				if (customSelection.includes("infoBox") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].infoBox;
+				}
+				if (
+					customSelection.includes("characterThoughts") ||
+					dataType === "all"
+				) {
+					delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
+				}
+				if (customSelection.includes("locks") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
+				}
+				if (customSelection.includes("diceRoll") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].lastDiceRoll;
+				}
+			}
+		}
+	}
 
-    // Re-render panels for selected items
-    renderUserStats();
-    renderInfoBox();
-    renderThoughts();
-    updateChatThoughts();
-    updateDiceDisplay();
-    renderInventory();
-    renderQuests();
+	// Save changes
+	saveChatData();
+	saveSettings();
 
+	// Re-render panels for selected items
+	renderUserStats();
+	renderInfoBox();
+	renderThoughts();
+	updateChatThoughts();
+	updateDiceDisplay();
+	renderInventory();
+	renderQuests();
 
-    console.log('[RPG Companion] Custom cache cleared with selection:', customSelection);
+	console.log(
+		"[RPG Companion] Custom cache cleared with selection:",
+		customSelection,
+	);
 }
-

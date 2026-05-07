@@ -18,7 +18,7 @@ export let extensionSettings = {
 	enabled: true,
 	autoUpdate: false,
 	updateDepth: 4, // How many messages to include in the context
-	generationMode: "together", // 'separate' or 'together' - whether to generate with main response or separately
+	generationMode: "single", // 'single' - generates RPG data separately (manual or auto)
 	connectionProfile: "", // Connection Manager profile name for tracker generation (empty = use current)
 	showUserStats: true,
 	showInfoBox: true,

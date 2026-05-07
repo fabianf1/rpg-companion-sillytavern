@@ -157,7 +157,7 @@ export function getCurrentProfile() {
 }
 
 /**
- * Updates RPG tracker data using separate API call (separate mode only).
+ * Updates RPG tracker data using a dedicated API call.
  * Makes a dedicated API call to generate tracker data, then stores it
  * in the last assistant message's swipe data.
  */
@@ -174,8 +174,8 @@ export async function updateRPGData(
 		return;
 	}
 
-	if (extensionSettings.generationMode !== "separate") {
-		// console.log('[RPG Companion] Not in separate mode, skipping manual update');
+	if (extensionSettings.generationMode !== "single") {
+		// console.log('[RPG Companion] Not in single mode, skipping manual update');
 		return;
 	}
 
@@ -227,8 +227,8 @@ export async function updateRPGData(
 
 		const prompt = generateSeparateUpdatePrompt(selectedSections);
 
-		// Generate response in separate mode
-		let profile = getCurrentProfile();
+		// Generate response
+		const profile = getCurrentProfile();
 
 		const controller = new AbortController();
 		const signal = controller.signal;
@@ -513,47 +513,4 @@ export async function updateRPGData(
 	}
 }
 
-/**
- * Parses character names from Present Characters thoughts data
- * @param {string|object} characterThoughtsData - Raw character thoughts data (object or JSON string)
- * @returns {Array<string>} Array of character names found
- */
-function parseCharactersFromThoughts(characterThoughtsData) {
-	if (!characterThoughtsData) return [];
 
-	// Try parsing as JSON first (current format)
-	try {
-		const parsed =
-			typeof characterThoughtsData === "object"
-				? characterThoughtsData
-				: JSON.parse(characterThoughtsData);
-
-		// Handle both {characters: [...]} and direct array formats
-		const charactersArray = Array.isArray(parsed)
-			? parsed
-			: parsed.characters || [];
-
-		if (charactersArray.length > 0) {
-			// Extract names from JSON character objects
-			return charactersArray
-				.map((char) => char.name)
-				.filter((name) => name && name.toLowerCase() !== "unavailable");
-		}
-	} catch (e) {
-		// Not JSON, fall back to text parsing
-	}
-
-	// Fallback: Parse text format (legacy)
-	const lines = characterThoughtsData.split("\n");
-	const characters = [];
-
-	for (const line of lines) {
-		if (line.trim().startsWith("- ")) {
-			const name = line.trim().substring(2).trim();
-			if (name && name.toLowerCase() !== "unavailable") {
-				characters.push(name);
-			}
-		}
-	}
-	return characters;
-}

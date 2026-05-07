@@ -1,6 +1,6 @@
 # RPG Companion Extension for SillyTavern
 
-An immersive RPG extension for browsers that tracks character stats, scene information, and character thoughts in a beautiful, customizable UI panel. All automated! Works with any preset. Choose between Together or Separate generation modes for context and generation control.
+An immersive RPG extension for browsers that tracks character stats, scene information, and character thoughts in a beautiful, customizable UI panel. All automated! Works with any preset. Uses a separate generation mode for context and generation control.
 
 [![My Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da)](https://discord.com/invite/KdAkTg94ME)
 [![Support Me](https://img.shields.io/badge/Ko--fi-Support%20Creator-ff5e5b)](https://ko-fi.com/marinara_spaghetti)
@@ -74,7 +74,7 @@ Paperboygold, Munimunigamer, Subarashimo, Lilminzyu, Claude, IDeathByte, Chungch
 - **Panel Position**: Left or Right side of the chat
 - **Theme**: Choose from 6 built-in themes or create a custom
 - **Auto-update after messages**: Automatically refresh RPG data after each message
-- **Context Messages**: How many recent messages to include when generating updates (only for Separate generation mode)
+- **Context Messages**: How many recent messages to include when generating updates
 
 ### Display Options
 
@@ -82,33 +82,7 @@ Paperboygold, Munimunigamer, Subarashimo, Lilminzyu, Claude, IDeathByte, Chungch
 - **Show Info Box**: Display the scene information panel
 - **Show Character Thoughts**: Display the AI character's internal thoughts
 
-### Generation Modes
-
-#### Together Mode
-
-Tracker data is generated within the main AI response and automatically extracted:
-
-Example:
-User: walks into the tavern
-
-AI: Trackers + Full roleplay response
-
-↓ Extension extracts tracker data from the response
-
-↓ Displays in sidebar panels
-
-↓ Main chat shows clean roleplay text
-
-Pros:
-- Single API call
-- Faster response
-- Simpler setup
-
-Cons:
-- Tracker formatting mixed in AI response
-- May affect roleplay quality slightly
-
-#### Separate Mode
+### Generation Mode
 
 Tracker data is generated in a separate API call after the main response:
 
@@ -146,9 +120,8 @@ Cons:
 ### Quick Start
 
 1. Enable the extension in the Extensions tab
-2. Choose your generation mode: Together or Separate
-3. Select which panels to display (User Stats, Info Box, Character Thoughts)
-4. Start chatting! The tracker updates automatically
+2. Select which panels to display (User Stats, Info Box, Character Thoughts)
+3. Start chatting! The tracker updates automatically
 
 ### Editing Tracker Data
 
@@ -191,13 +164,13 @@ The extension fully supports swipes:
 
 ### Manual Update
 
-You can click the "Refresh RPG Info" button in the settings to refresh the RPG data at any time in separate generation mode.
+You can click the "Refresh RPG Info" button in the settings to refresh the RPG data at any time.
 
 ### Compatibility with Guided Generations
 
 This extension detects when a "guided generation" prompt is submitted (for example, via the GuidedGenerations extension which injects an ephemeral `instruct` prompt), and will avoid adding its tracker injection instructions (requests for stats, info box, and context prompts) to the generation context. This prevents conflicting instructions and ensures guided generations behave as the user expects.
 
-If you want tracker prompts to apply during a guided generation, run the update via separate generation or temporarily disable guided generation in the other extension.
+If you want tracker prompts to apply during a guided generation, run the update manually or temporarily disable guided generation in the other extension.
 
 There is a new setting "Skip Tracker & HTML Injections during Guided Generations" in the RPG Companion settings (Advanced section). It now supports three modes:
 - none: never skip (always inject the tracker prompts as usual, default)

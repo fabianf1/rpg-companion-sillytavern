@@ -541,22 +541,19 @@
                     <label for="rpg-generation-mode"
                         data-i18n-key="template.settingsModal.advanced.generationMode">Generation Mode:</label>
                     <select id="rpg-generation-mode" class="rpg-select">
-                        <option value="together"
-                            data-i18n-key="template.settingsModal.advanced.generationModeOptions.together">Together with
-                            Main Generation</option>
-                        <option value="separate"
-                            data-i18n-key="template.settingsModal.advanced.generationModeOptions.separate">Separate
+                        <option value="single"
+                            data-i18n-key="template.settingsModal.advanced.generationModeOptions.single">Single
                             Generation</option>
                     </select>
-                    <small data-i18n-key="template.settingsModal.advanced.generationModeNote">Together: Adds RPG
-                        tracking to main roleplay. Separate: Generates RPG data separately (manual or auto).</small>
+                    <small data-i18n-key="template.settingsModal.advanced.generationModeNote">Generates RPG data
+                        separately (manual or auto).</small>
                 </div>
 
                 <!-- Connection Profile (uses SillyTavern Connection Manager) -->
                 <div class="rpg-setting-row" id="rpg-connection-profile-row">
                     <div class="rpg-setting-label-group">
                         <span class="rpg-setting-label">Connection Profile</span>
-                        <span class="rpg-setting-hint">API profile for separate tracker generation</span>
+                        <span class="rpg-setting-hint">API profile for tracker generation</span>
                     </div>
                     <select id="rpg-connection-profile" class="rpg-accordion-select">
                         <option value="">Use Current</option>
@@ -581,14 +578,12 @@
 
 
 
-                <div id="rpg-separate-mode-settings">
-                    <div class="rpg-setting-row">
-                        <label for="rpg-update-depth"
-                            data-i18n-key="template.settingsModal.advanced.contextMessages">Context Messages:</label>
-                        <input type="number" id="rpg-update-depth" min="1" max="20" value="4" class="rpg-input" />
-                        <small data-i18n-key="template.settingsModal.advanced.contextMessagesNote">Number of recent messages
-                            to include (Separate mode)</small>
-                    </div>
+                <div class="rpg-setting-row">
+                    <label for="rpg-update-depth"
+                        data-i18n-key="template.settingsModal.advanced.contextMessages">Context Messages:</label>
+                    <input type="number" id="rpg-update-depth" min="1" max="20" value="4" class="rpg-input" />
+                    <small data-i18n-key="template.settingsModal.advanced.contextMessagesNote">Number of recent messages
+                        to include</small>
                 </div>
 
                 <div class="rpg-setting-row" style="margin-top: 16px;">
@@ -596,10 +591,10 @@
                         data-i18n-key="template.settingsModal.advanced.minReplyLength">Minimum Reply Length for Auto-Update:</label>
                     <input type="number" id="rpg-min-reply-length" min="0" value="100"
                         class="rpg-input" />
-                    <small data-i18n-key="template.settingsModal.advanced.minReplyLengthNote">Minimum character count for the latest message to trigger auto-update. Set to 0 to disable. Only applies to separate generation mode.</small>
+                    <small data-i18n-key="template.settingsModal.advanced.minReplyLengthNote">Minimum character count for the latest message to trigger auto-update. Set to 0 to disable.</small>
                 </div>
 
-                <label class="checkbox_label" id="rpg-auto-update-container" style="margin-top: 16px;">
+                <label class="checkbox_label" style="margin-top: 16px;">
                     <input type="checkbox" id="rpg-toggle-auto-update" />
                     <span data-i18n-key="template.settingsModal.display.toggleAutoUpdate">Auto-update after
                         messages</span>
@@ -991,7 +986,7 @@
                     <i class="fa-solid fa-comment-dots"></i> Context Instructions Prompt
                 </label>
                 <small style="display: block; margin-bottom: 8px; color: #888; font-size: 11px;">
-                    Injected in Separate mode after the context summary. Tells the AI how to use the context.
+                    Injected after the context summary. Tells the AI how to use the context.
                 </small>
                 <textarea id="rpg-prompt-context-instructions" class="rpg-prompt-textarea" rows="4"></textarea>
                 <button class="menu_button rpg-restore-prompt-btn" data-prompt="contextInstructions" style="margin-top: 8px;">

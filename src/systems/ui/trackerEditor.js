@@ -1463,7 +1463,7 @@ function renderHistoryPersistenceTab() {
     const userStatsConfig = extensionSettings.trackerConfig.userStats;
     const infoBoxConfig = extensionSettings.trackerConfig.infoBox;
     const presentCharsConfig = extensionSettings.trackerConfig.presentCharacters;
-    const generationMode = extensionSettings.generationMode || 'together';
+    const generationMode = extensionSettings.generationMode || 'single';
 
     let html = '<div class="rpg-editor-section">';
 
@@ -1477,14 +1477,12 @@ function renderHistoryPersistenceTab() {
     html += `<label for="rpg-history-persistence-enabled">Enable History Persistence</label>`;
     html += '</div>';
 
-    // Send All Enabled toggle - only show for separate mode
-    if (generationMode === 'separate') {
-        html += '<div class="rpg-editor-toggle-row" style="margin-top: 8px;">';
-        html += `<input type="checkbox" id="rpg-history-send-all-enabled" ${historyPersistence.sendAllEnabledOnRefresh ? 'checked' : ''}>`;
-        html += `<label for="rpg-history-send-all-enabled">Send All Enabled Stats on Refresh</label>`;
-        html += '</div>';
-        html += `<p class="rpg-editor-hint" style="margin-top: 4px; margin-left: 24px;">When enabled, Refresh RPG Info will include all enabled stats from the preset in history context, ignoring the individual selections below.</p>`;
-    }
+    // Send All Enabled toggle
+    html += '<div class="rpg-editor-toggle-row" style="margin-top: 8px;">';
+    html += `<input type="checkbox" id="rpg-history-send-all-enabled" ${historyPersistence.sendAllEnabledOnRefresh ? 'checked' : ''}>`;
+    html += `<label for="rpg-history-send-all-enabled">Send All Enabled Stats on Refresh</label>`;
+    html += '</div>';
+    html += `<p class="rpg-editor-hint" style="margin-top: 4px; margin-left: 24px;">When enabled, Refresh RPG Info will include all enabled stats from the preset in history context, ignoring the individual selections below.</p>`;
 
     // Message count
     html += '<div class="rpg-editor-input-row" style="margin-top: 12px;">';
