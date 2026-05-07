@@ -3,7 +3,7 @@
  * Utilities for parsing item strings into arrays and vice versa
  */
 
-import { sanitizeItemName, MAX_ITEMS_PER_SECTION } from './security.js';
+import { MAX_ITEMS_PER_SECTION, sanitizeItemName } from "./security.js";
 
 /**
  * Converts time format between 12-hour and 24-hour formats.
@@ -15,86 +15,90 @@ import { sanitizeItemName, MAX_ITEMS_PER_SECTION } from './security.js';
  * @returns {string} Converted time string, or original if conversion fails or preference is 'none'
  */
 export function convertTimeFormat(timeValue, preference) {
-    if (!timeValue || preference === 'none') {
-        return timeValue;
-    }
+	if (!timeValue || preference === "none") {
+		return timeValue;
+	}
 
-    try {
-        // Try to match 12-hour format with explicit AM/PM
-        const match12hExplicit = timeValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
-        if (match12hExplicit) {
-            let hours = parseInt(match12hExplicit[1]);
-            const minutes = match12hExplicit[2];
-            const period = match12hExplicit[3]?.toUpperCase();
+	try {
+		// Try to match 12-hour format with explicit AM/PM
+		const match12hExplicit = timeValue.match(
+			/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i,
+		);
+		if (match12hExplicit) {
+			let hours = parseInt(match12hExplicit[1]);
+			const minutes = match12hExplicit[2];
+			const period = match12hExplicit[3]?.toUpperCase();
 
-            // Convert to 24h internally
-            if (period === 'PM' && hours !== 12) {
-                hours += 12;
-            } else if (period === 'AM' && hours === 12) {
-                hours = 0;
-            }
+			// Convert to 24h internally
+			if (period === "PM" && hours !== 12) {
+				hours += 12;
+			} else if (period === "AM" && hours === 12) {
+				hours = 0;
+			}
 
-            // Output based on preference
-            if (preference === '24h') {
-                return `${String(hours).padStart(2, '0')}:${minutes}`;
-            } else if (preference === '12h') {
-                const displayHours = hours % 12 || 12;
-                const displayPeriod = hours >= 12 ? 'PM' : 'AM';
-                return `${displayHours}:${minutes} ${displayPeriod}`;
-            }
-        }
+			// Output based on preference
+			if (preference === "24h") {
+				return `${String(hours).padStart(2, "0")}:${minutes}`;
+			} else if (preference === "12h") {
+				const displayHours = hours % 12 || 12;
+				const displayPeriod = hours >= 12 ? "PM" : "AM";
+				return `${displayHours}:${minutes} ${displayPeriod}`;
+			}
+		}
 
-        // Try to match 24-hour format (no AM/PM, hours 0-23)
-        const match24h = timeValue.match(/(\d{1,2}):(\d{2})/);
-        if (match24h) {
-            let hours = parseInt(match24h[1]);
-            const minutes = match24h[2];
+		// Try to match 24-hour format (no AM/PM, hours 0-23)
+		const match24h = timeValue.match(/(\d{1,2}):(\d{2})/);
+		if (match24h) {
+			const hours = parseInt(match24h[1]);
+			const minutes = match24h[2];
 
-            // Validate 24h format: hours must be 0-23
-            if (hours >= 0 && hours <= 23) {
-                // If preference is 12h, convert from 24h
-                if (preference === '12h') {
-                    const displayHours = hours % 12 || 12;
-                    const displayPeriod = hours >= 12 ? 'PM' : 'AM';
-                    return `${displayHours}:${minutes} ${displayPeriod}`;
-                } else if (preference === '24h') {
-                    // Already in 24h format, return as-is
-                    return `${String(hours).padStart(2, '0')}:${minutes}`;
-                }
-            }
-        }
+			// Validate 24h format: hours must be 0-23
+			if (hours >= 0 && hours <= 23) {
+				// If preference is 12h, convert from 24h
+				if (preference === "12h") {
+					const displayHours = hours % 12 || 12;
+					const displayPeriod = hours >= 12 ? "PM" : "AM";
+					return `${displayHours}:${minutes} ${displayPeriod}`;
+				} else if (preference === "24h") {
+					// Already in 24h format, return as-is
+					return `${String(hours).padStart(2, "0")}:${minutes}`;
+				}
+			}
+		}
 
-        // Try to match 12-hour format without AM/PM (e.g., "3:00")
-        // This is ambiguous - could be 3 AM or 3 PM
-        // Only convert if the value would be valid in the target format
-        const match12hImplicit = timeValue.match(/(\d{1,2}):(\d{2})(?!\s*(?:AM|PM|am|pm))/i);
-        if (match12hImplicit) {
-            let hours = parseInt(match12hImplicit[1]);
-            const minutes = match12hImplicit[2];
+		// Try to match 12-hour format without AM/PM (e.g., "3:00")
+		// This is ambiguous - could be 3 AM or 3 PM
+		// Only convert if the value would be valid in the target format
+		const match12hImplicit = timeValue.match(
+			/(\d{1,2}):(\d{2})(?!\s*(?:AM|PM|am|pm))/i,
+		);
+		if (match12hImplicit) {
+			const hours = parseInt(match12hImplicit[1]);
+			const minutes = match12hImplicit[2];
 
-            // If preference is 12h, we need AM/PM to be correct
-            // If preference is 24h and hours > 12, this is wrong format - return original
-            if (preference === '24h' && hours > 12) {
-                // Input is in 12h format but user wants 24h, and hours > 12
-                // This indicates wrong format - return original
-                return timeValue;
-            }
+			// If preference is 12h, we need AM/PM to be correct
+			// If preference is 24h and hours > 12, this is wrong format - return original
+			if (preference === "24h" && hours > 12) {
+				// Input is in 12h format but user wants 24h, and hours > 12
+				// This indicates wrong format - return original
+				return timeValue;
+			}
 
-            // Safe to convert: either preference is 12h, or hours <= 12
-            if (preference === '12h') {
-                // Keep as-is (no AM/PM specified)
-                return `${hours}:${minutes}`;
-            } else if (preference === '24h') {
-                // Hours <= 12 is valid in 24h format
-                return `${String(hours).padStart(2, '0')}:${minutes}`;
-            }
-        }
-    } catch (error) {
-        console.error('[RPG Companion] Error converting time format:', error);
-    }
+			// Safe to convert: either preference is 12h, or hours <= 12
+			if (preference === "12h") {
+				// Keep as-is (no AM/PM specified)
+				return `${hours}:${minutes}`;
+			} else if (preference === "24h") {
+				// Hours <= 12 is valid in 24h format
+				return `${String(hours).padStart(2, "0")}:${minutes}`;
+			}
+		}
+	} catch (error) {
+		console.error("[RPG Companion] Error converting time format:", error);
+	}
 
-    // If conversion fails or input is in wrong format, return original
-    return timeValue;
+	// If conversion fails or input is in wrong format, return original
+	return timeValue;
 }
 
 /**
@@ -145,151 +149,159 @@ export function convertTimeFormat(timeValue, preference) {
  * parseItems(null) // []
  */
 export function parseItems(itemString) {
-    // Handle null/undefined/non-string
-    if (!itemString || typeof itemString !== 'string') {
-        return [];
-    }
+	// Handle null/undefined/non-string
+	if (!itemString || typeof itemString !== "string") {
+		return [];
+	}
 
-    let processed = itemString.trim();
+	let processed = itemString.trim();
 
-    // Quick check for "None" or empty
-    if (processed === '' || processed.toLowerCase() === 'none') {
-        return [];
-    }
+	// Quick check for "None" or empty
+	if (processed === "" || processed.toLowerCase() === "none") {
+		return [];
+	}
 
-    // STEP 1: Strip wrapping brackets/braces (AI sometimes wraps entire lists)
-    // Handle: [], {}, [[]], etc.
-    while (
-        (processed.startsWith('[') && processed.endsWith(']')) ||
-        (processed.startsWith('{') && processed.endsWith('}'))
-    ) {
-        processed = processed.slice(1, -1).trim();
-        if (processed === '' || processed.toLowerCase() === 'none') {
-            return [];
-        }
-    }
+	// STEP 1: Strip wrapping brackets/braces (AI sometimes wraps entire lists)
+	// Handle: [], {}, [[]], etc.
+	while (
+		(processed.startsWith("[") && processed.endsWith("]")) ||
+		(processed.startsWith("{") && processed.endsWith("}"))
+	) {
+		processed = processed.slice(1, -1).trim();
+		if (processed === "" || processed.toLowerCase() === "none") {
+			return [];
+		}
+	}
 
-    // STEP 2: Strip wrapping quotes (AI sometimes quotes entire lists)
-    // Handle: "...", '...'
-    if ((processed.startsWith('"') && processed.endsWith('"')) ||
-        (processed.startsWith("'") && processed.endsWith("'"))) {
-        processed = processed.slice(1, -1).trim();
-        if (processed === '' || processed.toLowerCase() === 'none') {
-            return [];
-        }
-    }
+	// STEP 2: Strip wrapping quotes (AI sometimes quotes entire lists)
+	// Handle: "...", '...'
+	if (
+		(processed.startsWith('"') && processed.endsWith('"')) ||
+		(processed.startsWith("'") && processed.endsWith("'"))
+	) {
+		processed = processed.slice(1, -1).trim();
+		if (processed === "" || processed.toLowerCase() === "none") {
+			return [];
+		}
+	}
 
-    // STEP 3: Convert newlines to commas (OUTSIDE parentheses)
-    // Handles newline-based lists: "Sword\nShield\nPotion" → "Sword, Shield, Potion"
-    let withCommas = '';
-    let parenDepth = 0;
+	// STEP 3: Convert newlines to commas (OUTSIDE parentheses)
+	// Handles newline-based lists: "Sword\nShield\nPotion" → "Sword, Shield, Potion"
+	let withCommas = "";
+	let parenDepth = 0;
 
-    for (let i = 0; i < processed.length; i++) {
-        const char = processed[i];
+	for (let i = 0; i < processed.length; i++) {
+		const char = processed[i];
 
-        if (char === '(') {
-            parenDepth++;
-            withCommas += char;
-        } else if (char === ')') {
-            parenDepth--;
-            withCommas += char;
-        } else if ((char === '\n' || char === '\r') && parenDepth === 0) {
-            // Newline outside parentheses - convert to comma separator
-            // Don't add if previous char was already a separator
-            const prevChar = withCommas[withCommas.length - 1];
-            if (prevChar && prevChar !== ',' && prevChar !== '\n') {
-                withCommas += ',';
-            }
-        } else if ((char === '\n' || char === '\r') && parenDepth > 0) {
-            // Newline inside parentheses - convert to space
-            if (withCommas[withCommas.length - 1] !== ' ') {
-                withCommas += ' ';
-            }
-        } else {
-            withCommas += char;
-        }
-    }
-    processed = withCommas;
+		if (char === "(") {
+			parenDepth++;
+			withCommas += char;
+		} else if (char === ")") {
+			parenDepth--;
+			withCommas += char;
+		} else if ((char === "\n" || char === "\r") && parenDepth === 0) {
+			// Newline outside parentheses - convert to comma separator
+			// Don't add if previous char was already a separator
+			const prevChar = withCommas[withCommas.length - 1];
+			if (prevChar && prevChar !== "," && prevChar !== "\n") {
+				withCommas += ",";
+			}
+		} else if ((char === "\n" || char === "\r") && parenDepth > 0) {
+			// Newline inside parentheses - convert to space
+			if (withCommas[withCommas.length - 1] !== " ") {
+				withCommas += " ";
+			}
+		} else {
+			withCommas += char;
+		}
+	}
+	processed = withCommas;
 
-    // STEP 4: Strip markdown formatting
-    // Remove: **bold**, *italic*, `code`, ~~strikethrough~~
-    processed = processed
-        .replace(/\*\*(.+?)\*\*/g, '$1')  // **bold** → bold
-        .replace(/\*(.+?)\*/g, '$1')      // *italic* → italic
-        .replace(/`(.+?)`/g, '$1')        // `code` → code
-        .replace(/~~(.+?)~~/g, '$1');     // ~~strike~~ → strike
+	// STEP 4: Strip markdown formatting
+	// Remove: **bold**, *italic*, `code`, ~~strikethrough~~
+	processed = processed
+		.replace(/\*\*(.+?)\*\*/g, "$1") // **bold** → bold
+		.replace(/\*(.+?)\*/g, "$1") // *italic* → italic
+		.replace(/`(.+?)`/g, "$1") // `code` → code
+		.replace(/~~(.+?)~~/g, "$1"); // ~~strike~~ → strike
 
-    // STEP 5: Normalize whitespace
-    processed = processed.replace(/\s+/g, ' ');
+	// STEP 5: Normalize whitespace
+	processed = processed.replace(/\s+/g, " ");
 
-    // STEP 6: Smart comma splitting (only split on commas OUTSIDE parentheses and NOT in numbers)
-    // Also handles list markers, quotes, and security validation per-item
-    const items = [];
-    let currentItem = '';
-    parenDepth = 0;
+	// STEP 6: Smart comma splitting (only split on commas OUTSIDE parentheses and NOT in numbers)
+	// Also handles list markers, quotes, and security validation per-item
+	const items = [];
+	let currentItem = "";
+	parenDepth = 0;
 
-    for (let i = 0; i < processed.length; i++) {
-        const char = processed[i];
+	for (let i = 0; i < processed.length; i++) {
+		const char = processed[i];
 
-        if (char === '(') {
-            parenDepth++;
-            currentItem += char;
-        } else if (char === ')') {
-            parenDepth--;
-            // Graceful handling: don't let depth go negative
-            if (parenDepth < 0) {
-                console.warn('[RPG Companion] Unmatched closing parenthesis in item parsing');
-                parenDepth = 0;
-            }
-            currentItem += char;
-        } else if (char === ',' && parenDepth === 0) {
-            // Check if this comma is between digits (decimal separator like 4443,445)
-            const prevChar = i > 0 ? processed[i - 1] : '';
-            const nextChar = i < processed.length - 1 ? processed[i + 1] : '';
-            const isDecimalComma = /\d/.test(prevChar) && /\d/.test(nextChar);
+		if (char === "(") {
+			parenDepth++;
+			currentItem += char;
+		} else if (char === ")") {
+			parenDepth--;
+			// Graceful handling: don't let depth go negative
+			if (parenDepth < 0) {
+				console.warn(
+					"[RPG Companion] Unmatched closing parenthesis in item parsing",
+				);
+				parenDepth = 0;
+			}
+			currentItem += char;
+		} else if (char === "," && parenDepth === 0) {
+			// Check if this comma is between digits (decimal separator like 4443,445)
+			const prevChar = i > 0 ? processed[i - 1] : "";
+			const nextChar = i < processed.length - 1 ? processed[i + 1] : "";
+			const isDecimalComma = /\d/.test(prevChar) && /\d/.test(nextChar);
 
-            if (isDecimalComma) {
-                // This is a decimal comma, not a separator - keep it
-                currentItem += char;
-            } else {
-                // Comma outside parentheses and not in a number - this is a separator
-                const cleaned = cleanSingleItem(currentItem);
-                if (cleaned) {
-                    // Security check: validate and sanitize item name
-                    const sanitized = sanitizeItemName(cleaned);
-                    if (sanitized) {
-                        items.push(sanitized);
-                    }
+			if (isDecimalComma) {
+				// This is a decimal comma, not a separator - keep it
+				currentItem += char;
+			} else {
+				// Comma outside parentheses and not in a number - this is a separator
+				const cleaned = cleanSingleItem(currentItem);
+				if (cleaned) {
+					// Security check: validate and sanitize item name
+					const sanitized = sanitizeItemName(cleaned);
+					if (sanitized) {
+						items.push(sanitized);
+					}
 
-                    // DoS protection: enforce max items limit
-                    if (items.length >= MAX_ITEMS_PER_SECTION) {
-                        console.warn(`[RPG Companion] Reached max items limit (${MAX_ITEMS_PER_SECTION}), truncating list`);
-                        return items;
-                    }
-                }
-                currentItem = ''; // Start new item
-            }
-        } else {
-            currentItem += char;
-        }
-    }
+					// DoS protection: enforce max items limit
+					if (items.length >= MAX_ITEMS_PER_SECTION) {
+						console.warn(
+							`[RPG Companion] Reached max items limit (${MAX_ITEMS_PER_SECTION}), truncating list`,
+						);
+						return items;
+					}
+				}
+				currentItem = ""; // Start new item
+			}
+		} else {
+			currentItem += char;
+		}
+	}
 
-    // Don't forget the last item
-    const cleaned = cleanSingleItem(currentItem);
-    if (cleaned) {
-        // Security check: validate and sanitize item name
-        const sanitized = sanitizeItemName(cleaned);
-        if (sanitized) {
-            items.push(sanitized);
-        }
-    }
+	// Don't forget the last item
+	const cleaned = cleanSingleItem(currentItem);
+	if (cleaned) {
+		// Security check: validate and sanitize item name
+		const sanitized = sanitizeItemName(cleaned);
+		if (sanitized) {
+			items.push(sanitized);
+		}
+	}
 
-    // Warn if parentheses were unmatched
-    if (parenDepth > 0) {
-        console.warn('[RPG Companion] Unmatched opening parenthesis in item parsing');
-    }
+	// Warn if parentheses were unmatched
+	if (parenDepth > 0) {
+		console.warn(
+			"[RPG Companion] Unmatched opening parenthesis in item parsing",
+		);
+	}
 
-    return items;
+	return items;
 }
 
 /**
@@ -301,41 +313,43 @@ export function parseItems(itemString) {
  * @private
  */
 function cleanSingleItem(item) {
-    if (!item || typeof item !== 'string') {
-        return null;
-    }
+	if (!item || typeof item !== "string") {
+		return null;
+	}
 
-    let cleaned = item.trim();
+	let cleaned = item.trim();
 
-    // Filter "None"
-    if (cleaned === '' || cleaned.toLowerCase() === 'none') {
-        return null;
-    }
+	// Filter "None"
+	if (cleaned === "" || cleaned.toLowerCase() === "none") {
+		return null;
+	}
 
-    // Strip list markers: "- Item", "• Item", "1. Item", "2. Item", etc.
-    // Matches: -, •, *, 1., 2., a), etc.
-    cleaned = cleaned.replace(/^[-•*]\s+/, '');           // "- Item" → "Item"
-    cleaned = cleaned.replace(/^\d+\.\s+/, '');           // "1. Item" → "Item"
-    cleaned = cleaned.replace(/^[a-z]\)\s+/i, '');        // "a) Item" → "Item"
+	// Strip list markers: "- Item", "• Item", "1. Item", "2. Item", etc.
+	// Matches: -, •, *, 1., 2., a), etc.
+	cleaned = cleaned.replace(/^[-•*]\s+/, ""); // "- Item" → "Item"
+	cleaned = cleaned.replace(/^\d+\.\s+/, ""); // "1. Item" → "Item"
+	cleaned = cleaned.replace(/^[a-z]\)\s+/i, ""); // "a) Item" → "Item"
 
-    // Strip wrapping quotes from individual items
-    if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
-        (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
-        cleaned = cleaned.slice(1, -1).trim();
-    }
+	// Strip wrapping quotes from individual items
+	if (
+		(cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+		(cleaned.startsWith("'") && cleaned.endsWith("'"))
+	) {
+		cleaned = cleaned.slice(1, -1).trim();
+	}
 
-    // Final empty check
-    if (cleaned === '' || cleaned.toLowerCase() === 'none') {
-        return null;
-    }
+	// Final empty check
+	if (cleaned === "" || cleaned.toLowerCase() === "none") {
+		return null;
+	}
 
-    // Capitalize first letter for consistency
-    // Preserves rest of string case (e.g., "iPhone" stays "iPhone", not "Iphone")
-    if (cleaned.length > 0) {
-        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-    }
+	// Capitalize first letter for consistency
+	// Preserves rest of string case (e.g., "iPhone" stays "iPhone", not "Iphone")
+	if (cleaned.length > 0) {
+		cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+	}
 
-    return cleaned;
+	return cleaned;
 }
 
 /**
@@ -351,21 +365,21 @@ function cleanSingleItem(item) {
  * serializeItems(["Sword"]) // "Sword"
  */
 export function serializeItems(itemArray) {
-    // Handle null/undefined/non-array
-    if (!itemArray || !Array.isArray(itemArray)) {
-        return 'None';
-    }
+	// Handle null/undefined/non-array
+	if (!itemArray || !Array.isArray(itemArray)) {
+		return "None";
+	}
 
-    // Filter out empty strings and trim
-    const cleaned = itemArray
-        .filter(item => item && typeof item === 'string' && item.trim() !== '')
-        .map(item => item.trim());
+	// Filter out empty strings and trim
+	const cleaned = itemArray
+		.filter((item) => item && typeof item === "string" && item.trim() !== "")
+		.map((item) => item.trim());
 
-    // Return "None" if array is empty after cleaning
-    if (cleaned.length === 0) {
-        return 'None';
-    }
+	// Return "None" if array is empty after cleaning
+	if (cleaned.length === 0) {
+		return "None";
+	}
 
-    // Join with comma and space
-    return cleaned.join(', ');
+	// Join with comma and space
+	return cleaned.join(", ");
 }

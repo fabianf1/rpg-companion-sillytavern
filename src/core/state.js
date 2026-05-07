@@ -410,7 +410,7 @@ export function abortCurrentGeneration() {
 /**
  * Debug logs array for troubleshooting
  */
-export let debugLogs = [];
+export const debugLogs = [];
 
 /**
  * Add a debug log entry

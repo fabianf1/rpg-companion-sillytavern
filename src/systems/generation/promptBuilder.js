@@ -3,20 +3,20 @@
  * Handles all AI prompt generation for RPG tracker data
  */
 
+import { characters, chat, this_chid } from "../../../../../../../script.js";
 import { getContext } from "../../../../../../extensions.js";
-import { chat, characters, this_chid } from "../../../../../../../script.js";
 import {
-	selected_group,
-	getGroupMembers,
 	getGroupChat,
+	getGroupMembers,
 	groups,
+	selected_group,
 } from "../../../../../../group-chats.js";
 import { extensionSettings } from "../../core/state.js";
 import {
-	buildUserStatsJSONInstruction,
-	buildInfoBoxJSONInstruction,
-	buildCharactersJSONInstruction,
 	addLockInstruction,
+	buildCharactersJSONInstruction,
+	buildInfoBoxJSONInstruction,
+	buildUserStatsJSONInstruction,
 } from "./jsonPromptHelpers.js";
 import { applyLocks } from "./lockManager.js";
 
@@ -874,7 +874,7 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
 						const questDate = getValue(quests.main.date);
 						const questLocation = getValue(quests.main.location);
 
-						let mainQuestDetails = [];
+						const mainQuestDetails = [];
 						if (questTitle) mainQuestDetails.push(questTitle);
 						if (questCompleted) mainQuestDetails.push(questCompleted);
 						if (questDate) mainQuestDetails.push(`📅 ${questDate}`);
@@ -904,7 +904,7 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
 								const questDate = getValue(q.date);
 								const questLocation = getValue(q.location);
 
-								let questDetails = [];
+								const questDetails = [];
 								if (questTitle) questDetails.push(questTitle);
 								if (questCompleted) questDetails.push(questCompleted);
 								if (questDate) questDetails.push(`📅 ${questDate}`);
@@ -1213,7 +1213,7 @@ export function formatHistoricalTrackerData(
 			if (shouldIncludeQuests && userStatsData.quests) {
 				const quests = userStatsData.quests;
 				if (quests.main) {
-					let mainQuestDetails = [];
+					const mainQuestDetails = [];
 
 					if (typeof quests.main === "string") {
 						const mainQuest = getValue(quests.main);

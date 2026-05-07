@@ -4,10 +4,14 @@
  * Supports both legacy text format and new v3 JSON format
  */
 
-import { extensionSettings, FEATURE_FLAGS, addDebugLog } from '../../core/state.js';
-import { saveSettings } from '../../core/persistence.js';
-import { repairJSON } from '../../utils/jsonRepair.js';
-import { convertTimeFormat } from '../../utils/itemParser.js';
+import { saveSettings } from "../../core/persistence.js";
+import {
+	addDebugLog,
+	extensionSettings,
+	FEATURE_FLAGS,
+} from "../../core/state.js";
+import { convertTimeFormat } from "../../utils/itemParser.js";
+import { repairJSON } from "../../utils/jsonRepair.js";
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -16,11 +20,11 @@ import { convertTimeFormat } from '../../utils/itemParser.js';
  * @returns {string} snake_case key from the base name only
  */
 function toFieldKey(name) {
-    const baseName = name.replace(/\s*\(.*\)\s*$/, '').trim();
-    return baseName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
+	const baseName = name.replace(/\s*\(.*\)\s*$/, "").trim();
+	return baseName
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "");
 }
 
 /**
@@ -30,36 +34,37 @@ function toFieldKey(name) {
  * @returns {{emoji: string, text: string}} Separated emoji and text
  */
 function separateEmojiFromText(str) {
-    if (!str) return { emoji: '', text: '' };
+	if (!str) return { emoji: "", text: "" };
 
-    str = str.trim();
+	str = str.trim();
 
-    // Regex to match emoji at the start (handles most emoji including compound ones)
-    // This matches emoji sequences including skin tones, gender modifiers, etc.
-    const emojiRegex = /^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}]+/u;
-    const emojiMatch = str.match(emojiRegex);
+	// Regex to match emoji at the start (handles most emoji including compound ones)
+	// This matches emoji sequences including skin tones, gender modifiers, etc.
+	const emojiRegex =
+		/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F910}-\u{1F96B}\u{1F980}-\u{1F9E0}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}]+/u;
+	const emojiMatch = str.match(emojiRegex);
 
-    if (emojiMatch) {
-        const emoji = emojiMatch[0];
-        let text = str.substring(emoji.length).trim();
+	if (emojiMatch) {
+		const emoji = emojiMatch[0];
+		let text = str.substring(emoji.length).trim();
 
-        // Remove leading comma or space if present
-        text = text.replace(/^[,\s]+/, '');
+		// Remove leading comma or space if present
+		text = text.replace(/^[,\s]+/, "");
 
-        return { emoji, text };
-    }
+		return { emoji, text };
+	}
 
-    // No emoji found - check if there's a comma separator anyway
-    const commaParts = str.split(',');
-    if (commaParts.length >= 2) {
-        return {
-            emoji: commaParts[0].trim(),
-            text: commaParts.slice(1).join(',').trim()
-        };
-    }
+	// No emoji found - check if there's a comma separator anyway
+	const commaParts = str.split(",");
+	if (commaParts.length >= 2) {
+		return {
+			emoji: commaParts[0].trim(),
+			text: commaParts.slice(1).join(",").trim(),
+		};
+	}
 
-    // No clear separation - return original as text
-    return { emoji: '', text: str };
+	// No clear separation - return original as text
+	return { emoji: "", text: str };
 }
 
 /**
@@ -70,83 +75,109 @@ function separateEmojiFromText(str) {
  * @returns {string} Text with brackets and placeholders removed
  */
 function stripBrackets(text) {
-    if (!text) return text;
+	if (!text) return text;
 
-    // Remove leading and trailing whitespace first
-    text = text.trim();
+	// Remove leading and trailing whitespace first
+	text = text.trim();
 
-    // Check if the entire text is wrapped in brackets and remove them
-    // This handles cases where models wrap entire sections in brackets
-    while (
-        (text.startsWith('[') && text.endsWith(']')) ||
-        (text.startsWith('{') && text.endsWith('}')) ||
-        (text.startsWith('(') && text.endsWith(')'))
-    ) {
-        text = text.substring(1, text.length - 1).trim();
-    }
+	// Check if the entire text is wrapped in brackets and remove them
+	// This handles cases where models wrap entire sections in brackets
+	while (
+		(text.startsWith("[") && text.endsWith("]")) ||
+		(text.startsWith("{") && text.endsWith("}")) ||
+		(text.startsWith("(") && text.endsWith(")"))
+	) {
+		text = text.substring(1, text.length - 1).trim();
+	}
 
-    // Remove placeholder text patterns like [Location], [Mood Emoji], [Name], etc.
-    // Pattern matches: [anything with letters/spaces inside]
-    // This preserves actual content while removing template placeholders
-    const placeholderPattern = /\[([A-Za-z\s\/]+)\]/g;
+	// Remove placeholder text patterns like [Location], [Mood Emoji], [Name], etc.
+	// Pattern matches: [anything with letters/spaces inside]
+	// This preserves actual content while removing template placeholders
+	const placeholderPattern = /\[([A-Za-z\s/]+)\]/g;
 
-    // Check if a bracketed text looks like a placeholder vs real content
-    const isPlaceholder = (match, content) => {
-        // Common placeholder words to detect
-        const placeholderKeywords = [
-            'location', 'mood', 'emoji', 'name', 'description', 'placeholder',
-            'time', 'date', 'weather', 'temperature', 'action', 'appearance',
-            'skill', 'quest', 'item', 'character', 'field', 'value', 'details',
-            'relationship', 'thoughts', 'stat', 'status', 'lover', 'friend',
-            'enemy', 'neutral', 'weekday', 'month', 'year', 'forecast'
-        ];
+	// Check if a bracketed text looks like a placeholder vs real content
+	const isPlaceholder = (match, content) => {
+		// Common placeholder words to detect
+		const placeholderKeywords = [
+			"location",
+			"mood",
+			"emoji",
+			"name",
+			"description",
+			"placeholder",
+			"time",
+			"date",
+			"weather",
+			"temperature",
+			"action",
+			"appearance",
+			"skill",
+			"quest",
+			"item",
+			"character",
+			"field",
+			"value",
+			"details",
+			"relationship",
+			"thoughts",
+			"stat",
+			"status",
+			"lover",
+			"friend",
+			"enemy",
+			"neutral",
+			"weekday",
+			"month",
+			"year",
+			"forecast",
+		];
 
-        const lowerContent = content.toLowerCase().trim();
+		const lowerContent = content.toLowerCase().trim();
 
-        // If it contains common placeholder keywords, it's likely a placeholder
-        if (placeholderKeywords.some(keyword => lowerContent.includes(keyword))) {
-            return true;
-        }
+		// If it contains common placeholder keywords, it's likely a placeholder
+		if (placeholderKeywords.some((keyword) => lowerContent.includes(keyword))) {
+			return true;
+		}
 
-        // If it's a short generic phrase (1-3 words) with only letters/spaces, might be placeholder
-        const wordCount = content.trim().split(/\s+/).length;
-        if (wordCount <= 3 && /^[A-Za-z\s\/]+$/.test(content)) {
-            return true;
-        }
+		// If it's a short generic phrase (1-3 words) with only letters/spaces, might be placeholder
+		const wordCount = content.trim().split(/\s+/).length;
+		if (wordCount <= 3 && /^[A-Za-z\s/]+$/.test(content)) {
+			return true;
+		}
 
-        return false;
-    };
+		return false;
+	};
 
-    // Replace placeholders with empty string, keep real content
-    text = text.replace(placeholderPattern, (match, content) => {
-        if (isPlaceholder(match, content)) {
-            return ''; // Remove placeholder
-        }
-        return match; // Keep real bracketed content
-    });
+	// Replace placeholders with empty string, keep real content
+	text = text.replace(placeholderPattern, (match, content) => {
+		if (isPlaceholder(match, content)) {
+			return ""; // Remove placeholder
+		}
+		return match; // Keep real bracketed content
+	});
 
-    // Clean up any resulting empty labels (e.g., "Status: " with nothing after)
-    text = text.replace(/^([A-Za-z\s]+):\s*$/gm, ''); // Remove lines that are just "Label: " with nothing
-    text = text.replace(/^([A-Za-z\s]+):\s*,/gm, '$1:'); // Fix "Label: ," patterns
-    text = text.replace(/:\s*\|/g, ':'); // Fix ": |" patterns
-    text = text.replace(/\|\s*\|/g, '|'); // Fix "| |" patterns (double pipes from removed content)
-    text = text.replace(/\|\s*$/gm, ''); // Remove trailing pipes at end of lines
+	// Clean up any resulting empty labels (e.g., "Status: " with nothing after)
+	text = text.replace(/^([A-Za-z\s]+):\s*$/gm, ""); // Remove lines that are just "Label: " with nothing
+	text = text.replace(/^([A-Za-z\s]+):\s*,/gm, "$1:"); // Fix "Label: ," patterns
+	text = text.replace(/:\s*\|/g, ":"); // Fix ": |" patterns
+	text = text.replace(/\|\s*\|/g, "|"); // Fix "| |" patterns (double pipes from removed content)
+	text = text.replace(/\|\s*$/gm, ""); // Remove trailing pipes at end of lines
 
-    // Clean up multiple spaces and empty lines
-    text = text.replace(/\s{2,}/g, ' '); // Multiple spaces to single space
-    text = text.replace(/^\s*\n/gm, ''); // Remove empty lines
+	// Clean up multiple spaces and empty lines
+	text = text.replace(/\s{2,}/g, " "); // Multiple spaces to single space
+	text = text.replace(/^\s*\n/gm, ""); // Remove empty lines
 
-    return text.trim();
+	return text.trim();
 }
 
 /**
  * Helper to log to both console and debug logs array
  */
 function debugLog(message, data = null) {
-    // console.log(message, data || '');
-    if (extensionSettings.debugMode) {
-        addDebugLog(message, data);
-    }
+	// console.log(message, data || '');
+	if (extensionSettings.debugMode) {
+		addDebugLog(message, data);
+	}
 }
 
 /**
@@ -158,66 +189,78 @@ function debugLog(message, data = null) {
  * @returns {{userStats: string|null, infoBox: string|null, characterThoughts: string|null}} Parsed tracker data
  */
 export function parseResponse(response) {
-    debugLog('[RPG Parser] ==================== PARSING AI RESPONSE ====================');
-    debugLog('[RPG Parser] Response Raw:', response);
+	debugLog(
+		"[RPG Parser] ==================== PARSING AI RESPONSE ====================",
+	);
+	debugLog("[RPG Parser] Response Raw:", response);
 
-    // Clean response and find first JSON object
-    let cleanedResponse = response.content.replace(/FORMAT:\s*/gi, '');
-    const startIdx = cleanedResponse.indexOf('{');
-    
-    if (startIdx === -1) {
-        console.warn('[RPG Parser] No JSON structure found in response');
-        return { userStats: null, infoBox: null, characterThoughts: null };
-    }
+	// Clean response and find first JSON object
+	const cleanedResponse = response.content.replace(/FORMAT:\s*/gi, "");
+	const startIdx = cleanedResponse.indexOf("{");
 
-    // Match braces to extract complete JSON object
-    let depth = 1, i = startIdx + 1;
-    let inString = false, escapeNext = false;
+	if (startIdx === -1) {
+		console.warn("[RPG Parser] No JSON structure found in response");
+		return { userStats: null, infoBox: null, characterThoughts: null };
+	}
 
-    while (i < cleanedResponse.length && depth > 0) {
-        const char = cleanedResponse[i];
-        if (escapeNext) {
-            escapeNext = false;
-        } else if (char === '\\') {
-            escapeNext = true;
-        } else if (char === '"') {
-            inString = !inString;
-        } else if (!inString) {
-            if (char === '{') depth++;
-            else if (char === '}') depth--;
-        }
-        i++;
-    }
+	// Match braces to extract complete JSON object
+	let depth = 1,
+		i = startIdx + 1;
+	let inString = false,
+		escapeNext = false;
 
-    // Parse and validate the JSON object
-    const parsed = repairJSON(cleanedResponse.substring(startIdx, i).trim());
-    if (parsed && (parsed.userStats || parsed.infoBox || parsed.characters)) {
-        debugLog('[RPG Parser] Returning unified JSON parse results');
-        
-        // Apply time format conversion if time data exists
-        if (parsed.infoBox?.time && extensionSettings.trackerConfig.infoBox.widgets.time.format !== 'none') {
-            const preference = extensionSettings.trackerConfig.infoBox.widgets.time.format;
-            if (parsed.infoBox.time.start) {
-                parsed.infoBox.time.start = convertTimeFormat(parsed.infoBox.time.start, preference);
-            }
-            if (parsed.infoBox.time.end) {
-                parsed.infoBox.time.end = convertTimeFormat(parsed.infoBox.time.end, preference);
-            }
-            debugLog('[RPG Parser] Applied time format conversion:', preference);
-        }
-        
-        return {
-            userStats: parsed.userStats ? parsed.userStats : null,
-            infoBox: parsed.infoBox ? parsed.infoBox : null,
-            characterThoughts: parsed.characters ? parsed.characters : null
-        };
-    }
+	while (i < cleanedResponse.length && depth > 0) {
+		const char = cleanedResponse[i];
+		if (escapeNext) {
+			escapeNext = false;
+		} else if (char === "\\") {
+			escapeNext = true;
+		} else if (char === '"') {
+			inString = !inString;
+		} else if (!inString) {
+			if (char === "{") depth++;
+			else if (char === "}") depth--;
+		}
+		i++;
+	}
 
-    console.warn('[RPG Parser] No valid JSON structure found in response');
-    return { userStats: null, infoBox: null, characterThoughts: null };
+	// Parse and validate the JSON object
+	const parsed = repairJSON(cleanedResponse.substring(startIdx, i).trim());
+	if (parsed && (parsed.userStats || parsed.infoBox || parsed.characters)) {
+		debugLog("[RPG Parser] Returning unified JSON parse results");
+
+		// Apply time format conversion if time data exists
+		if (
+			parsed.infoBox?.time &&
+			extensionSettings.trackerConfig.infoBox.widgets.time.format !== "none"
+		) {
+			const preference =
+				extensionSettings.trackerConfig.infoBox.widgets.time.format;
+			if (parsed.infoBox.time.start) {
+				parsed.infoBox.time.start = convertTimeFormat(
+					parsed.infoBox.time.start,
+					preference,
+				);
+			}
+			if (parsed.infoBox.time.end) {
+				parsed.infoBox.time.end = convertTimeFormat(
+					parsed.infoBox.time.end,
+					preference,
+				);
+			}
+			debugLog("[RPG Parser] Applied time format conversion:", preference);
+		}
+
+		return {
+			userStats: parsed.userStats ? parsed.userStats : null,
+			infoBox: parsed.infoBox ? parsed.infoBox : null,
+			characterThoughts: parsed.characters ? parsed.characters : null,
+		};
+	}
+
+	console.warn("[RPG Parser] No valid JSON structure found in response");
+	return { userStats: null, infoBox: null, characterThoughts: null };
 } // End parseResponse
-
-
 
 /**
  * Helper: Extract code blocks from text
@@ -225,9 +268,9 @@ export function parseResponse(response) {
  * @returns {Array<string>} Array of code block contents
  */
 export function extractCodeBlocks(text) {
-    const codeBlockRegex = /```([^`]+)```/g;
-    const matches = [...text.matchAll(codeBlockRegex)];
-    return matches.map(match => match[1].trim());
+	const codeBlockRegex = /```([^`]+)```/g;
+	const matches = [...text.matchAll(codeBlockRegex)];
+	return matches.map((match) => match[1].trim());
 }
 
 /**
@@ -236,7 +279,7 @@ export function extractCodeBlocks(text) {
  * @returns {boolean} True if this is a stats section
  */
 export function isStatsSection(content) {
-    return content.match(/Stats\s*\n\s*---/i) !== null;
+	return content.match(/Stats\s*\n\s*---/i) !== null;
 }
 
 /**
@@ -245,7 +288,7 @@ export function isStatsSection(content) {
  * @returns {boolean} True if this is an info box section
  */
 export function isInfoBoxSection(content) {
-    return content.match(/Info Box\s*\n\s*---/i) !== null;
+	return content.match(/Info Box\s*\n\s*---/i) !== null;
 }
 
 /**
@@ -254,5 +297,8 @@ export function isInfoBoxSection(content) {
  * @returns {boolean} True if this is a character thoughts section
  */
 export function isCharacterThoughtsSection(content) {
-    return content.match(/Present Characters\s*\n\s*---/i) !== null || content.includes(" | ");
+	return (
+		content.match(/Present Characters\s*\n\s*---/i) !== null ||
+		content.includes(" | ")
+	);
 }

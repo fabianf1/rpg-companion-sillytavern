@@ -3,43 +3,53 @@
  * Handles all user interactions with the inventory v2 system
  */
 
-import { getContext } from '../../../../../../extensions.js';
-import { extensionSettings } from '../../core/state.js';
-import { saveSettings, saveChatData, updateMessageSwipeData } from '../../core/persistence.js';
-import { buildInventorySummary } from '../generation/promptBuilder.js';
-import { getTrackerDataForContext } from '../generation/promptBuilder.js';
-import { buildUserStatsText } from '../rendering/userStats.js';
-import { renderInventory, getLocationId } from '../rendering/inventory.js';
-import { sanitizeLocationName, sanitizeItemName } from '../../utils/security.js';
-import { removeInventoryItemLock } from '../generation/lockManager.js';
+import { getContext } from "../../../../../../extensions.js";
+import {
+	saveChatData,
+	saveSettings,
+	updateMessageSwipeData,
+} from "../../core/persistence.js";
+import { extensionSettings } from "../../core/state.js";
+import {
+	sanitizeItemName,
+	sanitizeLocationName,
+} from "../../utils/security.js";
+import { removeInventoryItemLock } from "../generation/lockManager.js";
+import {
+	buildInventorySummary,
+	getTrackerDataForContext,
+} from "../generation/promptBuilder.js";
+import { getLocationId, renderInventory } from "../rendering/inventory.js";
+import { buildUserStatsText } from "../rendering/userStats.js";
 
 /**
  * Helper to get inventory from tracker data (handles both flat and object formats)
  * @returns {Object} Inventory object
  */
 function getInventoryFromTracker() {
-    const trackerData = getTrackerDataForContext('userStats');
-    if (!trackerData) return { onPerson: [], clothing: [], stored: {}, assets: {} };
-    
-    // Get inventory from tracker data
-    if (trackerData.inventory) {
-        return trackerData.inventory;
-    }
-    
-    // Try object format (onPerson, clothing, stored, assets)
-    return {
-        onPerson: trackerData.onPerson || [],
-        clothing: trackerData.clothing || [],
-        stored: trackerData.stored || {},
-        assets: trackerData.assets || {}
-    };
+	const trackerData = getTrackerDataForContext("userStats");
+	if (!trackerData)
+		return { onPerson: [], clothing: [], stored: {}, assets: {} };
+
+	// Get inventory from tracker data
+	if (trackerData.inventory) {
+		return trackerData.inventory;
+	}
+
+	// Try object format (onPerson, clothing, stored, assets)
+	return {
+		onPerson: trackerData.onPerson || [],
+		clothing: trackerData.clothing || [],
+		stored: trackerData.stored || {},
+		assets: trackerData.assets || {},
+	};
 }
 
 /**
  * Current active sub-tab for inventory UI
  * @type {string}
  */
-let currentActiveSubTab = 'onPerson';
+let currentActiveSubTab = "onPerson";
 
 /**
  * Array of collapsed storage location names
@@ -51,11 +61,11 @@ let collapsedLocations = [];
  * Tracks which inline forms are currently open
  * @type {Object}
  */
-let openForms = {
-    addLocation: false,
-    addItemOnPerson: false,
-    addItemStored: {}, // { [locationName]: true/false }
-    addItemAssets: false
+const openForms = {
+	addLocation: false,
+	addItemOnPerson: false,
+	addItemStored: {}, // { [locationName]: true/false }
+	addItemAssets: false,
 };
 
 /**
@@ -64,32 +74,32 @@ let openForms = {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function showAddItemForm(field, location) {
-    let formId;
-    let inputId;
+	let formId;
+	let inputId;
 
-    if (field === 'stored') {
-        const locationId = getLocationId(location);
-        formId = `rpg-add-item-form-stored-${locationId}`;
-        inputId = `.rpg-location-item-input[data-location="${location}"]`;
-        // Track in state
-        if (!openForms.addItemStored) openForms.addItemStored = {};
-        openForms.addItemStored[location] = true;
-    } else {
-        formId = `rpg-add-item-form-${field}`;
-        inputId = `#rpg-new-item-${field}`;
-        // Track in state
-        if (field === 'onPerson') {
-            openForms.addItemOnPerson = true;
-        } else if (field === 'assets') {
-            openForms.addItemAssets = true;
-        }
-    }
+	if (field === "stored") {
+		const locationId = getLocationId(location);
+		formId = `rpg-add-item-form-stored-${locationId}`;
+		inputId = `.rpg-location-item-input[data-location="${location}"]`;
+		// Track in state
+		if (!openForms.addItemStored) openForms.addItemStored = {};
+		openForms.addItemStored[location] = true;
+	} else {
+		formId = `rpg-add-item-form-${field}`;
+		inputId = `#rpg-new-item-${field}`;
+		// Track in state
+		if (field === "onPerson") {
+			openForms.addItemOnPerson = true;
+		} else if (field === "assets") {
+			openForms.addItemAssets = true;
+		}
+	}
 
-    const form = $(`#${formId}`);
-    const input = $(inputId);
+	const form = $(`#${formId}`);
+	const input = $(inputId);
 
-    form.show();
-    input.val('').focus();
+	form.show();
+	input.val("").focus();
 }
 
 /**
@@ -98,33 +108,33 @@ export function showAddItemForm(field, location) {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function hideAddItemForm(field, location) {
-    let formId;
-    let inputId;
+	let formId;
+	let inputId;
 
-    if (field === 'stored') {
-        const locationId = getLocationId(location);
-        formId = `rpg-add-item-form-stored-${locationId}`;
-        inputId = `.rpg-location-item-input[data-location="${location}"]`;
-        // Clear from state
-        if (openForms.addItemStored && openForms.addItemStored[location]) {
-            delete openForms.addItemStored[location];
-        }
-    } else {
-        formId = `rpg-add-item-form-${field}`;
-        inputId = `#rpg-new-item-${field}`;
-        // Clear from state
-        if (field === 'onPerson') {
-            openForms.addItemOnPerson = false;
-        } else if (field === 'assets') {
-            openForms.addItemAssets = false;
-        }
-    }
+	if (field === "stored") {
+		const locationId = getLocationId(location);
+		formId = `rpg-add-item-form-stored-${locationId}`;
+		inputId = `.rpg-location-item-input[data-location="${location}"]`;
+		// Clear from state
+		if (openForms.addItemStored && openForms.addItemStored[location]) {
+			delete openForms.addItemStored[location];
+		}
+	} else {
+		formId = `rpg-add-item-form-${field}`;
+		inputId = `#rpg-new-item-${field}`;
+		// Clear from state
+		if (field === "onPerson") {
+			openForms.addItemOnPerson = false;
+		} else if (field === "assets") {
+			openForms.addItemAssets = false;
+		}
+	}
 
-    const form = $(`#${formId}`);
-    const input = $(inputId);
+	const form = $(`#${formId}`);
+	const input = $(inputId);
 
-    form.hide();
-    input.val('');
+	form.hide();
+	input.val("");
 }
 
 /**
@@ -133,68 +143,68 @@ export function hideAddItemForm(field, location) {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function saveAddItem(field, location) {
-    const inventory = getInventoryFromTracker();
-    console.log('[RPG Companion] DEBUG inventory before adding item:', inventory);
-    let inputId;
+	const inventory = getInventoryFromTracker();
+	console.log("[RPG Companion] DEBUG inventory before adding item:", inventory);
+	let inputId;
 
-    if (field === 'stored') {
-        inputId = `.rpg-location-item-input[data-location="${location}"]`;
-    } else {
-        inputId = `#rpg-new-item-${field}`;
-    }
+	if (field === "stored") {
+		inputId = `.rpg-location-item-input[data-location="${location}"]`;
+	} else {
+		inputId = `#rpg-new-item-${field}`;
+	}
 
-    const input = $(inputId);
-    const rawItemName = input.val().trim();
+	const input = $(inputId);
+	const rawItemName = input.val().trim();
 
-    if (!rawItemName) {
-        hideAddItemForm(field, location);
-        return;
-    }
+	if (!rawItemName) {
+		hideAddItemForm(field, location);
+		return;
+	}
 
-    // Security: Validate and sanitize item name
-    const itemName = sanitizeItemName(rawItemName);
-    if (!itemName) {
-        alert('Invalid item name.');
-        hideAddItemForm(field, location);
-        return;
-    }
+	// Security: Validate and sanitize item name
+	const itemName = sanitizeItemName(rawItemName);
+	if (!itemName) {
+		alert("Invalid item name.");
+		hideAddItemForm(field, location);
+		return;
+	}
 
-    // Get current items as array, add new one
-    let currentItems;
-    if (field === 'stored') {
-        currentItems = inventory.stored[location] || [];
-    } else {
-        currentItems = inventory[field] || [];
-    }
+	// Get current items as array, add new one
+	let currentItems;
+	if (field === "stored") {
+		currentItems = inventory.stored[location] || [];
+	} else {
+		currentItems = inventory[field] || [];
+	}
 
-    // Ensure we have an array
-    if (!Array.isArray(currentItems)) {
-        currentItems = [];
-    }
+	// Ensure we have an array
+	if (!Array.isArray(currentItems)) {
+		currentItems = [];
+	}
 
-    // Add new item as object
-    currentItems.push({ name: itemName, quantity: 1 });
+	// Add new item as object
+	currentItems.push({ name: itemName, quantity: 1 });
 
-    // Save back to inventory as array
-    if (field === 'stored') {
-        inventory.stored[location] = currentItems;
-    } else {
-        inventory[field] = currentItems;
-    }
-    
-    console.log('[RPG Companion] DEBUG inventory after adding item:', inventory);
-    
-    // Update tracker data with modified inventory
-    const trackerData = getTrackerDataForContext('userStats') || {};
-    trackerData.inventory = inventory;
-    updateMessageSwipeData('userStats', trackerData);
-    
-    // Save to swipe store directly
-    saveChatData();
+	// Save back to inventory as array
+	if (field === "stored") {
+		inventory.stored[location] = currentItems;
+	} else {
+		inventory[field] = currentItems;
+	}
 
-    // Hide form and re-render
-    hideAddItemForm(field, location);
-    renderInventory();
+	console.log("[RPG Companion] DEBUG inventory after adding item:", inventory);
+
+	// Update tracker data with modified inventory
+	const trackerData = getTrackerDataForContext("userStats") || {};
+	trackerData.inventory = inventory;
+	updateMessageSwipeData("userStats", trackerData);
+
+	// Save to swipe store directly
+	saveChatData();
+
+	// Hide form and re-render
+	hideAddItemForm(field, location);
+	renderInventory();
 }
 
 /**
@@ -204,122 +214,125 @@ export function saveAddItem(field, location) {
  * @param {string} [location] - Location name (required for 'stored' field)
  */
 export function removeItem(field, itemIndex, location) {
-    const inventory = getInventoryFromTracker();
+	const inventory = getInventoryFromTracker();
 
-    // console.log('[RPG Companion] DEBUG removeItem called:', { field, itemIndex, location });
+	// console.log('[RPG Companion] DEBUG removeItem called:', { field, itemIndex, location });
 
-    // Get current items as array
-    let currentItems;
-    if (field === 'stored') {
-        currentItems = inventory.stored[location] || [];
-    } else {
-        currentItems = inventory[field] || [];
-    }
+	// Get current items as array
+	let currentItems;
+	if (field === "stored") {
+		currentItems = inventory.stored[location] || [];
+	} else {
+		currentItems = inventory[field] || [];
+	}
 
-    // Ensure we have an array
-    if (!Array.isArray(currentItems)) {
-        currentItems = [];
-    }
+	// Ensure we have an array
+	if (!Array.isArray(currentItems)) {
+		currentItems = [];
+	}
 
-    // console.log('[RPG Companion] DEBUG items array before removal:', currentItems);
+	// console.log('[RPG Companion] DEBUG items array before removal:', currentItems);
 
-    // Get item name for lock removal before we delete it
-    const item = currentItems[itemIndex];
-    const itemName = typeof item === 'string' ? item : (item.name || item.item || '');
-    currentItems.splice(itemIndex, 1); // Remove item at index
-    // console.log('[RPG Companion] DEBUG items array after removal:', currentItems);
+	// Get item name for lock removal before we delete it
+	const item = currentItems[itemIndex];
+	const itemName =
+		typeof item === "string" ? item : item.name || item.item || "";
+	currentItems.splice(itemIndex, 1); // Remove item at index
+	// console.log('[RPG Companion] DEBUG items array after removal:', currentItems);
 
-    // Save back to inventory as array
-    if (field === 'stored') {
-        inventory.stored[location] = currentItems;
-    } else {
-        inventory[field] = currentItems;
-    }
+	// Save back to inventory as array
+	if (field === "stored") {
+		inventory.stored[location] = currentItems;
+	} else {
+		inventory[field] = currentItems;
+	}
 
-    // console.log('[RPG Companion] DEBUG inventory after save:', inventory);
+	// console.log('[RPG Companion] DEBUG inventory after save:', inventory);
 
-    // Remove lock for this item if it exists
-    removeInventoryItemLock('userStats', field, itemName, location);
+	// Remove lock for this item if it exists
+	removeInventoryItemLock("userStats", field, itemName, location);
 
-    // Update tracker data with modified inventory
-    const trackerData = getTrackerDataForContext('userStats') || {};
-    trackerData.inventory = inventory;
-    updateMessageSwipeData('userStats', trackerData);
-    
-    // Save to swipe store directly
-    saveChatData();
+	// Update tracker data with modified inventory
+	const trackerData = getTrackerDataForContext("userStats") || {};
+	trackerData.inventory = inventory;
+	updateMessageSwipeData("userStats", trackerData);
 
-    // Re-render
-    renderInventory();
-}/**
+	// Save to swipe store directly
+	saveChatData();
+
+	// Re-render
+	renderInventory();
+} /**
  * Shows the inline form for adding a new storage location.
  */
 export function showAddLocationForm() {
-    const form = $('#rpg-add-location-form');
-    const input = $('#rpg-new-location-name');
+	const form = $("#rpg-add-location-form");
+	const input = $("#rpg-new-location-name");
 
-    // Track in state
-    openForms.addLocation = true;
+	// Track in state
+	openForms.addLocation = true;
 
-    form.show();
-    input.val('').focus();
+	form.show();
+	input.val("").focus();
 }
 
 /**
  * Hides the inline form for adding a new storage location.
  */
 export function hideAddLocationForm() {
-    const form = $('#rpg-add-location-form');
-    const input = $('#rpg-new-location-name');
+	const form = $("#rpg-add-location-form");
+	const input = $("#rpg-new-location-name");
 
-    // Clear from state
-    openForms.addLocation = false;
+	// Clear from state
+	openForms.addLocation = false;
 
-    form.hide();
-    input.val('');
+	form.hide();
+	input.val("");
 }
 
 /**
  * Saves a new storage location from the inline form.
  */
 export function saveAddLocation() {
-    const inventory = getInventoryFromTracker();
-    const input = $('#rpg-new-location-name');
-    const rawLocationName = input.val().trim();
+	const inventory = getInventoryFromTracker();
+	const input = $("#rpg-new-location-name");
+	const rawLocationName = input.val().trim();
 
-    if (!rawLocationName) {
-        hideAddLocationForm();
-        return;
-    }
+	if (!rawLocationName) {
+		hideAddLocationForm();
+		return;
+	}
 
-    // Security: Validate and sanitize location name
-    const locationName = sanitizeLocationName(rawLocationName);
-    if (!locationName) {
-        alert('Invalid location name. Avoid special names like "__proto__" or "constructor".');
-        hideAddLocationForm();
-        return;
-    }
+	// Security: Validate and sanitize location name
+	const locationName = sanitizeLocationName(rawLocationName);
+	if (!locationName) {
+		alert(
+			'Invalid location name. Avoid special names like "__proto__" or "constructor".',
+		);
+		hideAddLocationForm();
+		return;
+	}
 
-    // Check for duplicate
-    if (inventory.stored[locationName]) {
-        alert(`Storage location "${locationName}" already exists.`);
-        return;
-    }
+	// Check for duplicate
+	if (inventory.stored[locationName]) {
+		alert(`Storage location "${locationName}" already exists.`);
+		return;
+	}
 
-    // Create new location with empty array
-    inventory.stored[locationName] = [];
+	// Create new location with empty array
+	inventory.stored[locationName] = [];
 
-    // Update tracker data with modified inventory
-    const trackerData = getTrackerDataForContext('userStats') || {};
-    trackerData.inventory = inventory;
-    updateMessageSwipeData('userStats', trackerData);
-    
-    // Save to swipe store directly
-    saveChatData();
+	// Update tracker data with modified inventory
+	const trackerData = getTrackerDataForContext("userStats") || {};
+	trackerData.inventory = inventory;
+	updateMessageSwipeData("userStats", trackerData);
 
-    // Hide form and re-render
-    hideAddLocationForm();
-    renderInventory();
+	// Save to swipe store directly
+	saveChatData();
+
+	// Hide form and re-render
+	hideAddLocationForm();
+	renderInventory();
 }
 
 /**
@@ -327,18 +340,18 @@ export function saveAddLocation() {
  * @param {string} locationName - Name of location to remove
  */
 export function showRemoveConfirmation(locationName) {
-    // console.log('[RPG Companion] DEBUG showRemoveConfirmation called for:', locationName);
-    const confirmId = `rpg-remove-confirm-${getLocationId(locationName)}`;
-    // console.log('[RPG Companion] DEBUG confirmId:', confirmId);
-    const confirmUI = $(`#${confirmId}`);
-    // console.log('[RPG Companion] DEBUG confirmUI element found:', confirmUI.length);
+	// console.log('[RPG Companion] DEBUG showRemoveConfirmation called for:', locationName);
+	const confirmId = `rpg-remove-confirm-${getLocationId(locationName)}`;
+	// console.log('[RPG Companion] DEBUG confirmId:', confirmId);
+	const confirmUI = $(`#${confirmId}`);
+	// console.log('[RPG Companion] DEBUG confirmUI element found:', confirmUI.length);
 
-    if (confirmUI.length > 0) {
-        confirmUI.show();
-        // console.log('[RPG Companion] DEBUG confirmation shown');
-    } else {
-        console.warn('[RPG Companion] DEBUG confirmation element not found!');
-    }
+	if (confirmUI.length > 0) {
+		confirmUI.show();
+		// console.log('[RPG Companion] DEBUG confirmation shown');
+	} else {
+		console.warn("[RPG Companion] DEBUG confirmation element not found!");
+	}
 }
 
 /**
@@ -346,12 +359,12 @@ export function showRemoveConfirmation(locationName) {
  * @param {string} locationName - Name of location
  */
 export function hideRemoveConfirmation(locationName) {
-    const confirmId = `rpg-remove-confirm-${getLocationId(locationName)}`;
-    const confirmUI = $(`#${confirmId}`);
+	const confirmId = `rpg-remove-confirm-${getLocationId(locationName)}`;
+	const confirmUI = $(`#${confirmId}`);
 
-    if (confirmUI.length > 0) {
-        confirmUI.hide();
-    }
+	if (confirmUI.length > 0) {
+		confirmUI.hide();
+	}
 }
 
 /**
@@ -359,62 +372,63 @@ export function hideRemoveConfirmation(locationName) {
  * @param {string} locationName - Name of location to remove
  */
 export function confirmRemoveLocation(locationName) {
-    // console.log('[RPG Companion] DEBUG confirmRemoveLocation called for:', locationName);
-    const inventory = getInventoryFromTracker();
-    // console.log('[RPG Companion] DEBUG inventory.stored before deletion:', inventory.stored);
+	// console.log('[RPG Companion] DEBUG confirmRemoveLocation called for:', locationName);
+	const inventory = getInventoryFromTracker();
+	// console.log('[RPG Companion] DEBUG inventory.stored before deletion:', inventory.stored);
 
-    // Remove locks for all items in this location before deleting the location
-    if (inventory.stored && inventory.stored[locationName]) {
-        const itemsInLocation = inventory.stored[locationName];
-        itemsInLocation.forEach(item => {
-            const itemName = typeof item === 'string' ? item : (item.name || item.item || '');
-            if (itemName) {
-                removeInventoryItemLock('userStats', 'stored', itemName, locationName);
-            }
-        });
-    }
+	// Remove locks for all items in this location before deleting the location
+	if (inventory.stored && inventory.stored[locationName]) {
+		const itemsInLocation = inventory.stored[locationName];
+		itemsInLocation.forEach((item) => {
+			const itemName =
+				typeof item === "string" ? item : item.name || item.item || "";
+			if (itemName) {
+				removeInventoryItemLock("userStats", "stored", itemName, locationName);
+			}
+		});
+	}
 
-    delete inventory.stored[locationName];
-    // console.log('[RPG Companion] DEBUG inventory.stored after deletion:', inventory.stored);
+	delete inventory.stored[locationName];
+	// console.log('[RPG Companion] DEBUG inventory.stored after deletion:', inventory.stored);
 
-    // Remove from collapsed list if present
-    const index = collapsedLocations.indexOf(locationName);
-    if (index > -1) {
-        collapsedLocations.splice(index, 1);
-    }
+	// Remove from collapsed list if present
+	const index = collapsedLocations.indexOf(locationName);
+	if (index > -1) {
+		collapsedLocations.splice(index, 1);
+	}
 
-    // Update tracker data with modified inventory
-    const trackerData = getTrackerDataForContext('userStats') || {};
-    trackerData.inventory = inventory;
-    updateMessageSwipeData('userStats', trackerData);
-    
-    // Save to swipe store directly
-    saveChatData();
+	// Update tracker data with modified inventory
+	const trackerData = getTrackerDataForContext("userStats") || {};
+	trackerData.inventory = inventory;
+	updateMessageSwipeData("userStats", trackerData);
 
-    // Re-render inventory UI
-    // console.log('[RPG Companion] DEBUG calling renderInventory()');
-    renderInventory();
-}/**
+	// Save to swipe store directly
+	saveChatData();
+
+	// Re-render inventory UI
+	// console.log('[RPG Companion] DEBUG calling renderInventory()');
+	renderInventory();
+} /**
  * Toggles the collapsed state of a storage location section.
  * @param {string} locationName - Name of location to toggle
  */
 export function toggleLocationCollapse(locationName) {
-    const index = collapsedLocations.indexOf(locationName);
+	const index = collapsedLocations.indexOf(locationName);
 
-    if (index > -1) {
-        // Currently collapsed, expand it
-        collapsedLocations.splice(index, 1);
-    } else {
-        // Currently expanded, collapse it
-        collapsedLocations.push(locationName);
-    }
+	if (index > -1) {
+		// Currently collapsed, expand it
+		collapsedLocations.splice(index, 1);
+	} else {
+		// Currently expanded, collapse it
+		collapsedLocations.push(locationName);
+	}
 
-    // Save collapsed state to settings
-    extensionSettings.collapsedInventoryLocations = collapsedLocations;
-    saveSettings();
+	// Save collapsed state to settings
+	extensionSettings.collapsedInventoryLocations = collapsedLocations;
+	saveSettings();
 
-    // Re-render inventory UI
-    renderInventory();
+	// Re-render inventory UI
+	renderInventory();
 }
 
 /**
@@ -422,10 +436,10 @@ export function toggleLocationCollapse(locationName) {
  * @param {string} tabName - Name of the tab ('onPerson', 'stored', 'assets')
  */
 export function switchInventoryTab(tabName) {
-    currentActiveSubTab = tabName;
+	currentActiveSubTab = tabName;
 
-    // Re-render inventory UI
-    renderInventory();
+	// Re-render inventory UI
+	renderInventory();
 }
 
 /**
@@ -434,23 +448,23 @@ export function switchInventoryTab(tabName) {
  * @param {string} mode - View mode ('list' or 'grid')
  */
 export function switchViewMode(field, mode) {
-    // Ensure inventoryViewModes exists
-    if (!extensionSettings.inventoryViewModes) {
-        extensionSettings.inventoryViewModes = {
-            onPerson: 'list',
-            stored: 'list',
-            assets: 'list'
-        };
-    }
+	// Ensure inventoryViewModes exists
+	if (!extensionSettings.inventoryViewModes) {
+		extensionSettings.inventoryViewModes = {
+			onPerson: "list",
+			stored: "list",
+			assets: "list",
+		};
+	}
 
-    // Update view mode
-    extensionSettings.inventoryViewModes[field] = mode;
+	// Update view mode
+	extensionSettings.inventoryViewModes[field] = mode;
 
-    // Save settings
-    saveSettings();
+	// Save settings
+	saveSettings();
 
-    // Re-render inventory UI
-    renderInventory();
+	// Re-render inventory UI
+	renderInventory();
 }
 
 /**
@@ -458,127 +472,175 @@ export function switchViewMode(field, mode) {
  * Uses event delegation to handle dynamically created elements.
  */
 export function initInventoryEventListeners() {
-    // Load collapsed state from settings
-    if (extensionSettings.collapsedInventoryLocations) {
-        collapsedLocations = extensionSettings.collapsedInventoryLocations;
-    }
+	// Load collapsed state from settings
+	if (extensionSettings.collapsedInventoryLocations) {
+		collapsedLocations = extensionSettings.collapsedInventoryLocations;
+	}
 
-    // Add item button - shows inline form
-    $(document).on('click', '.rpg-inventory-add-btn[data-action="add-item"]', function(e) {
-        e.preventDefault();
-        const field = $(this).data('field');
-        const location = $(this).data('location');
-        showAddItemForm(field, location);
-    });
+	// Add item button - shows inline form
+	$(document).on(
+		"click",
+		'.rpg-inventory-add-btn[data-action="add-item"]',
+		function (e) {
+			e.preventDefault();
+			const field = $(this).data("field");
+			const location = $(this).data("location");
+			showAddItemForm(field, location);
+		},
+	);
 
-    // Add item inline form - save button
-    $(document).on('click', '.rpg-inline-btn[data-action="save-add-item"]', function(e) {
-        e.preventDefault();
-        const field = $(this).data('field');
-        const location = $(this).data('location');
-        saveAddItem(field, location);
-    });
+	// Add item inline form - save button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="save-add-item"]',
+		function (e) {
+			e.preventDefault();
+			const field = $(this).data("field");
+			const location = $(this).data("location");
+			saveAddItem(field, location);
+		},
+	);
 
-    // Add item inline form - cancel button
-    $(document).on('click', '.rpg-inline-btn[data-action="cancel-add-item"]', function(e) {
-        e.preventDefault();
-        const field = $(this).data('field');
-        const location = $(this).data('location');
-        hideAddItemForm(field, location);
-    });
+	// Add item inline form - cancel button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="cancel-add-item"]',
+		function (e) {
+			e.preventDefault();
+			const field = $(this).data("field");
+			const location = $(this).data("location");
+			hideAddItemForm(field, location);
+		},
+	);
 
-    // Add item inline form - enter key to save
-    $(document).on('keypress', '.rpg-inline-input', function(e) {
-        if (e.which === 13) { // Enter key
-            e.preventDefault();
-            const $btn = $(this).closest('.rpg-inline-form').find('[data-action="save-add-item"]');
-            if ($btn.length > 0) {
-                const field = $btn.data('field');
-                const location = $btn.data('location');
-                saveAddItem(field, location);
-            }
-        }
-    });
+	// Add item inline form - enter key to save
+	$(document).on("keypress", ".rpg-inline-input", function (e) {
+		if (e.which === 13) {
+			// Enter key
+			e.preventDefault();
+			const $btn = $(this)
+				.closest(".rpg-inline-form")
+				.find('[data-action="save-add-item"]');
+			if ($btn.length > 0) {
+				const field = $btn.data("field");
+				const location = $btn.data("location");
+				saveAddItem(field, location);
+			}
+		}
+	});
 
-    // Remove item button
-    $(document).on('click', '.rpg-item-remove[data-action="remove-item"]', function(e) {
-        e.preventDefault();
-        const field = $(this).data('field');
-        const itemIndex = parseInt($(this).data('index'));
-        const location = $(this).data('location');
-        removeItem(field, itemIndex, location);
-    });
+	// Remove item button
+	$(document).on(
+		"click",
+		'.rpg-item-remove[data-action="remove-item"]',
+		function (e) {
+			e.preventDefault();
+			const field = $(this).data("field");
+			const itemIndex = parseInt($(this).data("index"));
+			const location = $(this).data("location");
+			removeItem(field, itemIndex, location);
+		},
+	);
 
-    // Add location button - shows inline form
-    $(document).on('click', '.rpg-inventory-add-btn[data-action="add-location"]', function(e) {
-        e.preventDefault();
-        showAddLocationForm();
-    });
+	// Add location button - shows inline form
+	$(document).on(
+		"click",
+		'.rpg-inventory-add-btn[data-action="add-location"]',
+		(e) => {
+			e.preventDefault();
+			showAddLocationForm();
+		},
+	);
 
-    // Add location inline form - save button
-    $(document).on('click', '.rpg-inline-btn[data-action="save-add-location"]', function(e) {
-        e.preventDefault();
-        saveAddLocation();
-    });
+	// Add location inline form - save button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="save-add-location"]',
+		(e) => {
+			e.preventDefault();
+			saveAddLocation();
+		},
+	);
 
-    // Add location inline form - cancel button
-    $(document).on('click', '.rpg-inline-btn[data-action="cancel-add-location"]', function(e) {
-        e.preventDefault();
-        hideAddLocationForm();
-    });
+	// Add location inline form - cancel button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="cancel-add-location"]',
+		(e) => {
+			e.preventDefault();
+			hideAddLocationForm();
+		},
+	);
 
-    // Add location inline form - enter key to save
-    $(document).on('keypress', '#rpg-new-location-name', function(e) {
-        if (e.which === 13) { // Enter key
-            e.preventDefault();
-            saveAddLocation();
-        }
-    });
+	// Add location inline form - enter key to save
+	$(document).on("keypress", "#rpg-new-location-name", (e) => {
+		if (e.which === 13) {
+			// Enter key
+			e.preventDefault();
+			saveAddLocation();
+		}
+	});
 
-    // Remove location button - shows inline confirmation
-    $(document).on('click', '.rpg-inventory-remove-btn[data-action="remove-location"]', function(e) {
-        e.preventDefault();
-        const location = $(this).data('location');
-        showRemoveConfirmation(location);
-    });
+	// Remove location button - shows inline confirmation
+	$(document).on(
+		"click",
+		'.rpg-inventory-remove-btn[data-action="remove-location"]',
+		function (e) {
+			e.preventDefault();
+			const location = $(this).data("location");
+			showRemoveConfirmation(location);
+		},
+	);
 
-    // Remove location inline confirmation - confirm button
-    $(document).on('click', '.rpg-inline-btn[data-action="confirm-remove-location"]', function(e) {
-        e.preventDefault();
-        const location = $(this).data('location');
-        confirmRemoveLocation(location);
-    });
+	// Remove location inline confirmation - confirm button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="confirm-remove-location"]',
+		function (e) {
+			e.preventDefault();
+			const location = $(this).data("location");
+			confirmRemoveLocation(location);
+		},
+	);
 
-    // Remove location inline confirmation - cancel button
-    $(document).on('click', '.rpg-inline-btn[data-action="cancel-remove-location"]', function(e) {
-        e.preventDefault();
-        const location = $(this).data('location');
-        hideRemoveConfirmation(location);
-    });
+	// Remove location inline confirmation - cancel button
+	$(document).on(
+		"click",
+		'.rpg-inline-btn[data-action="cancel-remove-location"]',
+		function (e) {
+			e.preventDefault();
+			const location = $(this).data("location");
+			hideRemoveConfirmation(location);
+		},
+	);
 
-    // Collapse toggle buttons
-    $(document).on('click', '.rpg-storage-toggle', function(e) {
-        e.preventDefault();
-        const location = $(this).data('location');
-        toggleLocationCollapse(location);
-    });
+	// Collapse toggle buttons
+	$(document).on("click", ".rpg-storage-toggle", function (e) {
+		e.preventDefault();
+		const location = $(this).data("location");
+		toggleLocationCollapse(location);
+	});
 
-    // Sub-tab switching
-    $(document).on('click', '.rpg-inventory-subtab', function(e) {
-        e.preventDefault();
-        const tab = $(this).data('tab');
-        switchInventoryTab(tab);
-    });
+	// Sub-tab switching
+	$(document).on("click", ".rpg-inventory-subtab", function (e) {
+		e.preventDefault();
+		const tab = $(this).data("tab");
+		switchInventoryTab(tab);
+	});
 
-    // View mode switching
-    $(document).on('click', '.rpg-view-btn[data-action="switch-view"]', function(e) {
-        e.preventDefault();
-        const field = $(this).data('field');
-        const view = $(this).data('view');
-        switchViewMode(field, view);
-    });
+	// View mode switching
+	$(document).on(
+		"click",
+		'.rpg-view-btn[data-action="switch-view"]',
+		function (e) {
+			e.preventDefault();
+			const field = $(this).data("field");
+			const view = $(this).data("view");
+			switchViewMode(field, view);
+		},
+	);
 
-    // console.log('[RPG Companion] Inventory event listeners initialized');
+	// console.log('[RPG Companion] Inventory event listeners initialized');
 }
 
 /**
@@ -586,10 +648,10 @@ export function initInventoryEventListeners() {
  * @returns {Object} Options object with activeSubTab and collapsedLocations
  */
 export function getInventoryRenderOptions() {
-    return {
-        activeSubTab: currentActiveSubTab,
-        collapsedLocations
-    };
+	return {
+		activeSubTab: currentActiveSubTab,
+		collapsedLocations,
+	};
 }
 
 /**
@@ -598,60 +660,60 @@ export function getInventoryRenderOptions() {
  * Also cleans up orphaned form states for deleted locations (Bug #3 fix).
  */
 export function restoreFormStates() {
-    // Restore add location form
-    if (openForms.addLocation) {
-        const form = $('#rpg-add-location-form');
-        const input = $('#rpg-new-location-name');
-        if (form.length > 0) {
-            form.show();
-            // Don't refocus to avoid disrupting user interaction
-        }
-    }
+	// Restore add location form
+	if (openForms.addLocation) {
+		const form = $("#rpg-add-location-form");
+		const input = $("#rpg-new-location-name");
+		if (form.length > 0) {
+			form.show();
+			// Don't refocus to avoid disrupting user interaction
+		}
+	}
 
-    // Restore add item on person form
-    if (openForms.addItemOnPerson) {
-        const form = $('#rpg-add-item-form-onPerson');
-        const input = $('#rpg-new-item-onPerson');
-        if (form.length > 0) {
-            form.show();
-        }
-    }
+	// Restore add item on person form
+	if (openForms.addItemOnPerson) {
+		const form = $("#rpg-add-item-form-onPerson");
+		const input = $("#rpg-new-item-onPerson");
+		if (form.length > 0) {
+			form.show();
+		}
+	}
 
-    // Restore add item assets form
-    if (openForms.addItemAssets) {
-        const form = $('#rpg-add-item-form-assets');
-        const input = $('#rpg-new-item-assets');
-        if (form.length > 0) {
-            form.show();
-        }
-    }
+	// Restore add item assets form
+	if (openForms.addItemAssets) {
+		const form = $("#rpg-add-item-form-assets");
+		const input = $("#rpg-new-item-assets");
+		if (form.length > 0) {
+			form.show();
+		}
+	}
 
-    // Restore add item stored forms (for each location)
-    // Clean up orphaned states for deleted locations (Bug #3 fix)
-    if (openForms.addItemStored && typeof openForms.addItemStored === 'object') {
-        const inventory = getInventoryFromTracker();
-        const locationsToDelete = [];
+	// Restore add item stored forms (for each location)
+	// Clean up orphaned states for deleted locations (Bug #3 fix)
+	if (openForms.addItemStored && typeof openForms.addItemStored === "object") {
+		const inventory = getInventoryFromTracker();
+		const locationsToDelete = [];
 
-        for (const location in openForms.addItemStored) {
-            if (openForms.addItemStored[location]) {
-                // Check if location still exists in inventory
-                if (inventory?.stored && inventory.stored.hasOwnProperty(location)) {
-                    // Location exists, restore form
-                    const locationId = location.replace(/\s+/g, '-');
-                    const form = $(`#rpg-add-item-form-stored-${locationId}`);
-                    if (form.length > 0) {
-                        form.show();
-                    }
-                } else {
-                    // Location was deleted, mark for cleanup
-                    locationsToDelete.push(location);
-                }
-            }
-        }
+		for (const location in openForms.addItemStored) {
+			if (openForms.addItemStored[location]) {
+				// Check if location still exists in inventory
+				if (inventory?.stored && Object.hasOwn(inventory.stored, location)) {
+					// Location exists, restore form
+					const locationId = location.replace(/\s+/g, "-");
+					const form = $(`#rpg-add-item-form-stored-${locationId}`);
+					if (form.length > 0) {
+						form.show();
+					}
+				} else {
+					// Location was deleted, mark for cleanup
+					locationsToDelete.push(location);
+				}
+			}
+		}
 
-        // Clean up orphaned form states
-        for (const location of locationsToDelete) {
-            delete openForms.addItemStored[location];
-        }
-    }
+		// Clean up orphaned form states
+		for (const location of locationsToDelete) {
+			delete openForms.addItemStored[location];
+		}
+	}
 }

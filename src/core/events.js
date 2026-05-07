@@ -3,7 +3,7 @@
  * Wrapper for SillyTavern event system
  */
 
-import { eventSource, event_types } from '../../../../../../script.js';
+import { event_types, eventSource } from "../../../../../../script.js";
 
 /**
  * Register an event handler
@@ -11,7 +11,7 @@ import { eventSource, event_types } from '../../../../../../script.js';
  * @param {Function} handler - Event handler function
  */
 export function on(eventType, handler) {
-    eventSource.on(eventType, handler);
+	eventSource.on(eventType, handler);
 }
 
 /**
@@ -20,7 +20,7 @@ export function on(eventType, handler) {
  * @param {Function} handler - Event handler function
  */
 export function once(eventType, handler) {
-    eventSource.once(eventType, handler);
+	eventSource.once(eventType, handler);
 }
 
 /**
@@ -29,7 +29,7 @@ export function once(eventType, handler) {
  * @param {Function} handler - Event handler function to remove
  */
 export function off(eventType, handler) {
-    eventSource.off(eventType, handler);
+	eventSource.off(eventType, handler);
 }
 
 /**
@@ -38,7 +38,7 @@ export function off(eventType, handler) {
  * @param {...*} args - Arguments to pass to handlers
  */
 export function emit(eventType, ...args) {
-    eventSource.emit(eventType, ...args);
+	eventSource.emit(eventType, ...args);
 }
 
 /**
@@ -59,30 +59,30 @@ const registeredHandlers = new Map();
  * });
  */
 export function registerAllEvents(handlers) {
-    for (const [eventType, handler] of Object.entries(handlers)) {
-        // Handler can be a single function or an array of functions
-        const handlerArray = Array.isArray(handler) ? handler : [handler];
+	for (const [eventType, handler] of Object.entries(handlers)) {
+		// Handler can be a single function or an array of functions
+		const handlerArray = Array.isArray(handler) ? handler : [handler];
 
-        for (const handlerFn of handlerArray) {
-            eventSource.on(eventType, handlerFn);
+		for (const handlerFn of handlerArray) {
+			eventSource.on(eventType, handlerFn);
 
-            // Store for later cleanup
-            if (!registeredHandlers.has(eventType)) {
-                registeredHandlers.set(eventType, []);
-            }
-            registeredHandlers.get(eventType).push(handlerFn);
-        }
-    }
+			// Store for later cleanup
+			if (!registeredHandlers.has(eventType)) {
+				registeredHandlers.set(eventType, []);
+			}
+			registeredHandlers.get(eventType).push(handlerFn);
+		}
+	}
 }
 
 /**
  * Unregisters all extension event handlers (for cleanup/reload)
  */
 export function unregisterAllEvents() {
-    for (const [eventType, handlers] of registeredHandlers.entries()) {
-        for (const handler of handlers) {
-            eventSource.off(eventType, handler);
-        }
-    }
-    registeredHandlers.clear();
+	for (const [eventType, handlers] of registeredHandlers.entries()) {
+		for (const handler of handlers) {
+			eventSource.off(eventType, handler);
+		}
+	}
+	registeredHandlers.clear();
 }

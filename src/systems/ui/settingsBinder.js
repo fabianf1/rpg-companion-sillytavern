@@ -4,31 +4,34 @@
  * Eliminates repetitive boilerplate for toggle/select/input change handlers.
  */
 
-import { extensionSettings } from "../../core/state.js";
 import { saveSettings } from "../../core/persistence.js";
-import { updateSectionVisibility } from "./layout.js";
-import { toggleDynamicWeather } from "./weatherEffects.js";
-import { togglePlotButtons } from "./layout.js";
-import {
-	updateFeatureTogglesVisibility,
-	applyTheme,
-	toggleCustomColors,
-	applyCustomTheme,
-} from "./theme.js";
-import { updateChatThoughts } from "../rendering/thoughts.js";
-import { updateDiceDisplay, getSettingsModal } from "./modals.js";
-import { updateSettingsPopupTheme } from "./theme.js";
-import { updateFabWidgets } from "./mobile.js";
-import { updateStripWidgets } from "./desktop.js";
-import { renderUserStats } from "../rendering/userStats.js";
+import { extensionSettings } from "../../core/state.js";
+import { renderAppearance } from "../rendering/appearance.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
-import { renderThoughts } from "../rendering/thoughts.js";
 import { renderInventory } from "../rendering/inventory.js";
 import { renderQuests } from "../rendering/quests.js";
-import { renderAppearance } from "../rendering/appearance.js";
-import { applyPanelPosition } from "./layout.js";
-import { updateGenerationModeUI } from "./layout.js";
-import { updateWeatherSubOptionsVisibility } from "./weatherEffects.js";
+import { renderThoughts, updateChatThoughts } from "../rendering/thoughts.js";
+import { renderUserStats } from "../rendering/userStats.js";
+import { updateStripWidgets } from "./desktop.js";
+import {
+	applyPanelPosition,
+	togglePlotButtons,
+	updateGenerationModeUI,
+	updateSectionVisibility,
+} from "./layout.js";
+import { updateFabWidgets } from "./mobile.js";
+import { getSettingsModal, updateDiceDisplay } from "./modals.js";
+import {
+	applyCustomTheme,
+	applyTheme,
+	toggleCustomColors,
+	updateFeatureTogglesVisibility,
+	updateSettingsPopupTheme,
+} from "./theme.js";
+import {
+	toggleDynamicWeather,
+	updateWeatherSubOptionsVisibility,
+} from "./weatherEffects.js";
 
 /**
  * @typedef {Object} BindingEntry

@@ -4,11 +4,14 @@
  * TODO: Handle quantity for accessories (e.g. "2 rings")
  */
 
-import { extensionSettings, $appearanceContainer } from '../../core/state.js';
-import { saveSettings, updateMessageSwipeData } from '../../core/persistence.js';
-import { getTrackerDataForContext } from '../generation/promptBuilder.js';
-import { isItemLocked, setItemLock } from '../generation/lockManager.js';
-import { i18n } from '../../core/i18n.js';
+import { i18n } from "../../core/i18n.js";
+import {
+	saveSettings,
+	updateMessageSwipeData,
+} from "../../core/persistence.js";
+import { $appearanceContainer, extensionSettings } from "../../core/state.js";
+import { isItemLocked, setItemLock } from "../generation/lockManager.js";
+import { getTrackerDataForContext } from "../generation/promptBuilder.js";
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
@@ -17,14 +20,14 @@ import { i18n } from '../../core/i18n.js';
  * @returns {string} Lock icon HTML or empty string
  */
 function getLockIconHtml(tracker, path) {
-    const showLockIcons = extensionSettings.showLockIcons ?? true;
-    if (!showLockIcons) return '';
+	const showLockIcons = extensionSettings.showLockIcons ?? true;
+	if (!showLockIcons) return "";
 
-    const isLocked = isItemLocked(tracker, path);
-    const lockIcon = isLocked ? '🔒' : '🔓';
-    const lockTitle = isLocked ? 'Locked' : 'Unlocked';
-    const lockedClass = isLocked ? ' locked' : '';
-    return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
+	const isLocked = isItemLocked(tracker, path);
+	const lockIcon = isLocked ? "🔒" : "🔓";
+	const lockTitle = isLocked ? "Locked" : "Unlocked";
+	const lockedClass = isLocked ? " locked" : "";
+	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
 }
 
 /**
@@ -33,9 +36,9 @@ function getLockIconHtml(tracker, path) {
  * @returns {string} Escaped HTML
  */
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+	const div = document.createElement("div");
+	div.textContent = text;
+	return div.innerHTML;
 }
 
 /**
@@ -46,22 +49,27 @@ function escapeHtml(text) {
  * @param {string} viewMode - View mode (list or grid)
  * @returns {string} HTML for items
  */
-function renderAppearanceItems(items, field, emptyMessage, viewMode = 'list') {
-    if (!Array.isArray(items) || items.length === 0) {
-        return `<div class="rpg-inventory-empty">${emptyMessage}</div>`;
-    }
+function renderAppearanceItems(items, field, emptyMessage, viewMode = "list") {
+	if (!Array.isArray(items) || items.length === 0) {
+		return `<div class="rpg-inventory-empty">${emptyMessage}</div>`;
+	}
 
-    const listViewClass = viewMode === 'list' ? 'rpg-item-list-view' : 'rpg-item-grid-view';
-    const itemsHtml = items.map((item, index) => {
-        // Support both object format {name: "Item"} and legacy string format
-        const itemName = typeof item === 'object' ? (item.name || '') : item;
-        const itemQuantity = typeof item === 'object' ? item.quantity : null;
-        
-        const lockIconHtml = getLockIconHtml('userStats', `appearance.${field}.${index}`);
+	const listViewClass =
+		viewMode === "list" ? "rpg-item-list-view" : "rpg-item-grid-view";
+	const itemsHtml = items
+		.map((item, index) => {
+			// Support both object format {name: "Item"} and legacy string format
+			const itemName = typeof item === "object" ? item.name || "" : item;
+			const itemQuantity = typeof item === "object" ? item.quantity : null;
 
-        if (viewMode === 'grid') {
-            // Grid view: card-style items
-            return `
+			const lockIconHtml = getLockIconHtml(
+				"userStats",
+				`appearance.${field}.${index}`,
+			);
+
+			if (viewMode === "grid") {
+				// Grid view: card-style items
+				return `
             <div class="rpg-item-card" data-field="${field}" data-index="${index}">
                 ${lockIconHtml}
                 <button class="rpg-appearance-item-remove" data-action="remove-item" data-field="${field}" data-index="${index}" title="Remove item">
@@ -70,9 +78,9 @@ function renderAppearanceItems(items, field, emptyMessage, viewMode = 'list') {
                 <span class="rpg-appearance-item-name rpg-editable" contenteditable="true" data-field="${field}" data-index="${index}" title="Click to edit">${escapeHtml(itemName)}</span>
             </div>
             `;
-        } else {
-            // List view: full-width rows
-            return `
+			} else {
+				// List view: full-width rows
+				return `
             <div class="rpg-item-row" data-field="${field}" data-index="${index}">
                 ${lockIconHtml}
                 <span class="rpg-appearance-item-name rpg-editable" contenteditable="true" data-field="${field}" data-index="${index}" title="Click to edit">${escapeHtml(itemName)}</span>
@@ -81,10 +89,11 @@ function renderAppearanceItems(items, field, emptyMessage, viewMode = 'list') {
                 </button>
             </div>
             `;
-        }
-    }).join('');
+			}
+		})
+		.join("");
 
-    return `<div class="rpg-item-list ${listViewClass}">${itemsHtml}</div>`;
+	return `<div class="rpg-item-list ${listViewClass}">${itemsHtml}</div>`;
 }
 
 /**
@@ -92,42 +101,65 @@ function renderAppearanceItems(items, field, emptyMessage, viewMode = 'list') {
  * @returns {string} HTML for appearance section
  */
 export function renderAppearance() {
-    if (!$appearanceContainer) {
-        console.warn('[RPG Companion] Container not found. Skipping render.');
-        return;
-    }
+	if (!$appearanceContainer) {
+		console.warn("[RPG Companion] Container not found. Skipping render.");
+		return;
+	}
 
-    // Check if tracker data exists (from swipe store or extensionSettings)
-    const trackerData = getTrackerDataForContext('userStats');
-    
-    if (!trackerData || !trackerData.appearance) {
-        $appearanceContainer.html('<div class="rpg-inventory-empty">No appearance generated yet</div>');
-        return;
-    }
-    const appearanceData = trackerData.appearance;
+	// Check if tracker data exists (from swipe store or extensionSettings)
+	const trackerData = getTrackerDataForContext("userStats");
 
-    // Extract appearance fields with defaults
-    const hair = appearanceData.hair || '';
-    const scent = appearanceData.scent || '';
-    const posture = appearanceData.posture || '';
-    const demeanor = appearanceData.demeanor || '';
-    const clothing = Array.isArray(appearanceData.clothing) ? appearanceData.clothing : [];
-    const accessories = Array.isArray(appearanceData.accessories) ? appearanceData.accessories : [];
-    const physicalFeatures = Array.isArray(appearanceData.physicalFeatures) ? appearanceData.physicalFeatures : [];
+	if (!trackerData || !trackerData.appearance) {
+		$appearanceContainer.html(
+			'<div class="rpg-inventory-empty">No appearance generated yet</div>',
+		);
+		return;
+	}
+	const appearanceData = trackerData.appearance;
 
-    // Get view modes from settings (default to 'list')
-    const viewModes = extensionSettings.appearanceViewModes || {
-        clothing: 'list',
-        accessories: 'list',
-        physicalFeatures: 'list'
-    };
+	// Extract appearance fields with defaults
+	const hair = appearanceData.hair || "";
+	const scent = appearanceData.scent || "";
+	const posture = appearanceData.posture || "";
+	const demeanor = appearanceData.demeanor || "";
+	const clothing = Array.isArray(appearanceData.clothing)
+		? appearanceData.clothing
+		: [];
+	const accessories = Array.isArray(appearanceData.accessories)
+		? appearanceData.accessories
+		: [];
+	const physicalFeatures = Array.isArray(appearanceData.physicalFeatures)
+		? appearanceData.physicalFeatures
+		: [];
 
-    // Generate items HTML for each section
-    const clothingItemsHtml = renderAppearanceItems(clothing, 'clothing', 'Not wearing anything', viewModes.clothing);
-    const accessoriesItemsHtml = renderAppearanceItems(accessories, 'accessories', 'No accessories', viewModes.accessories);
-    const physicalFeaturesItemsHtml = renderAppearanceItems(physicalFeatures, 'physicalFeatures', 'No physical features described', viewModes.physicalFeatures);
+	// Get view modes from settings (default to 'list')
+	const viewModes = extensionSettings.appearanceViewModes || {
+		clothing: "list",
+		accessories: "list",
+		physicalFeatures: "list",
+	};
 
-    const contentHtml = `
+	// Generate items HTML for each section
+	const clothingItemsHtml = renderAppearanceItems(
+		clothing,
+		"clothing",
+		"Not wearing anything",
+		viewModes.clothing,
+	);
+	const accessoriesItemsHtml = renderAppearanceItems(
+		accessories,
+		"accessories",
+		"No accessories",
+		viewModes.accessories,
+	);
+	const physicalFeaturesItemsHtml = renderAppearanceItems(
+		physicalFeatures,
+		"physicalFeatures",
+		"No physical features described",
+		viewModes.physicalFeatures,
+	);
+
+	const contentHtml = `
         <div class="rpg-inventory-container">
             <div class="rpg-inventory-views">
                 <!-- Hair Field -->
@@ -138,7 +170,7 @@ export function renderAppearance() {
                     <div class="rpg-inventory-content">
                         <div class="rpg-appearance-textarea-container">
                             <span class="rpg-appearance-input rpg-editable" contenteditable="true" data-field="hair" data-tracker="userStats" data-path="appearance.hair" placeholder="Describe the hair..." title="Click to edit">${escapeHtml(hair)}</span>
-                            ${getLockIconHtml('userStats', 'appearance.hair')}
+                            ${getLockIconHtml("userStats", "appearance.hair")}
                         </div>
                     </div>
                 </div>
@@ -151,7 +183,7 @@ export function renderAppearance() {
                     <div class="rpg-inventory-content">
                         <div class="rpg-appearance-textarea-container">
                             <span class="rpg-appearance-input rpg-editable" contenteditable="true" data-field="scent" data-tracker="userStats" data-path="appearance.scent" placeholder="Describe the scent..." title="Click to edit">${escapeHtml(scent)}</span>
-                            ${getLockIconHtml('userStats', 'appearance.scent')}
+                            ${getLockIconHtml("userStats", "appearance.scent")}
                         </div>
                     </div>
                 </div>
@@ -164,7 +196,7 @@ export function renderAppearance() {
                     <div class="rpg-inventory-content">
                         <div class="rpg-appearance-textarea-container">
                             <span class="rpg-appearance-input rpg-editable" contenteditable="true" data-field="posture" data-tracker="userStats" data-path="appearance.posture" placeholder="Describe the posture..." title="Click to edit">${escapeHtml(posture)}</span>
-                            ${getLockIconHtml('userStats', 'appearance.posture')}
+                            ${getLockIconHtml("userStats", "appearance.posture")}
                         </div>
                     </div>
                 </div>
@@ -177,7 +209,7 @@ export function renderAppearance() {
                     <div class="rpg-inventory-content">
                         <div class="rpg-appearance-textarea-container">
                             <span class="rpg-appearance-input rpg-editable" contenteditable="true" data-field="demeanor" data-tracker="userStats" data-path="appearance.demeanor" placeholder="Describe the demeanor/expression..." title="Click to edit">${escapeHtml(demeanor)}</span>
-                            ${getLockIconHtml('userStats', 'appearance.demeanor')}
+                            ${getLockIconHtml("userStats", "appearance.demeanor")}
                         </div>
                     </div>
                 </div>
@@ -188,10 +220,10 @@ export function renderAppearance() {
                         <h4 data-i18n-key="inventory.section.clothing">Clothing</h4>
                         <div class="rpg-inventory-header-actions">
                             <div class="rpg-view-toggle">
-                                <button class="rpg-view-btn ${viewModes.clothing === 'list' ? 'active' : ''}" data-action="switch-view" data-field="clothing" data-view="list" title="List view">
+                                <button class="rpg-view-btn ${viewModes.clothing === "list" ? "active" : ""}" data-action="switch-view" data-field="clothing" data-view="list" title="List view">
                                     <i class="fa-solid fa-list"></i>
                                 </button>
-                                <button class="rpg-view-btn ${viewModes.clothing === 'grid' ? 'active' : ''}" data-action="switch-view" data-field="clothing" data-view="grid" title="Grid view">
+                                <button class="rpg-view-btn ${viewModes.clothing === "grid" ? "active" : ""}" data-action="switch-view" data-field="clothing" data-view="grid" title="Grid view">
                                     <i class="fa-solid fa-th"></i>
                                 </button>
                             </div>
@@ -211,10 +243,10 @@ export function renderAppearance() {
                         <h4 data-i18n-key="appearance.accessories">Accessories</h4>
                         <div class="rpg-inventory-header-actions">
                             <div class="rpg-view-toggle">
-                                <button class="rpg-view-btn ${viewModes.accessories === 'list' ? 'active' : ''}" data-action="switch-view" data-field="accessories" data-view="list" title="List view">
+                                <button class="rpg-view-btn ${viewModes.accessories === "list" ? "active" : ""}" data-action="switch-view" data-field="accessories" data-view="list" title="List view">
                                     <i class="fa-solid fa-list"></i>
                                 </button>
-                                <button class="rpg-view-btn ${viewModes.accessories === 'grid' ? 'active' : ''}" data-action="switch-view" data-field="accessories" data-view="grid" title="Grid view">
+                                <button class="rpg-view-btn ${viewModes.accessories === "grid" ? "active" : ""}" data-action="switch-view" data-field="accessories" data-view="grid" title="Grid view">
                                     <i class="fa-solid fa-th"></i>
                                 </button>
                             </div>
@@ -234,10 +266,10 @@ export function renderAppearance() {
                         <h4 data-i18n-key="appearance.physicalFeatures">Physical Features</h4>
                         <div class="rpg-inventory-header-actions">
                             <div class="rpg-view-toggle">
-                                <button class="rpg-view-btn ${viewModes.physicalFeatures === 'list' ? 'active' : ''}" data-action="switch-view" data-field="physicalFeatures" data-view="list" title="List view">
+                                <button class="rpg-view-btn ${viewModes.physicalFeatures === "list" ? "active" : ""}" data-action="switch-view" data-field="physicalFeatures" data-view="list" title="List view">
                                     <i class="fa-solid fa-list"></i>
                                 </button>
-                                <button class="rpg-view-btn ${viewModes.physicalFeatures === 'grid' ? 'active' : ''}" data-action="switch-view" data-field="physicalFeatures" data-view="grid" title="Grid view">
+                                <button class="rpg-view-btn ${viewModes.physicalFeatures === "grid" ? "active" : ""}" data-action="switch-view" data-field="physicalFeatures" data-view="grid" title="Grid view">
                                     <i class="fa-solid fa-th"></i>
                                 </button>
                             </div>
@@ -253,172 +285,196 @@ export function renderAppearance() {
             </div>
         </div>
     `;
-    // Render and add event handlers
-    $appearanceContainer.html(contentHtml);
-    setupAppearanceEventHandlers();
+	// Render and add event handlers
+	$appearanceContainer.html(contentHtml);
+	setupAppearanceEventHandlers();
 }
 
 /**
  * Sets up event handlers for appearance UI elements
  */
 function setupAppearanceEventHandlers() {
-    const $container = $appearanceContainer;
-    if ($container.length === 0) return;
+	const $container = $appearanceContainer;
+	if ($container.length === 0) return;
 
-    // Handle lock/unlock icon clicks
-    $container.off('click', '.rpg-section-lock-icon').on('click', '.rpg-section-lock-icon', function(e) {
-        e.stopPropagation();
-        const tracker = $(this).data('tracker');
-        const path = $(this).data('path');
-        setItemLock(tracker, path);
-        renderAppearance();
-    });
+	// Handle lock/unlock icon clicks
+	$container
+		.off("click", ".rpg-section-lock-icon")
+		.on("click", ".rpg-section-lock-icon", function (e) {
+			e.stopPropagation();
+			const tracker = $(this).data("tracker");
+			const path = $(this).data("path");
+			setItemLock(tracker, path);
+			renderAppearance();
+		});
 
-    // Handle view mode toggle
-    $container.off('click', '.rpg-view-btn').on('click', '.rpg-view-btn', function(e) {
-        e.stopPropagation();
-        const field = $(this).data('field');
-        const viewMode = $(this).data('view');
+	// Handle view mode toggle
+	$container
+		.off("click", ".rpg-view-btn")
+		.on("click", ".rpg-view-btn", function (e) {
+			e.stopPropagation();
+			const field = $(this).data("field");
+			const viewMode = $(this).data("view");
 
-        // Update settings
-        if (!extensionSettings.appearanceViewModes) {
-            extensionSettings.appearanceViewModes = {};
-        }
-        extensionSettings.appearanceViewModes[field] = viewMode;
-        saveSettings();
+			// Update settings
+			if (!extensionSettings.appearanceViewModes) {
+				extensionSettings.appearanceViewModes = {};
+			}
+			extensionSettings.appearanceViewModes[field] = viewMode;
+			saveSettings();
 
-        // Update display
-        renderAppearance();
-    });
+			// Update display
+			renderAppearance();
+		});
 
-    // Handle add item button clicks
-    $container.off('click', '.rpg-appearance-add-btn').on('click', '.rpg-appearance-add-btn', function(e) {
-        e.stopPropagation();
-        const field = $(this).data('field');
+	// Handle add item button clicks
+	$container
+		.off("click", ".rpg-appearance-add-btn")
+		.on("click", ".rpg-appearance-add-btn", function (e) {
+			e.stopPropagation();
+			const field = $(this).data("field");
 
-        // Get current tracker data
-        const trackerData = getTrackerDataForContext('userStats') || {};
-        const currentItems = Array.isArray(trackerData.appearance?.[field]) ? [...trackerData.appearance[field]] : [];
+			// Get current tracker data
+			const trackerData = getTrackerDataForContext("userStats") || {};
+			const currentItems = Array.isArray(trackerData.appearance?.[field])
+				? [...trackerData.appearance[field]]
+				: [];
 
-        // Add new empty item object
-        if (field === 'accessories') {
-            currentItems.push({name: '', quantity: 1});
-        } else {
-            currentItems.push({name: ''});
-        }
+			// Add new empty item object
+			if (field === "accessories") {
+				currentItems.push({ name: "", quantity: 1 });
+			} else {
+				currentItems.push({ name: "" });
+			}
 
-        // Update swipe store
-        const updatedData = {
-            ...trackerData,
-            appearance: {
-                ...trackerData.appearance,
-                [field]: currentItems
-            }
-        };
-        updateMessageSwipeData('userStats', updatedData);
+			// Update swipe store
+			const updatedData = {
+				...trackerData,
+				appearance: {
+					...trackerData.appearance,
+					[field]: currentItems,
+				},
+			};
+			updateMessageSwipeData("userStats", updatedData);
 
-        // Update display
-        renderAppearance();
-    });
+			// Update display
+			renderAppearance();
+		});
 
-    // Handle remove item button clicks
-    $container.off('click', '.rpg-appearance-item-remove').on('click', '.rpg-appearance-item-remove', function(e) {
-        e.stopPropagation();
-        const field = $(this).data('field');
-        const index = parseInt($(this).data('index'));
+	// Handle remove item button clicks
+	$container
+		.off("click", ".rpg-appearance-item-remove")
+		.on("click", ".rpg-appearance-item-remove", function (e) {
+			e.stopPropagation();
+			const field = $(this).data("field");
+			const index = parseInt($(this).data("index"));
 
-        console.log(`[RPG Companion] Remove item - field: ${field}, index: ${index}`);
+			console.log(
+				`[RPG Companion] Remove item - field: ${field}, index: ${index}`,
+			);
 
-        // Get current tracker data
-        const trackerData = getTrackerDataForContext('userStats') || {};
-        const currentItems = Array.isArray(trackerData.appearance?.[field]) ? [...trackerData.appearance[field]] : [];
+			// Get current tracker data
+			const trackerData = getTrackerDataForContext("userStats") || {};
+			const currentItems = Array.isArray(trackerData.appearance?.[field])
+				? [...trackerData.appearance[field]]
+				: [];
 
-        // Remove item
-        currentItems.splice(index, 1);
+			// Remove item
+			currentItems.splice(index, 1);
 
-        // Update swipe store
-        const updatedData = {
-            ...trackerData,
-            appearance: {
-                ...trackerData.appearance,
-                [field]: currentItems
-            }
-        };
-        updateMessageSwipeData('userStats', updatedData);
+			// Update swipe store
+			const updatedData = {
+				...trackerData,
+				appearance: {
+					...trackerData.appearance,
+					[field]: currentItems,
+				},
+			};
+			updateMessageSwipeData("userStats", updatedData);
 
-        // Update display
-        renderAppearance();
-    });
+			// Update display
+			renderAppearance();
+		});
 
-    // Handle text field changes (hair, scent, posture, demeanor) - save on blur only
-    $container.off('blur', '.rpg-appearance-input').on('blur', '.rpg-appearance-input', function(e) {
-        const field = $(this).data('field');
-        const value = $(this).text().trim();
+	// Handle text field changes (hair, scent, posture, demeanor) - save on blur only
+	$container
+		.off("blur", ".rpg-appearance-input")
+		.on("blur", ".rpg-appearance-input", function (e) {
+			const field = $(this).data("field");
+			const value = $(this).text().trim();
 
-        console.log(`[RPG Companion] Text field changed - field: ${field}, value: ${value}`);
-        
-        // Get current tracker data
-        const trackerData = getTrackerDataForContext('userStats') || {};
-        
-        // Update text field in appearance object
-        const updatedData = {
-            ...trackerData,
-            appearance: {
-                ...trackerData.appearance,
-                [field]: value
-            }
-        };
+			console.log(
+				`[RPG Companion] Text field changed - field: ${field}, value: ${value}`,
+			);
 
-        console.log('[RPG Companion] Updated appearance data:', updatedData);
-        // Update swipe store
-        updateMessageSwipeData('userStats', updatedData);
-    });
+			// Get current tracker data
+			const trackerData = getTrackerDataForContext("userStats") || {};
 
-    // Handle array item name changes (clothing, accessories, physicalFeatures)
-    $container.off('input', '.rpg-appearance-item-name').on('input', '.rpg-appearance-item-name', function(e) {
-        const field = $(this).data('field');
-        const index = parseInt($(this).data('index'));
-        const value = $(this).text().trim();
+			// Update text field in appearance object
+			const updatedData = {
+				...trackerData,
+				appearance: {
+					...trackerData.appearance,
+					[field]: value,
+				},
+			};
 
-        console.log(`[RPG Companion] Item name changed - field: ${field}, index: ${index}, value: ${value}`);
-        
-        // Get current tracker data
-        const trackerData = getTrackerDataForContext('userStats') || {};
-        const currentItems = Array.isArray(trackerData.appearance?.[field]) ? [...trackerData.appearance[field]] : [];
-        
-        // Update item name
-        if (currentItems[index]) {
-            if (typeof currentItems[index] === 'object') {
-                currentItems[index] = { ...currentItems[index], name: value };
-            } else {
-                currentItems[index] = value;
-            }
-        }
+			console.log("[RPG Companion] Updated appearance data:", updatedData);
+			// Update swipe store
+			updateMessageSwipeData("userStats", updatedData);
+		});
 
-        const updatedData = {
-            ...trackerData,
-            appearance: {
-                ...trackerData.appearance,
-                [field]: currentItems
-            }
-        };
+	// Handle array item name changes (clothing, accessories, physicalFeatures)
+	$container
+		.off("input", ".rpg-appearance-item-name")
+		.on("input", ".rpg-appearance-item-name", function (e) {
+			const field = $(this).data("field");
+			const index = parseInt($(this).data("index"));
+			const value = $(this).text().trim();
 
-        console.log('[RPG Companion] Updated appearance data:', updatedData);
-        // Update swipe store
-        updateMessageSwipeData('userStats', updatedData);
-    });
+			console.log(
+				`[RPG Companion] Item name changed - field: ${field}, index: ${index}, value: ${value}`,
+			);
+
+			// Get current tracker data
+			const trackerData = getTrackerDataForContext("userStats") || {};
+			const currentItems = Array.isArray(trackerData.appearance?.[field])
+				? [...trackerData.appearance[field]]
+				: [];
+
+			// Update item name
+			if (currentItems[index]) {
+				if (typeof currentItems[index] === "object") {
+					currentItems[index] = { ...currentItems[index], name: value };
+				} else {
+					currentItems[index] = value;
+				}
+			}
+
+			const updatedData = {
+				...trackerData,
+				appearance: {
+					...trackerData.appearance,
+					[field]: currentItems,
+				},
+			};
+
+			console.log("[RPG Companion] Updated appearance data:", updatedData);
+			// Update swipe store
+			updateMessageSwipeData("userStats", updatedData);
+		});
 }
 
 /**
  * Initializes the appearance section
  */
 export function initAppearance() {
-    // Check if appearance container exists
-    if (!$appearanceContainer || $appearanceContainer.length === 0) return;
+	// Check if appearance container exists
+	if (!$appearanceContainer || $appearanceContainer.length === 0) return;
 
-    // Initial render
-    renderAppearance();
+	// Initial render
+	renderAppearance();
 
-    // Setup event handlers
-    setupAppearanceEventHandlers();
+	// Setup event handlers
+	setupAppearanceEventHandlers();
 }

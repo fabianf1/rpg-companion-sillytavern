@@ -3,10 +3,10 @@
  * Helper functions for building JSON format tracker prompts
  */
 
-import { extensionSettings } from "../../core/state.js";
 import { getContext } from "../../../../../../extensions.js";
-import { getWeatherKeywordsAsPromptString } from "../ui/weatherEffects.js";
 import { i18n } from "../../core/i18n.js";
+import { extensionSettings } from "../../core/state.js";
+import { getWeatherKeywordsAsPromptString } from "../ui/weatherEffects.js";
 import { getTrackerDataForContext } from "./promptBuilder.js";
 
 /**

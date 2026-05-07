@@ -4,23 +4,23 @@
  */
 
 import {
-	saveSettingsDebounced,
 	chat_metadata,
 	saveChatDebounced,
+	saveSettingsDebounced,
 } from "../../../../../../script.js";
 import { getContext } from "../../../../../extensions.js";
-import { extensionSettings, updateExtensionSettings } from "./state.js";
-import { validateStoredInventory } from "../utils/security.js";
 import { updateDiceDisplay } from "../systems/features/dice.js";
-import { renderUserStats } from "../systems/rendering/userStats.js";
+import { getTrackerDataForContext } from "../systems/generation/promptBuilder.js";
 import { renderInfoBox } from "../systems/rendering/infoBox.js";
+import { renderInventory } from "../systems/rendering/inventory.js";
+import { renderQuests } from "../systems/rendering/quests.js";
 import {
 	renderThoughts,
 	updateChatThoughts,
 } from "../systems/rendering/thoughts.js";
-import { renderQuests } from "../systems/rendering/quests.js";
-import { renderInventory } from "../systems/rendering/inventory.js";
-import { getTrackerDataForContext } from "../systems/generation/promptBuilder.js";
+import { renderUserStats } from "../systems/rendering/userStats.js";
+import { validateStoredInventory } from "../utils/security.js";
+import { extensionSettings, updateExtensionSettings } from "./state.js";
 
 const extensionName = "third-party/rpg-companion-sillytavern";
 
@@ -851,7 +851,7 @@ export function migrateAppearanceData() {
 	};
 
 	// Update the userStats data with appearance
-	let updatedData = {
+	const updatedData = {
 		...currentData,
 		appearance: appearanceData,
 	};

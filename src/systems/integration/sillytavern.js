@@ -3,60 +3,64 @@
  * Handles all event listeners and integration with SillyTavern's event system
  */
 
-import { getContext } from '../../../../../../extensions.js';
-import { chat, user_avatar, setExtensionPrompt, extension_prompt_types } from '../../../../../../../script.js';
-
+import {
+	chat,
+	extension_prompt_types,
+	setExtensionPrompt,
+	user_avatar,
+} from "../../../../../../../script.js";
+import { getContext } from "../../../../../../extensions.js";
+import {
+	autoSwitchPresetForEntity,
+	migrateAppearanceData,
+	saveChatData,
+} from "../../core/persistence.js";
 // Core modules
 import {
-    extensionSettings,
-    lastActionWasSwipe,
-    isPlotProgression,
-    isAwaitingNewMessage,
-    setLastActionWasSwipe,
-    setIsPlotProgression,
-    setIsAwaitingNewMessage,
-    abortCurrentGeneration
-} from '../../core/state.js';
-import { saveChatData, autoSwitchPresetForEntity, migrateAppearanceData } from '../../core/persistence.js';
-
-// Generation & Parsing
-import { updateRPGData } from '../generation/apiClient.js';
-import { getLockedItemsFromSwipeStore } from '../generation/lockManager.js';
-import { initHistoryInjectionListeners } from '../generation/injector.js';
-
-// Rendering
-import { renderUserStats } from '../rendering/userStats.js';
-import { renderInfoBox } from '../rendering/infoBox.js';
-import { renderThoughts, updateChatThoughts } from '../rendering/thoughts.js';
-import { renderInventory } from '../rendering/inventory.js';
-import { renderAppearance } from '../rendering/appearance.js';
-import { renderQuests } from '../rendering/quests.js';
-
+	abortCurrentGeneration,
+	extensionSettings,
+	isAwaitingNewMessage,
+	isPlotProgression,
+	lastActionWasSwipe,
+	setIsAwaitingNewMessage,
+	setIsPlotProgression,
+	setLastActionWasSwipe,
+} from "../../core/state.js";
 // Utils
-import { getSafeThumbnailUrl } from '../../utils/avatars.js';
-
+import { getSafeThumbnailUrl } from "../../utils/avatars.js";
+// Generation & Parsing
+import { updateRPGData } from "../generation/apiClient.js";
+import { initHistoryInjectionListeners } from "../generation/injector.js";
+import { getLockedItemsFromSwipeStore } from "../generation/lockManager.js";
+import { renderAppearance } from "../rendering/appearance.js";
+import { renderInfoBox } from "../rendering/infoBox.js";
+import { renderInventory } from "../rendering/inventory.js";
+import { renderQuests } from "../rendering/quests.js";
+import { renderThoughts, updateChatThoughts } from "../rendering/thoughts.js";
+// Rendering
+import { renderUserStats } from "../rendering/userStats.js";
+import { updateStripWidgets } from "../ui/desktop.js";
 // UI
-import { updateFabWidgets } from '../ui/mobile.js';
-import { updateStripWidgets } from '../ui/desktop.js';
+import { updateFabWidgets } from "../ui/mobile.js";
 
 /**
  * Reload lock settings from the current message's swipeStore
  * This ensures locks are message-specific and persist across swipes
  */
 function reloadLocksFromSwipeStore() {
-    console.log('[RPG Companion] Reloading locks from swipeStore...');
-    
-    // Get locks from swipeStore for each tracker type
-    const userStatsLocks = getLockedItemsFromSwipeStore('userStats');
-    const infoBoxLocks = getLockedItemsFromSwipeStore('infoBox');
-    const charactersLocks = getLockedItemsFromSwipeStore('characters');
-    
-    // Update extensionSettings with locks from swipeStore
-    extensionSettings.lockedItems = {
-        userStats: userStatsLocks,
-        infoBox: infoBoxLocks,
-        characters: charactersLocks
-    };
+	console.log("[RPG Companion] Reloading locks from swipeStore...");
+
+	// Get locks from swipeStore for each tracker type
+	const userStatsLocks = getLockedItemsFromSwipeStore("userStats");
+	const infoBoxLocks = getLockedItemsFromSwipeStore("infoBox");
+	const charactersLocks = getLockedItemsFromSwipeStore("characters");
+
+	// Update extensionSettings with locks from swipeStore
+	extensionSettings.lockedItems = {
+		userStats: userStatsLocks,
+		infoBox: infoBoxLocks,
+		characters: charactersLocks,
+	};
 }
 
 /**
@@ -64,110 +68,109 @@ function reloadLocksFromSwipeStore() {
  * Sets the flag to indicate this is NOT a swipe.
  */
 export function onMessageSent() {
-    if (!extensionSettings.enabled) return;
+	if (!extensionSettings.enabled) return;
 
-    // console.log('[RPG Companion] 🟢 EVENT: onMessageSent - lastActionWasSwipe =', lastActionWasSwipe);
+	// console.log('[RPG Companion] 🟢 EVENT: onMessageSent - lastActionWasSwipe =', lastActionWasSwipe);
 
-    // Check if this is a streaming placeholder message (content = "...")
-    // When streaming is on, ST sends a "..." placeholder before generation starts
-    const context = getContext();
-    const chat = context.chat;
-    const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
+	// Check if this is a streaming placeholder message (content = "...")
+	// When streaming is on, ST sends a "..." placeholder before generation starts
+	const context = getContext();
+	const chat = context.chat;
+	const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
 
-    if (lastMessage && lastMessage.mes === '...') {
-        // console.log('[RPG Companion] 🟢 Ignoring onMessageSent: streaming placeholder message');
-        return;
-    }
+	if (lastMessage && lastMessage.mes === "...") {
+		// console.log('[RPG Companion] 🟢 Ignoring onMessageSent: streaming placeholder message');
+		return;
+	}
 
-    // console.log('[RPG Companion] 🟢 EVENT: onMessageSent (after placeholder check)');
-    // console.log('[RPG Companion] 🟢 NOTE: lastActionWasSwipe will be reset in onMessageReceived after generation completes');
+	// console.log('[RPG Companion] 🟢 EVENT: onMessageSent (after placeholder check)');
+	// console.log('[RPG Companion] 🟢 NOTE: lastActionWasSwipe will be reset in onMessageReceived after generation completes');
 
-    // Set flag to indicate we're expecting a new message from generation
-    // This allows auto-update to distinguish between new generations and loading chat history
-    setIsAwaitingNewMessage(true);
+	// Set flag to indicate we're expecting a new message from generation
+	// This allows auto-update to distinguish between new generations and loading chat history
+	setIsAwaitingNewMessage(true);
 
-    // FAB spinning is handled by apiClient.js when updateRPGData() is called
+	// FAB spinning is handled by apiClient.js when updateRPGData() is called
 }
 
 /**
  * Event handler for when a message is generated.
  */
 export async function onMessageReceived(_data) {
-    // console.log('[RPG Companion] onMessageReceived called, lastActionWasSwipe:', lastActionWasSwipe);
+	// console.log('[RPG Companion] onMessageReceived called, lastActionWasSwipe:', lastActionWasSwipe);
 
-    if (!extensionSettings.enabled) {
-        return;
-    }
+	if (!extensionSettings.enabled) {
+		return;
+	}
 
-    // Reset swipe flag after generation completes
-    // This ensures next user message (whether from original or swipe) triggers commit
-    setLastActionWasSwipe(false);
-    // console.log('[RPG Companion] 🟢 Reset lastActionWasSwipe = false (generation completed)');
+	// Reset swipe flag after generation completes
+	// This ensures next user message (whether from original or swipe) triggers commit
+	setLastActionWasSwipe(false);
+	// console.log('[RPG Companion] 🟢 Reset lastActionWasSwipe = false (generation completed)');
 
-    // Trigger auto-update if enabled
-    // Only trigger if this is a newly generated message, not loading chat history
-    if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
-        setTimeout(async () => {
-            await updateRPGData(true); // Auto-update
-        }, 500);
-    }
+	// Trigger auto-update if enabled
+	// Only trigger if this is a newly generated message, not loading chat history
+	if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
+		setTimeout(async () => {
+			await updateRPGData(true); // Auto-update
+		}, 500);
+	}
 
-    // Reset the awaiting flag after processing the message
-    setIsAwaitingNewMessage(false);
+	// Reset the awaiting flag after processing the message
+	setIsAwaitingNewMessage(false);
 
-    // Reset the swipe flag after generation completes
-    // This ensures that if the user swiped → auto-reply generated → flag is now cleared
-    // so the next user message will be treated as a new message (not a swipe)
-    setLastActionWasSwipe(false);
+	// Reset the swipe flag after generation completes
+	// This ensures that if the user swiped → auto-reply generated → flag is now cleared
+	// so the next user message will be treated as a new message (not a swipe)
+	setLastActionWasSwipe(false);
 
-    // Clear plot progression flag if this was a plot progression generation
-    // Note: No need to clear extension prompt since we used quiet_prompt option
-    if (isPlotProgression) {
-        setIsPlotProgression(false);
-        // console.log('[RPG Companion] Plot progression generation completed');
-    }
-
+	// Clear plot progression flag if this was a plot progression generation
+	// Note: No need to clear extension prompt since we used quiet_prompt option
+	if (isPlotProgression) {
+		setIsPlotProgression(false);
+		// console.log('[RPG Companion] Plot progression generation completed');
+	}
 }
 
 /**
  * Event handler for character change.
  */
 export function onCharacterChanged() {
-    console.log('[RPG Companion] 🟠 EVENT: onCharacterChanged');
-    // Abort any pending or in-flight generation so
-    // its result is not applied to the (now-changed) chat tail.
-    abortCurrentGeneration();
-    
-    // Remove thought panel and icon when changing characters
-    $('#rpg-thought-panel').remove();
-    $('#rpg-thought-icon').remove();
-    $('#chat').off('scroll.thoughtPanel');
-    $(window).off('resize.thoughtPanel');
-    $(document).off('click.thoughtPanel');
+	console.log("[RPG Companion] 🟠 EVENT: onCharacterChanged");
+	// Abort any pending or in-flight generation so
+	// its result is not applied to the (now-changed) chat tail.
+	abortCurrentGeneration();
 
-    // Auto-switch to the preset associated with this character/group (if any)
-    autoSwitchPresetForEntity();
+	// Remove thought panel and icon when changing characters
+	$("#rpg-thought-panel").remove();
+	$("#rpg-thought-icon").remove();
+	$("#chat").off("scroll.thoughtPanel");
+	$(window).off("resize.thoughtPanel");
+	$(document).off("click.thoughtPanel");
 
-    // Apply migration
-    migrateAppearanceData();
+	// Auto-switch to the preset associated with this character/group (if any)
+	autoSwitchPresetForEntity();
 
-    // Reload lock settings from the current message's swipeStore
-    reloadLocksFromSwipeStore();
+	// Apply migration
+	migrateAppearanceData();
 
-    // Re-render with the loaded data
-    renderUserStats();
-    renderInfoBox();
-    renderThoughts();
-    renderInventory();
-    renderAppearance();
-    renderQuests();
+	// Reload lock settings from the current message's swipeStore
+	reloadLocksFromSwipeStore();
 
-    // Update FAB widgets and strip widgets with loaded data
-    updateFabWidgets();
-    updateStripWidgets();
+	// Re-render with the loaded data
+	renderUserStats();
+	renderInfoBox();
+	renderThoughts();
+	renderInventory();
+	renderAppearance();
+	renderQuests();
 
-    // Update chat thought overlays
-    updateChatThoughts();
+	// Update FAB widgets and strip widgets with loaded data
+	updateFabWidgets();
+	updateStripWidgets();
+
+	// Update chat thought overlays
+	updateChatThoughts();
 }
 
 /**
@@ -175,54 +178,60 @@ export function onCharacterChanged() {
  * Loads the RPG data for the swipe the user navigated to.
  */
 export function onMessageSwiped(messageIndex) {
-    if (!extensionSettings.enabled) {
-        return;
-    }
+	if (!extensionSettings.enabled) {
+		return;
+	}
 
-    // console.log('[RPG Companion] 🔵 EVENT: onMessageSwiped at index:', messageIndex);
+	// console.log('[RPG Companion] 🔵 EVENT: onMessageSwiped at index:', messageIndex);
 
-    // Abort any pending or in-flight generation so
-    // its result is not applied to the (now-changed) chat tail.
-    abortCurrentGeneration();
+	// Abort any pending or in-flight generation so
+	// its result is not applied to the (now-changed) chat tail.
+	abortCurrentGeneration();
 
-    // Get the message that was swiped
-    const message = chat[messageIndex];
-    if (!message || message.is_user) {
-        // console.log('[RPG Companion] 🔵 Ignoring swipe - message is user or undefined');
-        return;
-    }
+	// Get the message that was swiped
+	const message = chat[messageIndex];
+	if (!message || message.is_user) {
+		// console.log('[RPG Companion] 🔵 Ignoring swipe - message is user or undefined');
+		return;
+	}
 
-    const currentSwipeId = message.swipe_id || 0;
+	const currentSwipeId = message.swipe_id || 0;
 
-    // Only set flag to true if this swipe will trigger a NEW generation
-    // Check if the swipe already exists (has content in the swipes array)
-    const isExistingSwipe = message.swipes &&
-        message.swipes[currentSwipeId] !== undefined &&
-        message.swipes[currentSwipeId] !== null &&
-        message.swipes[currentSwipeId].length > 0;
+	// Only set flag to true if this swipe will trigger a NEW generation
+	// Check if the swipe already exists (has content in the swipes array)
+	const isExistingSwipe =
+		message.swipes &&
+		message.swipes[currentSwipeId] !== undefined &&
+		message.swipes[currentSwipeId] !== null &&
+		message.swipes[currentSwipeId].length > 0;
 
-    if (!isExistingSwipe) {
-        // This is a NEW swipe that will trigger generation
-        setLastActionWasSwipe(true);
-        setIsAwaitingNewMessage(true);
-        console.log('[RPG Companion] 🔵 NEW swipe detected - Set lastActionWasSwipe = true');
-    } else {
-        // This is navigating to an EXISTING swipe - don't change the flag
-        console.log('[RPG Companion] 🔵 EXISTING swipe navigation - lastActionWasSwipe unchanged =', lastActionWasSwipe);
-    }
+	if (!isExistingSwipe) {
+		// This is a NEW swipe that will trigger generation
+		setLastActionWasSwipe(true);
+		setIsAwaitingNewMessage(true);
+		console.log(
+			"[RPG Companion] 🔵 NEW swipe detected - Set lastActionWasSwipe = true",
+		);
+	} else {
+		// This is navigating to an EXISTING swipe - don't change the flag
+		console.log(
+			"[RPG Companion] 🔵 EXISTING swipe navigation - lastActionWasSwipe unchanged =",
+			lastActionWasSwipe,
+		);
+	}
 
-    // Re-render the panels
-    renderUserStats();
-    renderInfoBox();
-    renderThoughts();
-    renderInventory();
-    renderQuests();
+	// Re-render the panels
+	renderUserStats();
+	renderInfoBox();
+	renderThoughts();
+	renderInventory();
+	renderQuests();
 
-    // Reload lock settings from the current message's swipeStore
-    reloadLocksFromSwipeStore();
+	// Reload lock settings from the current message's swipeStore
+	reloadLocksFromSwipeStore();
 
-    // Update chat thought overlays
-    updateChatThoughts();
+	// Update chat thought overlays
+	updateChatThoughts();
 }
 
 /**
@@ -232,74 +241,91 @@ export function onMessageSwiped(messageIndex) {
  * assistant messages remain.
  */
 export function onMessageDeleted() {
-    if (!extensionSettings.enabled) return;
+	if (!extensionSettings.enabled) return;
 
-    console.log('[RPG Companion] 🗑️ EVENT: onMessageDeleted');
+	console.log("[RPG Companion] 🗑️ EVENT: onMessageDeleted");
 
-    // Abort any pending or in-flight generation so
-    // its result is not applied to the (now-changed) chat tail.
-    abortCurrentGeneration();
+	// Abort any pending or in-flight generation so
+	// its result is not applied to the (now-changed) chat tail.
+	abortCurrentGeneration();
 
-    // Re-render all panels.
-    // Render functions now read directly from the swipe store, so no state management needed.
-    renderUserStats();
-    renderInfoBox();
-    renderThoughts();
-    renderInventory();
-    renderQuests();
+	// Re-render all panels.
+	// Render functions now read directly from the swipe store, so no state management needed.
+	renderUserStats();
+	renderInfoBox();
+	renderThoughts();
+	renderInventory();
+	renderQuests();
 
-    // Update widget strips.
-    updateFabWidgets();
-    updateStripWidgets();
+	// Update widget strips.
+	updateFabWidgets();
+	updateStripWidgets();
 
-    // Persist updated state.
-    saveChatData();
+	// Persist updated state.
+	saveChatData();
 }
-
 
 /**
  * Update the persona avatar image when user switches personas
  */
 export function updatePersonaAvatar() {
-    const portraitImg = document.querySelector('.rpg-user-portrait');
-    if (!portraitImg) {
-        // console.log('[RPG Companion] Portrait image element not found in DOM');
-        return;
-    }
+	const portraitImg = document.querySelector(".rpg-user-portrait");
+	if (!portraitImg) {
+		// console.log('[RPG Companion] Portrait image element not found in DOM');
+		return;
+	}
 
-    // Get current user_avatar from context instead of using imported value
-    const context = getContext();
-    const currentUserAvatar = context.user_avatar || user_avatar;
+	// Get current user_avatar from context instead of using imported value
+	const context = getContext();
+	const currentUserAvatar = context.user_avatar || user_avatar;
 
-    // console.log('[RPG Companion] Attempting to update persona avatar:', currentUserAvatar);
+	// console.log('[RPG Companion] Attempting to update persona avatar:', currentUserAvatar);
 
-    // Try to get a valid thumbnail URL using our safe helper
-    if (currentUserAvatar) {
-        const thumbnailUrl = getSafeThumbnailUrl('persona', currentUserAvatar);
+	// Try to get a valid thumbnail URL using our safe helper
+	if (currentUserAvatar) {
+		const thumbnailUrl = getSafeThumbnailUrl("persona", currentUserAvatar);
 
-        if (thumbnailUrl) {
-            // Only update the src if we got a valid URL
-            portraitImg.src = thumbnailUrl;
-            // console.log('[RPG Companion] Persona avatar updated successfully');
-        } else {
-            // Don't update the src if we couldn't get a valid URL
-            // This prevents 400 errors and keeps the existing image
-            // console.warn('[RPG Companion] Could not get valid thumbnail URL for persona avatar, keeping existing image');
-        }
-    } else {
-        // console.log('[RPG Companion] No user avatar configured, keeping existing image');
-    }
+		if (thumbnailUrl) {
+			// Only update the src if we got a valid URL
+			portraitImg.src = thumbnailUrl;
+			// console.log('[RPG Companion] Persona avatar updated successfully');
+		} else {
+			// Don't update the src if we couldn't get a valid URL
+			// This prevents 400 errors and keeps the existing image
+			// console.warn('[RPG Companion] Could not get valid thumbnail URL for persona avatar, keeping existing image');
+		}
+	} else {
+		// console.log('[RPG Companion] No user avatar configured, keeping existing image');
+	}
 }
 
 /**
  * Clears all extension prompts.
  */
 export function clearExtensionPrompts() {
-    setExtensionPrompt('rpg-companion-inject', '', extension_prompt_types.IN_CHAT, 0, false);
-    setExtensionPrompt('rpg-companion-example', '', extension_prompt_types.IN_CHAT, 0, false);
-    setExtensionPrompt('rpg-companion-context', '', extension_prompt_types.IN_CHAT, 1, false);
-    // Note: rpg-companion-plot is not cleared here since it's passed via quiet_prompt option
-    // console.log('[RPG Companion] Cleared all extension prompts');
+	setExtensionPrompt(
+		"rpg-companion-inject",
+		"",
+		extension_prompt_types.IN_CHAT,
+		0,
+		false,
+	);
+	setExtensionPrompt(
+		"rpg-companion-example",
+		"",
+		extension_prompt_types.IN_CHAT,
+		0,
+		false,
+	);
+	setExtensionPrompt(
+		"rpg-companion-context",
+		"",
+		extension_prompt_types.IN_CHAT,
+		1,
+		false,
+	);
+	// Note: rpg-companion-plot is not cleared here since it's passed via quiet_prompt option
+	// console.log('[RPG Companion] Cleared all extension prompts');
 }
 
 /**
@@ -307,12 +333,10 @@ export function clearExtensionPrompts() {
  * Re-applies checkpoint if SillyTavern unhid messages
  */
 export async function onGenerationEnded() {
-    // console.log('[RPG Companion] 🏁 onGenerationEnded called');
-
-    // Note: isGenerating flag is cleared in apiClient.js after generation completes
-
-    // SillyTavern may auto-unhide messages when generation stops
-    // Re-apply checkpoint if one exists
+	// console.log('[RPG Companion] 🏁 onGenerationEnded called');
+	// Note: isGenerating flag is cleared in apiClient.js after generation completes
+	// SillyTavern may auto-unhide messages when generation stops
+	// Re-apply checkpoint if one exists
 }
 
 /**
@@ -320,5 +344,5 @@ export async function onGenerationEnded() {
  * Should be called once during extension initialization.
  */
 export function initHistoryInjection() {
-    initHistoryInjectionListeners();
+	initHistoryInjectionListeners();
 }

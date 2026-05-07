@@ -3,25 +3,25 @@
  * Handles panel visibility, section visibility, collapse/expand toggle, and panel positioning
  */
 
+import { i18n } from "../../core/i18n.js";
 import {
-	extensionSettings,
-	$panelContainer,
-	$userStatsContainer,
 	$infoBoxContainer,
-	$thoughtsContainer,
 	$inventoryContainer,
+	$panelContainer,
 	$questsContainer,
+	$thoughtsContainer,
+	$userStatsContainer,
+	extensionSettings,
 	setInventoryContainer,
 	setQuestsContainer,
 } from "../../core/state.js";
-import { i18n } from "../../core/i18n.js";
-import { setupMobileTabs, removeMobileTabs } from "./mobile.js";
+import { getTrackerDataForContext } from "../generation/promptBuilder.js";
 import {
-	setupDesktopTabs,
 	removeDesktopTabs,
+	setupDesktopTabs,
 	updateStripWidgets,
 } from "./desktop.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { removeMobileTabs, setupMobileTabs } from "./mobile.js";
 
 /**
  * Toggles the visibility of plot buttons based on settings.
@@ -77,7 +77,7 @@ export function closeMobilePanelWithAnimation() {
 	$mobileToggle.removeClass("active");
 
 	// Wait for animation to complete before hiding
-	$panel.one("animationend", function () {
+	$panel.one("animationend", () => {
 		$panel.removeClass("rpg-mobile-closing");
 		$(".rpg-mobile-overlay").remove();
 	});
@@ -164,7 +164,7 @@ export function setupCollapseToggle() {
 	const $panel = $("#rpg-companion-panel");
 	const $icon = $collapseToggle.find("i");
 
-	$collapseToggle.on("click", function (e) {
+	$collapseToggle.on("click", (e) => {
 		e.preventDefault();
 		e.stopPropagation();
 
@@ -209,7 +209,7 @@ export function setupCollapseToggle() {
 				}, 500);
 
 				// Close when clicking overlay
-				$overlay.on("click", function () {
+				$overlay.on("click", () => {
 					// console.log('[RPG Mobile] Overlay clicked - closing panel');
 					closeMobilePanelWithAnimation();
 					updateCollapseToggleIcon();

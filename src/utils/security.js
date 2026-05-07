@@ -3,7 +3,7 @@
  * Handles input sanitization and validation to prevent security vulnerabilities
  */
 
-import { parseItems } from './itemParser.js';
+import { parseItems } from "./itemParser.js";
 
 /**
  * List of dangerous property names that could cause prototype pollution
@@ -11,16 +11,16 @@ import { parseItems } from './itemParser.js';
  * @private
  */
 const BLOCKED_PROPERTY_NAMES = [
-    '__proto__',
-    'constructor',
-    'prototype',
-    'toString',
-    'valueOf',
-    'hasOwnProperty',
-    '__defineGetter__',
-    '__defineSetter__',
-    '__lookupGetter__',
-    '__lookupSetter__'
+	"__proto__",
+	"constructor",
+	"prototype",
+	"toString",
+	"valueOf",
+	"hasOwnProperty",
+	"__defineGetter__",
+	"__defineSetter__",
+	"__lookupGetter__",
+	"__lookupSetter__",
 ];
 
 /**
@@ -36,32 +36,40 @@ const BLOCKED_PROPERTY_NAMES = [
  * sanitizeLocationName("A".repeat(300)) // "AAA..." (truncated to 200 chars)
  */
 export function sanitizeLocationName(name) {
-    if (!name || typeof name !== 'string') {
-        return null;
-    }
+	if (!name || typeof name !== "string") {
+		return null;
+	}
 
-    const trimmed = name.trim();
+	const trimmed = name.trim();
 
-    // Empty check
-    if (trimmed === '') {
-        return null;
-    }
+	// Empty check
+	if (trimmed === "") {
+		return null;
+	}
 
-    // Check for dangerous property names (case-insensitive)
-    const lowerName = trimmed.toLowerCase();
-    if (BLOCKED_PROPERTY_NAMES.some(blocked => lowerName === blocked.toLowerCase())) {
-        console.warn(`[RPG Companion] Blocked dangerous location name: "${trimmed}"`);
-        return null;
-    }
+	// Check for dangerous property names (case-insensitive)
+	const lowerName = trimmed.toLowerCase();
+	if (
+		BLOCKED_PROPERTY_NAMES.some(
+			(blocked) => lowerName === blocked.toLowerCase(),
+		)
+	) {
+		console.warn(
+			`[RPG Companion] Blocked dangerous location name: "${trimmed}"`,
+		);
+		return null;
+	}
 
-    // Max length check (reasonable location name)
-    const MAX_LOCATION_LENGTH = 200;
-    if (trimmed.length > MAX_LOCATION_LENGTH) {
-        console.warn(`[RPG Companion] Location name too long (${trimmed.length} chars), truncating to ${MAX_LOCATION_LENGTH}`);
-        return trimmed.slice(0, MAX_LOCATION_LENGTH);
-    }
+	// Max length check (reasonable location name)
+	const MAX_LOCATION_LENGTH = 200;
+	if (trimmed.length > MAX_LOCATION_LENGTH) {
+		console.warn(
+			`[RPG Companion] Location name too long (${trimmed.length} chars), truncating to ${MAX_LOCATION_LENGTH}`,
+		);
+		return trimmed.slice(0, MAX_LOCATION_LENGTH);
+	}
 
-    return trimmed;
+	return trimmed;
 }
 
 /**
@@ -77,25 +85,27 @@ export function sanitizeLocationName(name) {
  * sanitizeItemName("A".repeat(600)) // "AAA..." (truncated to 500 chars)
  */
 export function sanitizeItemName(name) {
-    if (!name || typeof name !== 'string') {
-        return null;
-    }
+	if (!name || typeof name !== "string") {
+		return null;
+	}
 
-    const trimmed = name.trim();
+	const trimmed = name.trim();
 
-    // Empty check
-    if (trimmed === '' || trimmed.toLowerCase() === 'none') {
-        return null;
-    }
+	// Empty check
+	if (trimmed === "" || trimmed.toLowerCase() === "none") {
+		return null;
+	}
 
-    // Max length check (reasonable item name with description)
-    const MAX_ITEM_LENGTH = 500;
-    if (trimmed.length > MAX_ITEM_LENGTH) {
-        console.warn(`[RPG Companion] Item name too long (${trimmed.length} chars), truncating to ${MAX_ITEM_LENGTH}`);
-        return trimmed.slice(0, MAX_ITEM_LENGTH);
-    }
+	// Max length check (reasonable item name with description)
+	const MAX_ITEM_LENGTH = 500;
+	if (trimmed.length > MAX_ITEM_LENGTH) {
+		console.warn(
+			`[RPG Companion] Item name too long (${trimmed.length} chars), truncating to ${MAX_ITEM_LENGTH}`,
+		);
+		return trimmed.slice(0, MAX_ITEM_LENGTH);
+	}
 
-    return trimmed;
+	return trimmed;
 }
 
 /**
@@ -129,76 +139,91 @@ export function sanitizeItemName(name) {
  * // → {} (invalid input, returns empty object)
  */
 export function validateStoredInventory(stored) {
-    // Handle invalid input
-    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
-        return {};
-    }
+	// Handle invalid input
+	if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+		return {};
+	}
 
-    const cleaned = {};
+	const cleaned = {};
 
-    // Validate each property
-    for (const key in stored) {
-        // Only check own properties (not inherited)
-        if (!Object.prototype.hasOwnProperty.call(stored, key)) {
-            continue;
-        }
+	// Validate each property
+	for (const key in stored) {
+		// Only check own properties (not inherited)
+		if (!Object.hasOwn(stored, key)) {
+			continue;
+		}
 
-        // Sanitize the location name
-        const sanitizedKey = sanitizeLocationName(key);
-        if (!sanitizedKey) {
-            // Key was invalid or dangerous, skip it
-            continue;
-        }
+		// Sanitize the location name
+		const sanitizedKey = sanitizeLocationName(key);
+		if (!sanitizedKey) {
+			// Key was invalid or dangerous, skip it
+			continue;
+		}
 
-        const value = stored[key];
-        let cleanedValue;
+		const value = stored[key];
+		let cleanedValue;
 
-        // Handle both string format (legacy) and array format (new)
-        if (typeof value === 'string') {
-            // Legacy string format - parse and convert to array
-            const items = parseItems(value);
-            cleanedValue = items.map(item => ({ name: item, quantity: 1 }));
-        } else if (Array.isArray(value)) {
-            // New array format - validate each item
-            cleanedValue = value.filter(item => {
-                if (!item || typeof item !== 'object') {
-                    console.warn(`[RPG Companion] Invalid item in stored inventory "${sanitizedKey}", skipping`);
-                    return false;
-                }
-                if (!item.name || typeof item.name !== 'string') {
-                    console.warn(`[RPG Companion] Item missing name in stored inventory "${sanitizedKey}", skipping`);
-                    return false;
-                }
-                // Validate and sanitize item name
-                const sanitizedItemName = sanitizeItemName(item.name);
-                if (!sanitizedItemName) {
-                    console.warn(`[RPG Companion] Invalid item name in stored inventory "${sanitizedKey}", skipping`);
-                    return false;
-                }
-                // Create clean item object
-                const cleanItem = { name: sanitizedItemName };
-                if (item.quantity && typeof item.quantity === 'number') {
-                    cleanItem.quantity = item.quantity;
-                }
-                return true;
-            });
-        } else {
-            console.warn(`[RPG Companion] Invalid stored inventory value for location "${sanitizedKey}", skipping`);
-            continue;
-        }
+		// Handle both string format (legacy) and array format (new)
+		if (typeof value === "string") {
+			// Legacy string format - parse and convert to array
+			const items = parseItems(value);
+			cleanedValue = items.map((item) => ({ name: item, quantity: 1 }));
+		} else if (Array.isArray(value)) {
+			// New array format - validate each item
+			cleanedValue = value.filter((item) => {
+				if (!item || typeof item !== "object") {
+					console.warn(
+						`[RPG Companion] Invalid item in stored inventory "${sanitizedKey}", skipping`,
+					);
+					return false;
+				}
+				if (!item.name || typeof item.name !== "string") {
+					console.warn(
+						`[RPG Companion] Item missing name in stored inventory "${sanitizedKey}", skipping`,
+					);
+					return false;
+				}
+				// Validate and sanitize item name
+				const sanitizedItemName = sanitizeItemName(item.name);
+				if (!sanitizedItemName) {
+					console.warn(
+						`[RPG Companion] Invalid item name in stored inventory "${sanitizedKey}", skipping`,
+					);
+					return false;
+				}
+				// Create clean item object
+				const cleanItem = { name: sanitizedItemName };
+				if (item.quantity && typeof item.quantity === "number") {
+					cleanItem.quantity = item.quantity;
+				}
+				return true;
+			});
+		} else {
+			console.warn(
+				`[RPG Companion] Invalid stored inventory value for location "${sanitizedKey}", skipping`,
+			);
+			continue;
+		}
 
-        // Always keep the location (even if empty)
-        cleaned[sanitizedKey] = cleanedValue;
+		// Always keep the location (even if empty)
+		cleaned[sanitizedKey] = cleanedValue;
 
-        // Warn if we had to clean corrupted items
-        const originalCount = typeof value === 'string' ? parseItems(value).length : (Array.isArray(value) ? value.length : 0);
-        const cleanedCount = cleanedValue.length;
-        if (cleanedCount < originalCount && originalCount > 0) {
-            console.warn(`[RPG Companion] Cleaned corrupted items from location "${sanitizedKey}": ${originalCount} items → ${cleanedCount} items`);
-        }
-    }
+		// Warn if we had to clean corrupted items
+		const originalCount =
+			typeof value === "string"
+				? parseItems(value).length
+				: Array.isArray(value)
+					? value.length
+					: 0;
+		const cleanedCount = cleanedValue.length;
+		if (cleanedCount < originalCount && originalCount > 0) {
+			console.warn(
+				`[RPG Companion] Cleaned corrupted items from location "${sanitizedKey}": ${originalCount} items → ${cleanedCount} items`,
+			);
+		}
+	}
 
-    return cleaned;
+	return cleaned;
 }
 
 /**

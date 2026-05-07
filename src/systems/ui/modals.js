@@ -4,27 +4,27 @@
  */
 
 import { getContext } from "../../../../../../extensions.js";
+import { i18n } from "../../core/i18n.js";
 import {
-	extensionSettings,
+	clearCache,
+	saveChatData,
+	saveSettings,
+	updateMessageSwipeData,
+} from "../../core/persistence.js";
+import {
 	$infoBoxContainer,
 	$thoughtsContainer,
 	$userStatsContainer,
-	setPendingDiceRoll,
+	extensionSettings,
 	getPendingDiceRoll,
+	setPendingDiceRoll,
 } from "../../core/state.js";
 import {
-	saveSettings,
-	saveChatData,
-	updateMessageSwipeData,
-	clearCache,
-} from "../../core/persistence.js";
-import {
-	rollDice as rollDiceCore,
-	clearDiceRoll as clearDiceRollCore,
-	updateDiceDisplay as updateDiceDisplayCore,
 	addDiceQuickReply as addDiceQuickReplyCore,
+	clearDiceRoll as clearDiceRollCore,
+	rollDice as rollDiceCore,
+	updateDiceDisplay as updateDiceDisplayCore,
 } from "../features/dice.js";
-import { i18n } from "../../core/i18n.js";
 
 /**
  * Modern DiceModal ES6 Class
@@ -421,12 +421,12 @@ export function setupDiceRoller() {
 	diceModal = new DiceModal();
 
 	// Click dice display to open popup
-	$("#rpg-dice-display").on("click", function () {
+	$("#rpg-dice-display").on("click", () => {
 		openDicePopup();
 	});
 
 	// Close popup - handle both close button and backdrop clicks
-	$("#rpg-dice-popup-close").on("click", function () {
+	$("#rpg-dice-popup-close").on("click", () => {
 		closeDicePopup();
 	});
 
@@ -438,12 +438,12 @@ export function setupDiceRoller() {
 	});
 
 	// Roll dice button
-	$("#rpg-dice-roll-btn").on("click", async function () {
+	$("#rpg-dice-roll-btn").on("click", async () => {
 		await rollDiceCore(diceModal);
 	});
 
 	// Save roll button (closes popup and saves the roll)
-	$("#rpg-dice-save-btn").on("click", function () {
+	$("#rpg-dice-save-btn").on("click", () => {
 		// Save the pending roll
 		const roll = getPendingDiceRoll();
 		if (roll) {
@@ -456,14 +456,14 @@ export function setupDiceRoller() {
 	});
 
 	// Reset on Enter key
-	$("#rpg-dice-count, #rpg-dice-sides").on("keypress", function (e) {
+	$("#rpg-dice-count, #rpg-dice-sides").on("keypress", (e) => {
 		if (e.which === 13) {
 			rollDiceCore(diceModal);
 		}
 	});
 
 	// Clear dice roll button
-	$("#rpg-clear-dice").on("click", function (e) {
+	$("#rpg-clear-dice").on("click", (e) => {
 		e.stopPropagation(); // Prevent opening the dice popup
 		clearDiceRollCore();
 	});
@@ -484,12 +484,12 @@ export function setupSettingsPopup() {
 	settingsModal = new SettingsModal();
 
 	// Open settings popup
-	$("#rpg-open-settings").on("click", function () {
+	$("#rpg-open-settings").on("click", () => {
 		openSettingsPopup();
 	});
 
 	// Close settings popup - close button
-	$("#rpg-close-settings").on("click", function () {
+	$("#rpg-close-settings").on("click", () => {
 		closeSettingsPopup();
 	});
 
@@ -501,7 +501,7 @@ export function setupSettingsPopup() {
 	});
 
 	// Clear cache button with dropdown
-	$("#rpg-clear-cache").on("click", function (e) {
+	$("#rpg-clear-cache").on("click", (e) => {
 		e.stopPropagation(); // Prevent click from triggering dropdown toggle
 
 		const $dropdown = $("#rpg-clear-cache-options");
@@ -518,7 +518,7 @@ export function setupSettingsPopup() {
 	});
 
 	// Close dropdown when clicking anywhere else
-	$(document).on("click", function (e) {
+	$(document).on("click", (e) => {
 		if (
 			!$(e.target).closest("#rpg-clear-cache").length &&
 			!$(e.target).closest("#rpg-clear-cache-options").length
@@ -545,7 +545,7 @@ export function setupSettingsPopup() {
 	);
 
 	// Handle clear cache execute button click
-	$("#rpg-clear-cache-execute").on("click", function (e) {
+	$("#rpg-clear-cache-execute").on("click", (e) => {
 		e.stopPropagation();
 
 		// Get selected options
@@ -553,7 +553,7 @@ export function setupSettingsPopup() {
 		const dataType = $('input[name="rpg-clear-cache-type"]:checked').val();
 
 		// Get custom selections if custom type is selected
-		let customSelection = [];
+		const customSelection = [];
 		if (dataType === "custom") {
 			$(
 				'#rpg-clear-cache-custom-options input[name="rpg-clear-cache-custom"]:checked',
@@ -665,12 +665,12 @@ export function setupPartialRefreshPopup() {
 	partialRefreshModal = new PartialRefreshModal();
 
 	// Close button
-	$("#rpg-partial-refresh-close").on("click", function () {
+	$("#rpg-partial-refresh-close").on("click", () => {
 		closePartialRefreshPopup();
 	});
 
 	// Cancel button
-	$("#rpg-partial-refresh-cancel").on("click", function () {
+	$("#rpg-partial-refresh-cancel").on("click", () => {
 		closePartialRefreshPopup();
 	});
 
@@ -682,7 +682,7 @@ export function setupPartialRefreshPopup() {
 	});
 
 	// Execute button
-	$("#rpg-partial-refresh-execute").on("click", function () {
+	$("#rpg-partial-refresh-execute").on("click", () => {
 		if (partialRefreshModal) {
 			// Save selections before executing
 			partialRefreshModal.saveSelections();

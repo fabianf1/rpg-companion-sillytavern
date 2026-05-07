@@ -3,7 +3,7 @@
  * Handles theme application, custom colors, and animations
  */
 
-import { extensionSettings, $panelContainer } from '../../core/state.js';
+import { $panelContainer, extensionSettings } from "../../core/state.js";
 
 /**
  * Converts hex color and opacity percentage to rgba string
@@ -12,11 +12,11 @@ import { extensionSettings, $panelContainer } from '../../core/state.js';
  * @returns {string} - RGBA color string
  */
 export function hexToRgba(hex, opacity = 100) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const a = opacity / 100;
-    return `rgba(${r}, ${g}, ${b}, ${a})`;
+	const r = parseInt(hex.slice(1, 3), 16);
+	const g = parseInt(hex.slice(3, 5), 16);
+	const b = parseInt(hex.slice(5, 7), 16);
+	const a = opacity / 100;
+	return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
 /**
@@ -24,170 +24,177 @@ export function hexToRgba(hex, opacity = 100) {
  * @returns {{low: string, high: string}} RGBA color strings for stat bars
  */
 export function getStatBarColors() {
-    return {
-        low: hexToRgba(
-            extensionSettings.statBarColorLow || '#cc3333',
-            extensionSettings.statBarColorLowOpacity ?? 100
-        ),
-        high: hexToRgba(
-            extensionSettings.statBarColorHigh || '#33cc66',
-            extensionSettings.statBarColorHighOpacity ?? 100
-        )
-    };
+	return {
+		low: hexToRgba(
+			extensionSettings.statBarColorLow || "#cc3333",
+			extensionSettings.statBarColorLowOpacity ?? 100,
+		),
+		high: hexToRgba(
+			extensionSettings.statBarColorHigh || "#33cc66",
+			extensionSettings.statBarColorHighOpacity ?? 100,
+		),
+	};
 }
 
 /**
  * Applies the selected theme to the panel.
  */
 export function applyTheme() {
-    if (!$panelContainer) return;
+	if (!$panelContainer) return;
 
-    const theme = extensionSettings.theme;
+	const theme = extensionSettings.theme;
 
-    // Remove all theme attributes first
-    $panelContainer.removeAttr('data-theme');
+	// Remove all theme attributes first
+	$panelContainer.removeAttr("data-theme");
 
-    // Clear any inline CSS variable overrides
-    $panelContainer.css({
-        '--rpg-bg': '',
-        '--rpg-accent': '',
-        '--rpg-text': '',
-        '--rpg-highlight': '',
-        '--rpg-border': '',
-        '--rpg-shadow': ''
-    });
+	// Clear any inline CSS variable overrides
+	$panelContainer.css({
+		"--rpg-bg": "",
+		"--rpg-accent": "",
+		"--rpg-text": "",
+		"--rpg-highlight": "",
+		"--rpg-border": "",
+		"--rpg-shadow": "",
+	});
 
-    // Apply the selected theme
-    if (theme === 'custom') {
-        applyCustomTheme();
-    } else if (theme !== 'default') {
-        // For non-default themes, set the data-theme attribute
-        // which will trigger the CSS theme rules
-        $panelContainer.attr('data-theme', theme);
-    }
-    // For 'default', we do nothing - it will use the CSS variables from .rpg-panel class
-    // which fall back to SillyTavern's theme variables
+	// Apply the selected theme
+	if (theme === "custom") {
+		applyCustomTheme();
+	} else if (theme !== "default") {
+		// For non-default themes, set the data-theme attribute
+		// which will trigger the CSS theme rules
+		$panelContainer.attr("data-theme", theme);
+	}
+	// For 'default', we do nothing - it will use the CSS variables from .rpg-panel class
+	// which fall back to SillyTavern's theme variables
 
-    // Apply theme to mobile toggle and thought elements as well
-    const $mobileToggle = $('#rpg-mobile-toggle');
-    const $thoughtIcon = $('#rpg-thought-icon');
-    const $thoughtPanel = $('#rpg-thought-panel');
+	// Apply theme to mobile toggle and thought elements as well
+	const $mobileToggle = $("#rpg-mobile-toggle");
+	const $thoughtIcon = $("#rpg-thought-icon");
+	const $thoughtPanel = $("#rpg-thought-panel");
 
-    if ($mobileToggle.length) {
-        if (theme === 'default') {
-            $mobileToggle.removeAttr('data-theme');
-        } else {
-            $mobileToggle.attr('data-theme', theme);
-        }
-    }
+	if ($mobileToggle.length) {
+		if (theme === "default") {
+			$mobileToggle.removeAttr("data-theme");
+		} else {
+			$mobileToggle.attr("data-theme", theme);
+		}
+	}
 
-    if ($thoughtIcon.length) {
-        if (theme === 'default') {
-            $thoughtIcon.removeAttr('data-theme');
-        } else {
-            $thoughtIcon.attr('data-theme', theme);
-        }
-    }
+	if ($thoughtIcon.length) {
+		if (theme === "default") {
+			$thoughtIcon.removeAttr("data-theme");
+		} else {
+			$thoughtIcon.attr("data-theme", theme);
+		}
+	}
 
-    if ($thoughtPanel.length) {
-        if (theme === 'default') {
-            $thoughtPanel.removeAttr('data-theme');
-        } else {
-            $thoughtPanel.attr('data-theme', theme);
-        }
-    }
+	if ($thoughtPanel.length) {
+		if (theme === "default") {
+			$thoughtPanel.removeAttr("data-theme");
+		} else {
+			$thoughtPanel.attr("data-theme", theme);
+		}
+	}
 }
 
 /**
  * Applies custom colors when custom theme is selected.
  */
 export function applyCustomTheme() {
-    if (!$panelContainer) return;
+	if (!$panelContainer) return;
 
-    const colors = extensionSettings.customColors;
+	const colors = extensionSettings.customColors;
 
-    // Convert hex colors with opacity to rgba
-    const bgColor = hexToRgba(colors.bg, colors.bgOpacity ?? 100);
-    const accentColor = hexToRgba(colors.accent, colors.accentOpacity ?? 100);
-    const textColor = hexToRgba(colors.text, colors.textOpacity ?? 100);
-    const highlightColor = hexToRgba(colors.highlight, colors.highlightOpacity ?? 100);
+	// Convert hex colors with opacity to rgba
+	const bgColor = hexToRgba(colors.bg, colors.bgOpacity ?? 100);
+	const accentColor = hexToRgba(colors.accent, colors.accentOpacity ?? 100);
+	const textColor = hexToRgba(colors.text, colors.textOpacity ?? 100);
+	const highlightColor = hexToRgba(
+		colors.highlight,
+		colors.highlightOpacity ?? 100,
+	);
 
-    // Create shadow with 50% opacity of highlight color
-    const shadowColor = hexToRgba(colors.highlight, (colors.highlightOpacity ?? 100) * 0.5);
+	// Create shadow with 50% opacity of highlight color
+	const shadowColor = hexToRgba(
+		colors.highlight,
+		(colors.highlightOpacity ?? 100) * 0.5,
+	);
 
-    // Apply custom CSS variables as inline styles to main panel
-    $panelContainer.css({
-        '--rpg-bg': bgColor,
-        '--rpg-accent': accentColor,
-        '--rpg-text': textColor,
-        '--rpg-highlight': highlightColor,
-        '--rpg-border': highlightColor,
-        '--rpg-shadow': shadowColor
-    });
+	// Apply custom CSS variables as inline styles to main panel
+	$panelContainer.css({
+		"--rpg-bg": bgColor,
+		"--rpg-accent": accentColor,
+		"--rpg-text": textColor,
+		"--rpg-highlight": highlightColor,
+		"--rpg-border": highlightColor,
+		"--rpg-shadow": shadowColor,
+	});
 
-    // Apply custom colors to mobile toggle and thought elements
-    const customStyles = {
-        '--rpg-bg': bgColor,
-        '--rpg-accent': accentColor,
-        '--rpg-text': textColor,
-        '--rpg-highlight': highlightColor,
-        '--rpg-border': highlightColor,
-        '--rpg-shadow': shadowColor
-    };
+	// Apply custom colors to mobile toggle and thought elements
+	const customStyles = {
+		"--rpg-bg": bgColor,
+		"--rpg-accent": accentColor,
+		"--rpg-text": textColor,
+		"--rpg-highlight": highlightColor,
+		"--rpg-border": highlightColor,
+		"--rpg-shadow": shadowColor,
+	};
 
-    const $mobileToggle = $('#rpg-mobile-toggle');
-    const $thoughtIcon = $('#rpg-thought-icon');
-    const $thoughtPanel = $('#rpg-thought-panel');
+	const $mobileToggle = $("#rpg-mobile-toggle");
+	const $thoughtIcon = $("#rpg-thought-icon");
+	const $thoughtPanel = $("#rpg-thought-panel");
 
-    if ($mobileToggle.length) {
-        $mobileToggle.attr('data-theme', 'custom').css(customStyles);
-    }
+	if ($mobileToggle.length) {
+		$mobileToggle.attr("data-theme", "custom").css(customStyles);
+	}
 
-    if ($thoughtIcon.length) {
-        $thoughtIcon.attr('data-theme', 'custom').css(customStyles);
-    }
+	if ($thoughtIcon.length) {
+		$thoughtIcon.attr("data-theme", "custom").css(customStyles);
+	}
 
-    if ($thoughtPanel.length) {
-        $thoughtPanel.attr('data-theme', 'custom').css(customStyles);
-    }
+	if ($thoughtPanel.length) {
+		$thoughtPanel.attr("data-theme", "custom").css(customStyles);
+	}
 }
 
 /**
  * Toggles visibility of custom color pickers.
  */
 export function toggleCustomColors() {
-    const isCustom = extensionSettings.theme === 'custom';
-    $('#rpg-custom-colors').toggle(isCustom);
+	const isCustom = extensionSettings.theme === "custom";
+	$("#rpg-custom-colors").toggle(isCustom);
 }
 
 /**
  * Toggles animations on/off by adding/removing a class to the panel.
  */
 export function toggleAnimations() {
-    if (extensionSettings.enableAnimations) {
-        $panelContainer.addClass('rpg-animations-enabled');
-    } else {
-        $panelContainer.removeClass('rpg-animations-enabled');
-    }
+	if (extensionSettings.enableAnimations) {
+		$panelContainer.addClass("rpg-animations-enabled");
+	} else {
+		$panelContainer.removeClass("rpg-animations-enabled");
+	}
 }
 
 /**
  * Updates visibility of feature toggles in main panel based on settings
  */
 export function updateFeatureTogglesVisibility() {
-    const $featuresRow = $('#rpg-features-row');
+	const $featuresRow = $("#rpg-features-row");
 
-    const $dynamicWeatherToggle = $('#rpg-dynamic-weather-toggle-wrapper');
-    const $narratorToggle = $('#rpg-narrator-toggle-wrapper');
+	const $dynamicWeatherToggle = $("#rpg-dynamic-weather-toggle-wrapper");
+	const $narratorToggle = $("#rpg-narrator-toggle-wrapper");
 
-    // Show/hide individual toggles
-    $dynamicWeatherToggle.toggle(extensionSettings.showDynamicWeatherToggle);
-    $narratorToggle.toggle(extensionSettings.showNarratorMode);
+	// Show/hide individual toggles
+	$dynamicWeatherToggle.toggle(extensionSettings.showDynamicWeatherToggle);
+	$narratorToggle.toggle(extensionSettings.showNarratorMode);
 
-    // Hide entire row if all toggles are hidden
-    const anyVisible = extensionSettings.showDynamicWeatherToggle ||
-                      extensionSettings.showNarratorMode;
-    $featuresRow.toggle(anyVisible);
+	// Hide entire row if all toggles are hidden
+	const anyVisible =
+		extensionSettings.showDynamicWeatherToggle ||
+		extensionSettings.showNarratorMode;
+	$featuresRow.toggle(anyVisible);
 }
 
 /**
@@ -196,9 +203,9 @@ export function updateFeatureTogglesVisibility() {
  * @param {Object} settingsModal - The SettingsModal instance (passed as parameter to avoid circular dependency)
  */
 export function updateSettingsPopupTheme(settingsModal) {
-    if (settingsModal) {
-        settingsModal.updateTheme();
-    }
+	if (settingsModal) {
+		settingsModal.updateTheme();
+	}
 }
 
 /**
@@ -208,7 +215,7 @@ export function updateSettingsPopupTheme(settingsModal) {
  * @param {Object} settingsModal - The SettingsModal instance (passed as parameter to avoid circular dependency)
  */
 export function applyCustomThemeToSettingsPopup(settingsModal) {
-    if (settingsModal) {
-        settingsModal._applyCustomTheme();
-    }
+	if (settingsModal) {
+		settingsModal._applyCustomTheme();
+	}
 }

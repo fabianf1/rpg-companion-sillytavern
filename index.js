@@ -1,127 +1,121 @@
 import {
+	event_types,
+	eventSource,
+	saveSettingsDebounced,
+} from "../../../../script.js";
+import {
 	renderExtensionTemplateAsync,
 	extension_settings as st_extension_settings,
 } from "../../../extensions.js";
-import {
-	eventSource,
-	event_types,
-	saveSettingsDebounced,
-} from "../../../../script.js";
 
 // Core modules
 import { extensionName } from "./src/core/config.js";
-import { i18n } from "./src/core/i18n.js";
-import { migrateToV3JSON } from "./src/utils/jsonMigration.js";
-import {
-	extensionSettings,
-	updateExtensionSettings,
-	setPanelContainer,
-	setUserStatsContainer,
-	setInfoBoxContainer,
-	setThoughtsContainer,
-	setInventoryContainer,
-	setAppearanceContainer,
-	setQuestsContainer,
-	abortCurrentGeneration,
-} from "./src/core/state.js";
-import { loadSettings, saveSettings } from "./src/core/persistence.js";
 import { registerAllEvents } from "./src/core/events.js";
-import { log, error as logError } from "./src/utils/logger.js";
-
+import { i18n } from "./src/core/i18n.js";
+import { loadSettings, saveSettings } from "./src/core/persistence.js";
+import {
+	abortCurrentGeneration,
+	extensionSettings,
+	setAppearanceContainer,
+	setInfoBoxContainer,
+	setInventoryContainer,
+	setPanelContainer,
+	setQuestsContainer,
+	setThoughtsContainer,
+	setUserStatsContainer,
+	updateExtensionSettings,
+} from "./src/core/state.js";
+import { setupClassicStatsButtons } from "./src/systems/features/classicStats.js";
+import {
+	detectConflictingRegexScripts,
+	ensureHtmlCleaningRegex,
+	ensureTrackerCleaningRegex,
+} from "./src/systems/features/htmlCleaning.js";
+import { ensureJsonCleaningRegex } from "./src/systems/features/jsonCleaning.js";
+// Feature modules
+import {
+	sendPlotProgression,
+	setupPlotButtons,
+} from "./src/systems/features/plotProgression.js";
 // Generation & Parsing modules
 import {
-	updateRPGData,
 	getAvailableConnectionProfiles,
+	updateRPGData,
 } from "./src/systems/generation/apiClient.js";
 import { onGenerationStarted } from "./src/systems/generation/injector.js";
-
-// Rendering modules
-import { renderUserStats } from "./src/systems/rendering/userStats.js";
+// Integration modules
+import {
+	clearExtensionPrompts,
+	initHistoryInjection,
+	onCharacterChanged,
+	onGenerationEnded,
+	onMessageDeleted,
+	onMessageReceived,
+	onMessageSent,
+	onMessageSwiped,
+	updatePersonaAvatar,
+} from "./src/systems/integration/sillytavern.js";
+// Interaction modules
+import { initInventoryEventListeners } from "./src/systems/interaction/inventoryActions.js";
+import { renderAppearance } from "./src/systems/rendering/appearance.js";
 import { renderInfoBox } from "./src/systems/rendering/infoBox.js";
+import { renderInventory } from "./src/systems/rendering/inventory.js";
+import { renderQuests } from "./src/systems/rendering/quests.js";
 import {
 	renderThoughts,
 	updateChatThoughts,
 } from "./src/systems/rendering/thoughts.js";
-import { renderInventory } from "./src/systems/rendering/inventory.js";
-import { renderQuests } from "./src/systems/rendering/quests.js";
-import { renderAppearance } from "./src/systems/rendering/appearance.js";
-import { initSnowflakes } from "./src/systems/ui/snowflakes.js";
-import {
-	toggleDynamicWeather,
-	initWeatherEffects,
-	updateWeatherEffect,
-} from "./src/systems/ui/weatherEffects.js";
-
-// Interaction modules
-import { initInventoryEventListeners } from "./src/systems/interaction/inventoryActions.js";
-
-// UI Systems modules
-import {
-	applyTheme,
-	toggleCustomColors,
-	toggleAnimations,
-	updateFeatureTogglesVisibility,
-} from "./src/systems/ui/theme.js";
-import {
-	setupDiceRoller,
-	setupSettingsPopup,
-	setupPartialRefreshPopup,
-	openPartialRefreshPopup,
-	getPartialRefreshModal,
-	updateDiceDisplay,
-	addDiceQuickReply,
-} from "./src/systems/ui/modals.js";
-import { initTrackerEditor } from "./src/systems/ui/trackerEditor.js";
-import { initPromptsEditor } from "./src/systems/ui/promptsEditor.js";
-import {
-	togglePlotButtons,
-	setupCollapseToggle,
-	updatePanelVisibility,
-	updateSectionVisibility,
-	applyPanelPosition,
-} from "./src/systems/ui/layout.js";
-import {
-	setupMobileToggle,
-	setupMobileTabs,
-	setupMobileKeyboardHandling,
-	setupContentEditableScrolling,
-	updateMobileTabLabels,
-	updateFabWidgets,
-} from "./src/systems/ui/mobile.js";
+// Rendering modules
+import { renderUserStats } from "./src/systems/rendering/userStats.js";
 import {
 	setupDesktopTabs,
 	updateStripWidgets,
 } from "./src/systems/ui/desktop.js";
 import {
+	applyPanelPosition,
+	setupCollapseToggle,
+	togglePlotButtons,
+	updatePanelVisibility,
+	updateSectionVisibility,
+} from "./src/systems/ui/layout.js";
+import {
+	setupContentEditableScrolling,
+	setupMobileKeyboardHandling,
+	setupMobileTabs,
+	setupMobileToggle,
+	updateFabWidgets,
+	updateMobileTabLabels,
+} from "./src/systems/ui/mobile.js";
+import {
+	addDiceQuickReply,
+	getPartialRefreshModal,
+	openPartialRefreshPopup,
+	setupDiceRoller,
+	setupPartialRefreshPopup,
+	setupSettingsPopup,
+	updateDiceDisplay,
+} from "./src/systems/ui/modals.js";
+import { initPromptsEditor } from "./src/systems/ui/promptsEditor.js";
+import {
 	bindSettingsUI,
 	syncSettingsUI,
 } from "./src/systems/ui/settingsBinder.js";
-
-// Feature modules
+import { initSnowflakes } from "./src/systems/ui/snowflakes.js";
+// UI Systems modules
 import {
-	setupPlotButtons,
-	sendPlotProgression,
-} from "./src/systems/features/plotProgression.js";
-import { setupClassicStatsButtons } from "./src/systems/features/classicStats.js";
+	applyTheme,
+	toggleAnimations,
+	toggleCustomColors,
+	updateFeatureTogglesVisibility,
+} from "./src/systems/ui/theme.js";
+import { initTrackerEditor } from "./src/systems/ui/trackerEditor.js";
 import {
-	ensureHtmlCleaningRegex,
-	detectConflictingRegexScripts,
-	ensureTrackerCleaningRegex,
-} from "./src/systems/features/htmlCleaning.js";
-import { ensureJsonCleaningRegex } from "./src/systems/features/jsonCleaning.js";
-
-// Integration modules
-import {
-	onMessageSent,
-	onMessageReceived,
-	onCharacterChanged,
-	onMessageSwiped,
-	onMessageDeleted,
-	updatePersonaAvatar,
-	clearExtensionPrompts,
-	onGenerationEnded,
-	initHistoryInjection,
-} from "./src/systems/integration/sillytavern.js";
+	initWeatherEffects,
+	toggleDynamicWeather,
+	updateWeatherEffect,
+} from "./src/systems/ui/weatherEffects.js";
+import { migrateToV3JSON } from "./src/utils/jsonMigration.js";
+import { log, error as logError } from "./src/utils/logger.js";
 
 /**
  * Updates UI elements that are dynamically generated and not covered by data-i18n-key.

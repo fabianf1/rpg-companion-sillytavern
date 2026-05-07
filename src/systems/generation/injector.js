@@ -3,20 +3,20 @@
  * Handles injection of RPG tracker prompts into the generation context
  */
 
-import { getContext } from "../../../../../../extensions.js";
 import {
+	event_types,
+	eventSource,
 	extension_prompt_types,
 	setExtensionPrompt,
-	eventSource,
-	event_types,
 } from "../../../../../../../script.js";
+import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
-import { evaluateSuppression } from "./suppression.js";
 import {
-	generateContextualSummary,
-	formatHistoricalTrackerData,
 	DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT,
+	formatHistoricalTrackerData,
+	generateContextualSummary,
 } from "./promptBuilder.js";
+import { evaluateSuppression } from "./suppression.js";
 
 // ============================================================================
 // CONSTANTS AND CONFIGURATION

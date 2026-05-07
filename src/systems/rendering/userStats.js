@@ -3,24 +3,27 @@
  * Handles rendering of the user stats panel with progress bars and classic RPG stats
  */
 
-import { getContext } from '../../../../../../extensions.js';
-import { user_avatar } from '../../../../../../../script.js';
+import { user_avatar } from "../../../../../../../script.js";
+import { getContext } from "../../../../../../extensions.js";
+import { i18n } from "../../core/i18n.js";
 import {
-    extensionSettings,
-    $userStatsContainer,
-    FALLBACK_AVATAR_DATA_URI
-} from '../../core/state.js';
-import { i18n } from '../../core/i18n.js';
+	saveChatData,
+	saveSettings,
+	updateMessageSwipeData,
+} from "../../core/persistence.js";
 import {
-    saveSettings,
-    saveChatData,
-    updateMessageSwipeData
-} from '../../core/persistence.js';
-import { getSafeThumbnailUrl } from '../../utils/avatars.js';
-import { buildInventorySummary, getTrackerDataForContext } from '../generation/promptBuilder.js';
-import { isItemLocked, setItemLock } from '../generation/lockManager.js';
-import { updateFabWidgets } from '../ui/mobile.js';
-import { getStatBarColors } from '../ui/theme.js';
+	$userStatsContainer,
+	extensionSettings,
+	FALLBACK_AVATAR_DATA_URI,
+} from "../../core/state.js";
+import { getSafeThumbnailUrl } from "../../utils/avatars.js";
+import { isItemLocked, setItemLock } from "../generation/lockManager.js";
+import {
+	buildInventorySummary,
+	getTrackerDataForContext,
+} from "../generation/promptBuilder.js";
+import { updateFabWidgets } from "../ui/mobile.js";
+import { getStatBarColors } from "../ui/theme.js";
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -29,11 +32,11 @@ import { getStatBarColors } from '../ui/theme.js';
  * @returns {string} snake_case key from the base name only
  */
 function toFieldKey(name) {
-    const baseName = name.replace(/\s*\(.*\)\s*$/, '').trim();
-    return baseName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
+	const baseName = name.replace(/\s*\(.*\)\s*$/, "").trim();
+	return baseName
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "");
 }
 
 /**
@@ -44,22 +47,22 @@ function toFieldKey(name) {
  * @returns {number} The stat value
  */
 function getStatValue(trackerData, statId, defaultValue = 100) {
-    if (!trackerData) return defaultValue;
-    
-    // Try flat format first (tracker data)
-    if (trackerData[statId] !== undefined) {
-        return trackerData[statId];
-    }
-    
-    // Try array format (stats array in tracker data)
-    if (trackerData.stats && Array.isArray(trackerData.stats)) {
-        const stat = trackerData.stats.find(s => s.id === statId);
-        if (stat && stat.value !== undefined) {
-            return stat.value;
-        }
-    }
-    
-    return defaultValue;
+	if (!trackerData) return defaultValue;
+
+	// Try flat format first (tracker data)
+	if (trackerData[statId] !== undefined) {
+		return trackerData[statId];
+	}
+
+	// Try array format (stats array in tracker data)
+	if (trackerData.stats && Array.isArray(trackerData.stats)) {
+		const stat = trackerData.stats.find((s) => s.id === statId);
+		if (stat && stat.value !== undefined) {
+			return stat.value;
+		}
+	}
+
+	return defaultValue;
 }
 
 /**
@@ -69,32 +72,32 @@ function getStatValue(trackerData, statId, defaultValue = 100) {
  * @param {string} defaultValue - Default value if not found
  * @returns {string} The field value
  */
-function getStatusField(trackerData, fieldKey, defaultValue = '') {
-    if (!trackerData) return defaultValue;
-    
-    // Try flat format first
-    if (trackerData[fieldKey] !== undefined) {
-        return trackerData[fieldKey];
-    }
-    
-    // Try status object format
-    if (trackerData.status && typeof trackerData.status === 'object') {
-        // Try the field key directly
-        if (trackerData.status[fieldKey] !== undefined) {
-            return trackerData.status[fieldKey];
-        }
-        // Try lowercase field name
-        const lowerKey = fieldKey.toLowerCase();
-        if (trackerData.status[lowerKey] !== undefined) {
-            return trackerData.status[lowerKey];
-        }
-        // Try mood field if looking for mood
-        if (fieldKey === 'mood' && trackerData.status.mood !== undefined) {
-            return trackerData.status.mood;
-        }
-    }
-    
-    return defaultValue;
+function getStatusField(trackerData, fieldKey, defaultValue = "") {
+	if (!trackerData) return defaultValue;
+
+	// Try flat format first
+	if (trackerData[fieldKey] !== undefined) {
+		return trackerData[fieldKey];
+	}
+
+	// Try status object format
+	if (trackerData.status && typeof trackerData.status === "object") {
+		// Try the field key directly
+		if (trackerData.status[fieldKey] !== undefined) {
+			return trackerData.status[fieldKey];
+		}
+		// Try lowercase field name
+		const lowerKey = fieldKey.toLowerCase();
+		if (trackerData.status[lowerKey] !== undefined) {
+			return trackerData.status[lowerKey];
+		}
+		// Try mood field if looking for mood
+		if (fieldKey === "mood" && trackerData.status.mood !== undefined) {
+			return trackerData.status.mood;
+		}
+	}
+
+	return defaultValue;
 }
 
 /**
@@ -102,58 +105,64 @@ function getStatusField(trackerData, fieldKey, defaultValue = '') {
  * @returns {string} Formatted stats text for tracker
  */
 export function buildUserStatsText() {
-    const trackerData = getTrackerDataForContext('userStats');
-    const config = extensionSettings.trackerConfig?.userStats || {
-        customStats: [
-            { id: 'health', name: 'Health', enabled: true },
-            { id: 'satiety', name: 'Satiety', enabled: true },
-            { id: 'energy', name: 'Energy', enabled: true },
-            { id: 'hygiene', name: 'Hygiene', enabled: true },
-            { id: 'arousal', name: 'Arousal', enabled: true }
-        ],
-        statusSection: { enabled: true, showMoodEmoji: true, customFields: ['Conditions'] },
-        skillsSection: { enabled: false, label: 'Skills' }
-    };
+	const trackerData = getTrackerDataForContext("userStats");
+	const config = extensionSettings.trackerConfig?.userStats || {
+		customStats: [
+			{ id: "health", name: "Health", enabled: true },
+			{ id: "satiety", name: "Satiety", enabled: true },
+			{ id: "energy", name: "Energy", enabled: true },
+			{ id: "hygiene", name: "Hygiene", enabled: true },
+			{ id: "arousal", name: "Arousal", enabled: true },
+		],
+		statusSection: {
+			enabled: true,
+			showMoodEmoji: true,
+			customFields: ["Conditions"],
+		},
+		skillsSection: { enabled: false, label: "Skills" },
+	};
 
-    let text = '';
+	let text = "";
 
-    if (!trackerData) {
-        return text.trim();
-    }
+	if (!trackerData) {
+		return text.trim();
+	}
 
-    // Add enabled custom stats
-    const enabledStats = config.customStats.filter(stat => stat && stat.enabled && stat.name && stat.id);
-    for (const stat of enabledStats) {
-        const value = getStatValue(trackerData, stat.id, 100);
-        text += `${stat.name}: ${value}%\n`;
-    }
+	// Add enabled custom stats
+	const enabledStats = config.customStats.filter(
+		(stat) => stat && stat.enabled && stat.name && stat.id,
+	);
+	for (const stat of enabledStats) {
+		const value = getStatValue(trackerData, stat.id, 100);
+		text += `${stat.name}: ${value}%\n`;
+	}
 
-    // Add status section if enabled
-    if (config.statusSection.enabled) {
-        if (config.statusSection.showMoodEmoji) {
-            text += `${getStatusField(trackerData, 'mood', '')}: `;
-        }
-        text += `${getStatusField(trackerData, 'conditions', 'None')}\n`;
-    }
+	// Add status section if enabled
+	if (config.statusSection.enabled) {
+		if (config.statusSection.showMoodEmoji) {
+			text += `${getStatusField(trackerData, "mood", "")}: `;
+		}
+		text += `${getStatusField(trackerData, "conditions", "None")}\n`;
+	}
 
-    // Add inventory summary
-    const inventory = getStatusField(trackerData, 'inventory', {});
-    const inventorySummary = buildInventorySummary(inventory);
-    text += inventorySummary;
+	// Add inventory summary
+	const inventory = getStatusField(trackerData, "inventory", {});
+	const inventorySummary = buildInventorySummary(inventory);
+	text += inventorySummary;
 
-    // Add skills if enabled
-    if (config.skillsSection.enabled) {
-        const skills = getStatusField(trackerData, 'skills', null);
-        if (skills) {
-            if (Array.isArray(skills)) {
-                text += `\n${config.skillsSection.label}: ${skills.map(s => s.name || s).join(', ')}`;
-            } else {
-                text += `\n${config.skillsSection.label}: ${skills}`;
-            }
-        }
-    }
+	// Add skills if enabled
+	if (config.skillsSection.enabled) {
+		const skills = getStatusField(trackerData, "skills", null);
+		if (skills) {
+			if (Array.isArray(skills)) {
+				text += `\n${config.skillsSection.label}: ${skills.map((s) => s.name || s).join(", ")}`;
+			} else {
+				text += `\n${config.skillsSection.label}: ${skills}`;
+			}
+		}
+	}
 
-    return text.trim();
+	return text.trim();
 }
 
 /**
@@ -162,212 +171,247 @@ export function buildUserStatsText() {
 ```
  */
 export function renderUserStats() {
-    if (!extensionSettings.showUserStats || !$userStatsContainer) {
-        console.warn('[RPG Companion] User stats panel is disabled or container not found. Skipping render.');
-        return;
-    }
+	if (!extensionSettings.showUserStats || !$userStatsContainer) {
+		console.warn(
+			"[RPG Companion] User stats panel is disabled or container not found. Skipping render.",
+		);
+		return;
+	}
 
-    // Check if tracker data exists (from swipe store or extensionSettings)
-    const trackerData = getTrackerDataForContext('userStats');
-    
-    if (!trackerData) {
-        // Always render to the #rpg-user-stats container
-        $userStatsContainer.html('<div class="rpg-inventory-empty">No statuses generated yet</div>')
-        // Clear the tracker message display
-        $('#rpg-tracker-message').hide();   
-        return;
-    }
+	// Check if tracker data exists (from swipe store or extensionSettings)
+	const trackerData = getTrackerDataForContext("userStats");
 
-    const stats = trackerData;
-    // });
-    const config = extensionSettings.trackerConfig?.userStats || {
-        customStats: [
-            { id: 'health', name: 'Health', enabled: true },
-            { id: 'satiety', name: 'Satiety', enabled: true },
-            { id: 'energy', name: 'Energy', enabled: true },
-            { id: 'hygiene', name: 'Hygiene', enabled: true },
-            { id: 'arousal', name: 'Arousal', enabled: true }
-        ],
-        rpgAttributes: [
-            { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
-            { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
-        ],
-        statusSection: { enabled: true, showMoodEmoji: true, customFields: ['Conditions'] },
-        skillsSection: { enabled: false, label: 'Skills' }
-    };
-    const userName = getContext().name1;
+	if (!trackerData) {
+		// Always render to the #rpg-user-stats container
+		$userStatsContainer.html(
+			'<div class="rpg-inventory-empty">No statuses generated yet</div>',
+		);
+		// Clear the tracker message display
+		$("#rpg-tracker-message").hide();
+		return;
+	}
 
-    // Get user portrait
-    let userPortrait = FALLBACK_AVATAR_DATA_URI;
-    if (user_avatar) {
-        const thumbnailUrl = getSafeThumbnailUrl('persona', user_avatar);
-        if (thumbnailUrl) {
-            userPortrait = thumbnailUrl;
-        }
-    }
+	const stats = trackerData;
+	// });
+	const config = extensionSettings.trackerConfig?.userStats || {
+		customStats: [
+			{ id: "health", name: "Health", enabled: true },
+			{ id: "satiety", name: "Satiety", enabled: true },
+			{ id: "energy", name: "Energy", enabled: true },
+			{ id: "hygiene", name: "Hygiene", enabled: true },
+			{ id: "arousal", name: "Arousal", enabled: true },
+		],
+		rpgAttributes: [
+			{ id: "str", name: "STR", enabled: true },
+			{ id: "dex", name: "DEX", enabled: true },
+			{ id: "con", name: "CON", enabled: true },
+			{ id: "int", name: "INT", enabled: true },
+			{ id: "wis", name: "WIS", enabled: true },
+			{ id: "cha", name: "CHA", enabled: true },
+		],
+		statusSection: {
+			enabled: true,
+			showMoodEmoji: true,
+			customFields: ["Conditions"],
+		},
+		skillsSection: { enabled: false, label: "Skills" },
+	};
+	const userName = getContext().name1;
 
-    // Create gradient from low to high color with opacity
-    const colors = getStatBarColors();
-    const gradient = `linear-gradient(to right, ${colors.low}, ${colors.high})`;
+	// Get user portrait
+	let userPortrait = FALLBACK_AVATAR_DATA_URI;
+	if (user_avatar) {
+		const thumbnailUrl = getSafeThumbnailUrl("persona", user_avatar);
+		if (thumbnailUrl) {
+			userPortrait = thumbnailUrl;
+		}
+	}
 
-    // Check if stats bars section is locked
-    const isStatsLocked = isItemLocked('userStats', 'stats');
-    const lockIcon = isStatsLocked ? '🔒' : '🔓';
-    const lockTitle = isStatsLocked ? i18n.getTranslation('userStats.statsLocked') : i18n.getTranslation('userStats.statsUnlocked');
-    const lockedClass = isStatsLocked ? ' locked' : '';
+	// Create gradient from low to high color with opacity
+	const colors = getStatBarColors();
+	const gradient = `linear-gradient(to right, ${colors.low}, ${colors.high})`;
 
-    let html = '<div class="rpg-stats-content">';
-    html += '<div class="rpg-stats-left">';
+	// Check if stats bars section is locked
+	const isStatsLocked = isItemLocked("userStats", "stats");
+	const lockIcon = isStatsLocked ? "🔒" : "🔓";
+	const lockTitle = isStatsLocked
+		? i18n.getTranslation("userStats.statsLocked")
+		: i18n.getTranslation("userStats.statsUnlocked");
+	const lockedClass = isStatsLocked ? " locked" : "";
 
-    // User info row
-    const showLevel = extensionSettings.trackerConfig?.userStats?.showLevel !== false;
-    html += `
+	let html = '<div class="rpg-stats-content">';
+	html += '<div class="rpg-stats-left">';
+
+	// User info row
+	const showLevel =
+		extensionSettings.trackerConfig?.userStats?.showLevel !== false;
+	html += `
         <div class="rpg-user-info-row">
             <img src="${userPortrait}" alt="${userName}" class="rpg-user-portrait" onerror="this.style.opacity='0.5';this.onerror=null;" />
             <span class="rpg-user-name">${userName}</span>
-            ${showLevel ? `<span style="opacity: 0.5;">|</span>
-            <span class="rpg-level-label">${i18n.getTranslation('userStats.level')}</span>
-            <span class="rpg-level-value rpg-editable" contenteditable="true" data-field="level" title="${i18n.getTranslation('userStats.clickToEditLevel')}">${extensionSettings.level}</span>` : ''}
+            ${
+							showLevel
+								? `<span style="opacity: 0.5;">|</span>
+            <span class="rpg-level-label">${i18n.getTranslation("userStats.level")}</span>
+            <span class="rpg-level-value rpg-editable" contenteditable="true" data-field="level" title="${i18n.getTranslation("userStats.clickToEditLevel")}">${extensionSettings.level}</span>`
+								: ""
+						}
         </div>
     `;
 
-    // Dynamic stats grid - only show enabled stats
-    const showLockIcons = extensionSettings.showLockIcons ?? true;
-    if (showLockIcons) {
-        html += `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="userStats" data-path="stats" title="${lockTitle}">${lockIcon}</span>`;
-    }
-    html += '<div class="rpg-stats-grid">';
-    const enabledStats = config.customStats.filter(stat => stat && stat.enabled && stat.name && stat.id);
-    const displayMode = config.statsDisplayMode || 'percentage';
+	// Dynamic stats grid - only show enabled stats
+	const showLockIcons = extensionSettings.showLockIcons ?? true;
+	if (showLockIcons) {
+		html += `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="userStats" data-path="stats" title="${lockTitle}">${lockIcon}</span>`;
+	}
+	html += '<div class="rpg-stats-grid">';
+	const enabledStats = config.customStats.filter(
+		(stat) => stat && stat.enabled && stat.name && stat.id,
+	);
+	const displayMode = config.statsDisplayMode || "percentage";
 
-    for (const stat of enabledStats) {
-        const value = getStatValue(stats, stat.id, 100);
-        const maxValue = stat.maxValue || 100;
+	for (const stat of enabledStats) {
+		const value = getStatValue(stats, stat.id, 100);
+		const maxValue = stat.maxValue || 100;
 
-        // Calculate percentage for bar fill
-        let percentage;
-        let displayValue;
+		// Calculate percentage for bar fill
+		let percentage;
+		let displayValue;
 
-        if (displayMode === 'number') {
-            // In number mode, value is already the number (0 to maxValue)
-            percentage = maxValue > 0 ? (value / maxValue) * 100 : 100;
-            displayValue = `${value}/${maxValue}`;
-        } else {
-            // In percentage mode, value is 0-100
-            percentage = value;
-            displayValue = `${value}%`;
-        }
+		if (displayMode === "number") {
+			// In number mode, value is already the number (0 to maxValue)
+			percentage = maxValue > 0 ? (value / maxValue) * 100 : 100;
+			displayValue = `${value}/${maxValue}`;
+		} else {
+			// In percentage mode, value is 0-100
+			percentage = value;
+			displayValue = `${value}%`;
+		}
 
-        html += `
+		html += `
             <div class="rpg-stat-row">
-                <span class="rpg-stat-label rpg-editable-stat-name" contenteditable="true" data-field="${stat.id}" title="${i18n.getTranslation('userStats.clickToEditStatName')}">${stat.name}:</span>
+                <span class="rpg-stat-label rpg-editable-stat-name" contenteditable="true" data-field="${stat.id}" title="${i18n.getTranslation("userStats.clickToEditStatName")}">${stat.name}:</span>
                 <div class="rpg-stat-bar" style="background: ${gradient}">
                     <div class="rpg-stat-fill" style="width: ${100 - percentage}%"></div>
                 </div>
-                <span class="rpg-stat-value rpg-editable-stat" contenteditable="true" data-field="${stat.id}" data-max="${maxValue}" data-mode="${displayMode}" title="${i18n.getTranslation('userStats.clickToEditStatValue')}">${displayValue}</span>
+                <span class="rpg-stat-value rpg-editable-stat" contenteditable="true" data-field="${stat.id}" data-max="${maxValue}" data-mode="${displayMode}" title="${i18n.getTranslation("userStats.clickToEditStatValue")}">${displayValue}</span>
             </div>
         `;
-    }
-    html += '</div>';
+	}
+	html += "</div>";
 
-    // Status section (conditionally rendered)
-    if (config.statusSection.enabled) {
-        const isMoodLocked = isItemLocked('userStats', 'status');
-        const moodLockIcon = isMoodLocked ? '🔒' : '🔓';
-        const moodLockTitle = isMoodLocked ? i18n.getTranslation('userStats.moodLocked') : i18n.getTranslation('userStats.moodUnlocked');
-        const moodLockedClass = isMoodLocked ? ' locked' : '';
-        html += '<div class="rpg-mood">';
-        if (showLockIcons) {
-            html += `<span class="rpg-section-lock-icon${moodLockedClass}" data-tracker="userStats" data-path="status" title="${moodLockTitle}">${moodLockIcon}</span>`;
-        }
+	// Status section (conditionally rendered)
+	if (config.statusSection.enabled) {
+		const isMoodLocked = isItemLocked("userStats", "status");
+		const moodLockIcon = isMoodLocked ? "🔒" : "🔓";
+		const moodLockTitle = isMoodLocked
+			? i18n.getTranslation("userStats.moodLocked")
+			: i18n.getTranslation("userStats.moodUnlocked");
+		const moodLockedClass = isMoodLocked ? " locked" : "";
+		html += '<div class="rpg-mood">';
+		if (showLockIcons) {
+			html += `<span class="rpg-section-lock-icon${moodLockedClass}" data-tracker="userStats" data-path="status" title="${moodLockTitle}">${moodLockIcon}</span>`;
+		}
 
-        if (config.statusSection.showMoodEmoji) {
-            html += `<div class="rpg-mood-emoji rpg-editable" contenteditable="true" data-field="mood" title="${i18n.getTranslation('userStats.clickToEditEmoji')}">${getStatusField(stats, 'mood', '')}</div>`;
-        }
+		if (config.statusSection.showMoodEmoji) {
+			html += `<div class="rpg-mood-emoji rpg-editable" contenteditable="true" data-field="mood" title="${i18n.getTranslation("userStats.clickToEditEmoji")}">${getStatusField(stats, "mood", "")}</div>`;
+		}
 
-        // Render custom status fields
-        if (config.statusSection.customFields && config.statusSection.customFields.length > 0) {
-            for (const fieldName of config.statusSection.customFields) {
-                const fieldKey = toFieldKey(fieldName);
-                let fieldValue = getStatusField(stats, fieldKey, 'None');
-                // Handle array format (from JSON)
-                if (Array.isArray(fieldValue)) {
-                    fieldValue = fieldValue.join(', ') || 'None';
-                } else if (typeof fieldValue === 'string') {
-                    // Strip brackets if present (from JSON array format)
-                    fieldValue = fieldValue.replace(/^\[|\]$/g, '').trim();
-                }
-                html += `<div class="rpg-mood-conditions rpg-editable" contenteditable="true" data-field="${fieldKey}" title="Click to edit ${fieldName}">${fieldValue}</div>`;
-            }
-        }
+		// Render custom status fields
+		if (
+			config.statusSection.customFields &&
+			config.statusSection.customFields.length > 0
+		) {
+			for (const fieldName of config.statusSection.customFields) {
+				const fieldKey = toFieldKey(fieldName);
+				let fieldValue = getStatusField(stats, fieldKey, "None");
+				// Handle array format (from JSON)
+				if (Array.isArray(fieldValue)) {
+					fieldValue = fieldValue.join(", ") || "None";
+				} else if (typeof fieldValue === "string") {
+					// Strip brackets if present (from JSON array format)
+					fieldValue = fieldValue.replace(/^\[|\]$/g, "").trim();
+				}
+				html += `<div class="rpg-mood-conditions rpg-editable" contenteditable="true" data-field="${fieldKey}" title="Click to edit ${fieldName}">${fieldValue}</div>`;
+			}
+		}
 
-        html += '</div>';
-    }
+		html += "</div>";
+	}
 
-    // Skills section (conditionally rendered)
-    if (config.skillsSection.enabled) {
-        const isSkillsLocked = isItemLocked('userStats', 'skills');
-        const skillsLockIcon = isSkillsLocked ? '🔒' : '🔓';
-        const skillsLockTitle = isSkillsLocked ? i18n.getTranslation('userStats.skillsLocked') : i18n.getTranslation('userStats.skillsUnlocked');
-        const skillsLockedClass = isSkillsLocked ? ' locked' : '';
-        let skillsValue = 'None';
-        // Handle JSON array format: [{name: "Art"}, {name: "Coding"}]
-        const skillsData = getStatusField(stats, 'skills', null);
-        if (skillsData) {
-            if (Array.isArray(skillsData)) {
-                skillsValue = skillsData.map(s => s.name || s).join(', ') || 'None';
-            } else if (typeof skillsData === 'string') {
-                skillsValue = skillsData;
-            }
-        }
-        html += `
+	// Skills section (conditionally rendered)
+	if (config.skillsSection.enabled) {
+		const isSkillsLocked = isItemLocked("userStats", "skills");
+		const skillsLockIcon = isSkillsLocked ? "🔒" : "🔓";
+		const skillsLockTitle = isSkillsLocked
+			? i18n.getTranslation("userStats.skillsLocked")
+			: i18n.getTranslation("userStats.skillsUnlocked");
+		const skillsLockedClass = isSkillsLocked ? " locked" : "";
+		let skillsValue = "None";
+		// Handle JSON array format: [{name: "Art"}, {name: "Coding"}]
+		const skillsData = getStatusField(stats, "skills", null);
+		if (skillsData) {
+			if (Array.isArray(skillsData)) {
+				skillsValue = skillsData.map((s) => s.name || s).join(", ") || "None";
+			} else if (typeof skillsData === "string") {
+				skillsValue = skillsData;
+			}
+		}
+		html += `
             <div class="rpg-skills-section">`;
-        if (showLockIcons) {
-            html += `
+		if (showLockIcons) {
+			html += `
                 <span class="rpg-section-lock-icon${skillsLockedClass}" data-tracker="userStats" data-path="skills" title="${skillsLockTitle}">${skillsLockIcon}</span>`;
-        }
-        html += `
+		}
+		html += `
                 <span class="rpg-skills-label">${config.skillsSection.label}:</span>
-                <div class="rpg-skills-value rpg-editable" contenteditable="true" data-field="skills" title="${i18n.getTranslation('userStats.clickToEditSkills')}">${skillsValue}</div>
+                <div class="rpg-skills-value rpg-editable" contenteditable="true" data-field="skills" title="${i18n.getTranslation("userStats.clickToEditSkills")}">${skillsValue}</div>
             </div>
         `;
-    }
+	}
 
-    html += '</div>'; // Close rpg-stats-left
+	html += "</div>"; // Close rpg-stats-left
 
-    // RPG Attributes section (dynamically generated from config)
-    // Check if RPG Attributes section is enabled
-    const showRPGAttributes = config.showRPGAttributes !== undefined ? config.showRPGAttributes : true;
+	// RPG Attributes section (dynamically generated from config)
+	// Check if RPG Attributes section is enabled
+	const showRPGAttributes =
+		config.showRPGAttributes !== undefined ? config.showRPGAttributes : true;
 
-    if (showRPGAttributes) {
-        // Use attributes from config, with fallback to defaults if not configured
-        const rpgAttributes = (config.rpgAttributes && config.rpgAttributes.length > 0) ? config.rpgAttributes : [
-            { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
-            { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
-        ];
-        const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
+	if (showRPGAttributes) {
+		// Use attributes from config, with fallback to defaults if not configured
+		const rpgAttributes =
+			config.rpgAttributes && config.rpgAttributes.length > 0
+				? config.rpgAttributes
+				: [
+						{ id: "str", name: "STR", enabled: true },
+						{ id: "dex", name: "DEX", enabled: true },
+						{ id: "con", name: "CON", enabled: true },
+						{ id: "int", name: "INT", enabled: true },
+						{ id: "wis", name: "WIS", enabled: true },
+						{ id: "cha", name: "CHA", enabled: true },
+					];
+		const enabledAttributes = rpgAttributes.filter(
+			(attr) => attr && attr.enabled && attr.name && attr.id,
+		);
 
-        if (enabledAttributes.length > 0) {
-            html += `
+		if (enabledAttributes.length > 0) {
+			html += `
             <div class="rpg-stats-right">
                 <div class="rpg-classic-stats">
                     <div class="rpg-classic-stats-grid">
         `;
 
-            enabledAttributes.forEach(attr => {
-                // Use tracker data first, then classicStats from settings, then default to 10
-                const trackerData = getTrackerDataForContext('userStats');
-                const trackerValue = trackerData?.classicStats?.[attr.id];
-                const value = trackerValue !== undefined ? trackerValue : (extensionSettings.classicStats[attr.id] !== undefined ? extensionSettings.classicStats[attr.id] : 10);
-                html += `
+			enabledAttributes.forEach((attr) => {
+				// Use tracker data first, then classicStats from settings, then default to 10
+				const trackerData = getTrackerDataForContext("userStats");
+				const trackerValue = trackerData?.classicStats?.[attr.id];
+				const value =
+					trackerValue !== undefined
+						? trackerValue
+						: extensionSettings.classicStats[attr.id] !== undefined
+							? extensionSettings.classicStats[attr.id]
+							: 10;
+				html += `
                         <div class="rpg-classic-stat" data-stat="${attr.id}">
                             <span class="rpg-classic-stat-label">${attr.name}</span>
                             <div class="rpg-classic-stat-buttons">
@@ -377,189 +421,194 @@ export function renderUserStats() {
                             </div>
                         </div>
             `;
-            });
+			});
 
-            html += `
+			html += `
                     </div>
                 </div>
             </div>
         `;
-        }
-    }
+		}
+	}
 
-    html += '</div>'; // Close rpg-stats-content
+	html += "</div>"; // Close rpg-stats-content
 
-    // console.log('[RPG UserStats Render] Generated HTML length:', html.length);
-    // console.log('[RPG UserStats Render] HTML preview:', html.substring(0, 300));
-    // console.log('[RPG UserStats Render] Container exists:', !!$userStatsContainer, '$userStatsContainer length:', $userStatsContainer?.length);
+	// console.log('[RPG UserStats Render] Generated HTML length:', html.length);
+	// console.log('[RPG UserStats Render] HTML preview:', html.substring(0, 300));
+	// console.log('[RPG UserStats Render] Container exists:', !!$userStatsContainer, '$userStatsContainer length:', $userStatsContainer?.length);
 
-    // Always render to the #rpg-user-stats container (mobile layout just moves it around in DOM)
-    $userStatsContainer.html(html);
-    // console.log('[RPG UserStats Render] ✓ HTML rendered to #rpg-user-stats container');
+	// Always render to the #rpg-user-stats container (mobile layout just moves it around in DOM)
+	$userStatsContainer.html(html);
+	// console.log('[RPG UserStats Render] ✓ HTML rendered to #rpg-user-stats container');
 
-    // Add event listeners for editable stat values
-    $('.rpg-editable-stat').on('blur', function () {
-        const field = $(this).data('field');
-        const mode = $(this).data('mode');
-        const maxValue = parseInt($(this).data('max')) || 100;
-        const textValue = $(this).text().trim();
-        let value;
+	// Add event listeners for editable stat values
+	$(".rpg-editable-stat").on("blur", function () {
+		const field = $(this).data("field");
+		const mode = $(this).data("mode");
+		const maxValue = parseInt($(this).data("max")) || 100;
+		const textValue = $(this).text().trim();
+		let value;
 
-        if (mode === 'number') {
-            // In number mode, parse "X/MAX" or just "X"
-            const parts = textValue.split('/');
-            value = parseInt(parts[0]);
+		if (mode === "number") {
+			// In number mode, parse "X/MAX" or just "X"
+			const parts = textValue.split("/");
+			value = parseInt(parts[0]);
 
-            // Validate and clamp value between 0 and maxValue
-            if (isNaN(value)) {
-                value = 0;
-            }
-            value = Math.max(0, Math.min(maxValue, value));
-        } else {
-            // In percentage mode, parse "X%" or just "X"
-            value = parseInt(textValue.replace('%', ''));
+			// Validate and clamp value between 0 and maxValue
+			if (isNaN(value)) {
+				value = 0;
+			}
+			value = Math.max(0, Math.min(maxValue, value));
+		} else {
+			// In percentage mode, parse "X%" or just "X"
+			value = parseInt(textValue.replace("%", ""));
 
-            // Validate and clamp value between 0 and 100
-            if (isNaN(value)) {
-                value = 0;
-            }
-            value = Math.max(0, Math.min(100, value));
-        }
+			// Validate and clamp value between 0 and 100
+			if (isNaN(value)) {
+				value = 0;
+			}
+			value = Math.max(0, Math.min(100, value));
+		}
 
-        // Update tracker data
-        const trackerData = getTrackerDataForContext('userStats');
-        trackerData[field] = value;
-        updateMessageSwipeData(trackerData);
+		// Update tracker data
+		const trackerData = getTrackerDataForContext("userStats");
+		trackerData[field] = value;
+		updateMessageSwipeData(trackerData);
 
-        // Update and persist data
-        saveSettings();
-        saveChatData();
+		// Update and persist data
+		saveSettings();
+		saveChatData();
 
-        // Re-render to update the bar and FAB widgets
-        renderUserStats();
-        updateFabWidgets();
-    });
+		// Re-render to update the bar and FAB widgets
+		renderUserStats();
+		updateFabWidgets();
+	});
 
-    // Add event listeners for mood/conditions editing
-    $('.rpg-mood-emoji.rpg-editable').on('blur', function () {
-        const value = $(this).text().trim();
-        // Update tracker data
-        const trackerData = getTrackerDataForContext('userStats');
-        trackerData.mood = value || '😐';
-        updateMessageSwipeData(trackerData);
+	// Add event listeners for mood/conditions editing
+	$(".rpg-mood-emoji.rpg-editable").on("blur", function () {
+		const value = $(this).text().trim();
+		// Update tracker data
+		const trackerData = getTrackerDataForContext("userStats");
+		trackerData.mood = value || "😐";
+		updateMessageSwipeData(trackerData);
 
-        // Update and persist data
-        saveSettings();
-        saveChatData();
-    });
+		// Update and persist data
+		saveSettings();
+		saveChatData();
+	});
 
-    $('.rpg-mood-conditions.rpg-editable').on('blur', function () {
-        const value = $(this).text().trim();
-        const fieldKey = $(this).data('field');
-        // Update tracker data
-        const trackerData = getTrackerDataForContext('userStats');
-        trackerData[fieldKey] = value || 'None';
-        updateMessageSwipeData(trackerData);
+	$(".rpg-mood-conditions.rpg-editable").on("blur", function () {
+		const value = $(this).text().trim();
+		const fieldKey = $(this).data("field");
+		// Update tracker data
+		const trackerData = getTrackerDataForContext("userStats");
+		trackerData[fieldKey] = value || "None";
+		updateMessageSwipeData(trackerData);
 
-        // Update and persist data
-        saveSettings();
-        saveChatData();
-    });
+		// Update and persist data
+		saveSettings();
+		saveChatData();
+	});
 
-    // Add event listener for skills editing
-    $('.rpg-skills-value.rpg-editable').on('blur', function () {
-        const value = $(this).text().trim();
-        // Update tracker data
-        const trackerData = getTrackerDataForContext('userStats');
-        trackerData.skills = value || 'None';
-        updateMessageSwipeData(trackerData);
+	// Add event listener for skills editing
+	$(".rpg-skills-value.rpg-editable").on("blur", function () {
+		const value = $(this).text().trim();
+		// Update tracker data
+		const trackerData = getTrackerDataForContext("userStats");
+		trackerData.skills = value || "None";
+		updateMessageSwipeData(trackerData);
 
-        // Update and persist data
-        saveSettings();
-        saveChatData();
-    });
+		// Update and persist data
+		saveSettings();
+		saveChatData();
+	});
 
-    // Add event listeners for stat name editing
-    $('.rpg-editable-stat-name').on('blur', function () {
-        const field = $(this).data('field');
-        const value = $(this).text().trim().replace(':', '');
+	// Add event listeners for stat name editing
+	$(".rpg-editable-stat-name").on("blur", function () {
+		const field = $(this).data("field");
+		const value = $(this).text().trim().replace(":", "");
 
-        if (!extensionSettings.statNames) {
-            extensionSettings.statNames = {
-                health: 'Health',
-                satiety: 'Satiety',
-                energy: 'Energy',
-                hygiene: 'Hygiene',
-                arousal: 'Arousal'
-            };
-        }
+		if (!extensionSettings.statNames) {
+			extensionSettings.statNames = {
+				health: "Health",
+				satiety: "Satiety",
+				energy: "Energy",
+				hygiene: "Hygiene",
+				arousal: "Arousal",
+			};
+		}
 
-        extensionSettings.statNames[field] = value || extensionSettings.statNames[field];
+		extensionSettings.statNames[field] =
+			value || extensionSettings.statNames[field];
 
-        // Update and persist data
-        updateMessageSwipeData();
-        saveSettings();
-        saveChatData();
+		// Update and persist data
+		updateMessageSwipeData();
+		saveSettings();
+		saveChatData();
 
-        // Re-render to update the display
-        renderUserStats();
-    });
+		// Re-render to update the display
+		renderUserStats();
+	});
 
-    // Add event listener for level editing
-    $('.rpg-level-value.rpg-editable').on('blur', function () {
-        let value = parseInt($(this).text().trim());
-        if (isNaN(value) || value < 1) {
-            value = 1;
-        }
-        // Set reasonable max level
-        value = Math.min(100, value);
+	// Add event listener for level editing
+	$(".rpg-level-value.rpg-editable").on("blur", function () {
+		let value = parseInt($(this).text().trim());
+		if (isNaN(value) || value < 1) {
+			value = 1;
+		}
+		// Set reasonable max level
+		value = Math.min(100, value);
 
-        extensionSettings.level = value;
+		extensionSettings.level = value;
 
-        // Update and persist data
-        updateMessageSwipeData();
-        saveSettings();
-        saveChatData();
+		// Update and persist data
+		updateMessageSwipeData();
+		saveSettings();
+		saveChatData();
 
-        // Re-render to update the display
-        renderUserStats();
-    });
+		// Re-render to update the display
+		renderUserStats();
+	});
 
-    // Prevent line breaks in level field
-    $('.rpg-level-value.rpg-editable').on('keydown', function (e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $(this).blur();
-        }
-    });
+	// Prevent line breaks in level field
+	$(".rpg-level-value.rpg-editable").on("keydown", function (e) {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			$(this).blur();
+		}
+	});
 
-    // Add event listener for section lock icon clicks (support both click and touch)
-    $userStatsContainer.find('.rpg-section-lock-icon').on('click touchend', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const $icon = $(this);
-        const trackerType = $icon.data('tracker');
-        const itemPath = $icon.data('path');
-        const currentlyLocked = isItemLocked(trackerType, itemPath);
+	// Add event listener for section lock icon clicks (support both click and touch)
+	$userStatsContainer
+		.find(".rpg-section-lock-icon")
+		.on("click touchend", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const $icon = $(this);
+			const trackerType = $icon.data("tracker");
+			const itemPath = $icon.data("path");
+			const currentlyLocked = isItemLocked(trackerType, itemPath);
 
-        // Toggle lock state
-        setItemLock(trackerType, itemPath, !currentlyLocked);
+			// Toggle lock state
+			setItemLock(trackerType, itemPath, !currentlyLocked);
 
-        // Update icon
-        const newIcon = !currentlyLocked ? '🔒' : '🔓';
-        const newTitle = !currentlyLocked ? i18n.getTranslation('infoBox.locked') : i18n.getTranslation('infoBox.unlocked');
-        $icon.text(newIcon);
-        $icon.attr('title', newTitle);
+			// Update icon
+			const newIcon = !currentlyLocked ? "🔒" : "🔓";
+			const newTitle = !currentlyLocked
+				? i18n.getTranslation("infoBox.locked")
+				: i18n.getTranslation("infoBox.unlocked");
+			$icon.text(newIcon);
+			$icon.attr("title", newTitle);
 
-        // Toggle 'locked' class for persistent visibility
-        $icon.toggleClass('locked', !currentlyLocked);
+			// Toggle 'locked' class for persistent visibility
+			$icon.toggleClass("locked", !currentlyLocked);
 
-        // Save settings
-        saveSettings();
-    });
+			// Save settings
+			saveSettings();
+		});
 
-    // Update tracker message display
-    updateTrackerMessageDisplay();
+	// Update tracker message display
+	updateTrackerMessageDisplay();
 }
 
 /**
@@ -567,47 +616,53 @@ export function renderUserStats() {
  * Shows the message ID where tracker data was found and warns if outdated.
  */
 function updateTrackerMessageDisplay() {
-    const $display = $('#rpg-tracker-message');
-    const lastTrackerMessageId = extensionSettings.lastTrackerMessage;
-    
-    // Hide if no tracker message is set
-    if (!lastTrackerMessageId) {
-        $display.hide();
-        return;
-    } else {
-        $display.show();
-    }
-    
-    const chatToSearch = getContext().chat;
-    if (!chatToSearch) {
-        $display.hide();
-        return;
-    }
-    
-    // Check if the tracker message is the latest message
-    let lastAssistantMessage = chatToSearch.length -1;
-    for (let i = chatToSearch.length - 1; i >= 0; i--) {
-            const message = chatToSearch[i];
-            // Skip user and system messages
-            if (message.is_user || message.is_system) {
-                continue;
-            }
-            lastAssistantMessage = i;
-            break;
-        }
+	const $display = $("#rpg-tracker-message");
+	const lastTrackerMessageId = extensionSettings.lastTrackerMessage;
 
-    const isOutdated = lastAssistantMessage !== lastTrackerMessageId;
-    
-    const label = i18n.getTranslation('template.mainPanel.trackerMessage') || 'Tracker from message: ';
-    const outdatedLabel = i18n.getTranslation('template.mainPanel.trackerMessageOutdated') || ' (outdated)';
-    
-    const $element = $display.find('#rpg-tracker-message-text');
-    $element.text(`${label}${lastTrackerMessageId}${isOutdated ? outdatedLabel : ''}`);
-    
-    // Add/remove outdated class
-    if (isOutdated) {
-        $display.addClass('rpg-tracker-outdated');
-    } else {
-        $display.removeClass('rpg-tracker-outdated');
-    }
+	// Hide if no tracker message is set
+	if (!lastTrackerMessageId) {
+		$display.hide();
+		return;
+	} else {
+		$display.show();
+	}
+
+	const chatToSearch = getContext().chat;
+	if (!chatToSearch) {
+		$display.hide();
+		return;
+	}
+
+	// Check if the tracker message is the latest message
+	let lastAssistantMessage = chatToSearch.length - 1;
+	for (let i = chatToSearch.length - 1; i >= 0; i--) {
+		const message = chatToSearch[i];
+		// Skip user and system messages
+		if (message.is_user || message.is_system) {
+			continue;
+		}
+		lastAssistantMessage = i;
+		break;
+	}
+
+	const isOutdated = lastAssistantMessage !== lastTrackerMessageId;
+
+	const label =
+		i18n.getTranslation("template.mainPanel.trackerMessage") ||
+		"Tracker from message: ";
+	const outdatedLabel =
+		i18n.getTranslation("template.mainPanel.trackerMessageOutdated") ||
+		" (outdated)";
+
+	const $element = $display.find("#rpg-tracker-message-text");
+	$element.text(
+		`${label}${lastTrackerMessageId}${isOutdated ? outdatedLabel : ""}`,
+	);
+
+	// Add/remove outdated class
+	if (isOutdated) {
+		$display.addClass("rpg-tracker-outdated");
+	} else {
+		$display.removeClass("rpg-tracker-outdated");
+	}
 }

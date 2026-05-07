@@ -10,31 +10,34 @@ import { getContext } from "../../../../../../extensions.js";
 // Custom event name for when RPG Companion finishes updating tracker data
 // Other extensions can listen for this event to know when RPG Companion is done
 export const RPG_COMPANION_UPDATE_COMPLETE = "rpg_companion_update_complete";
+
+import { i18n } from "../../core/i18n.js";
+import { saveChatData } from "../../core/persistence.js";
 import {
 	extensionSettings,
 	isGenerating,
+	setGenerationAbortController,
 	setIsGenerating,
 	setLastActionWasSwipe,
-	setGenerationAbortController,
 } from "../../core/state.js";
-import { saveChatData } from "../../core/persistence.js";
-import { generateSeparateUpdatePrompt } from "./promptBuilder.js";
-import { parseResponse } from "./parser.js";
-import { renderUserStats } from "../rendering/userStats.js";
+import { renderAppearance } from "../rendering/appearance.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
-import { removeLocks, restoreLockedContent } from "./lockManager.js";
-import { getTrackerDataForContext } from "./promptBuilder.js";
-import { renderThoughts } from "../rendering/thoughts.js";
 import { renderInventory } from "../rendering/inventory.js";
 import { renderQuests } from "../rendering/quests.js";
-import { renderAppearance } from "../rendering/appearance.js";
-import { i18n } from "../../core/i18n.js";
+import { renderThoughts } from "../rendering/thoughts.js";
+import { renderUserStats } from "../rendering/userStats.js";
+import { setStripCancelState, updateStripWidgets } from "../ui/desktop.js";
 import {
-	setFabLoadingState,
 	setFabCancelState,
+	setFabLoadingState,
 	updateFabWidgets,
 } from "../ui/mobile.js";
-import { setStripCancelState, updateStripWidgets } from "../ui/desktop.js";
+import { removeLocks, restoreLockedContent } from "./lockManager.js";
+import { parseResponse } from "./parser.js";
+import {
+	generateSeparateUpdatePrompt,
+	getTrackerDataForContext,
+} from "./promptBuilder.js";
 
 /**
  * Gets the current preset name using the /preset command
@@ -512,5 +515,3 @@ export async function updateRPGData(
 		eventSource.emit(RPG_COMPANION_UPDATE_COMPLETE);
 	}
 }
-
-
