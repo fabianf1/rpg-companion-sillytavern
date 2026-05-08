@@ -7,7 +7,7 @@ import { saveSettings } from "../../core/persistence.js";
 import { $inventoryContainer, extensionSettings } from "../../core/state.js";
 // parseItems is no longer imported - arrays are used directly
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import {
 	getInventoryRenderOptions,
 	restoreFormStates,

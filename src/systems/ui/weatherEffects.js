@@ -5,7 +5,7 @@
 
 import { extensionSettings } from "../../core/state.js";
 import { repairJSON } from "../../utils/jsonRepair.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 
 let weatherContainer = null;
 let currentWeatherType = null;

@@ -18,10 +18,8 @@ import {
 } from "../../core/state.js";
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
-import {
-	buildInventorySummary,
-	getTrackerDataForContext,
-} from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
+import { buildInventorySummary } from "../generation/inventoryFormatter.js";
 import { updateFabWidgets } from "../ui/mobile.js";
 import { getStatBarColors } from "../ui/theme.js";
 

@@ -4,7 +4,6 @@
  */
 
 import { characters, this_chid } from "../../../../../../../script.js";
-import { getContext } from "../../../../../../extensions.js";
 import {
 	getGroupMembers,
 	selected_group,
@@ -23,7 +22,7 @@ import {
 } from "../../core/state.js";
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 
 /**
  * Helper to generate lock icon HTML if setting is enabled

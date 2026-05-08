@@ -15,12 +15,8 @@ import {
 	sanitizeLocationName,
 } from "../../utils/security.js";
 import { removeInventoryItemLock } from "../generation/lockManager.js";
-import {
-	buildInventorySummary,
-	getTrackerDataForContext,
-} from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { getLocationId, renderInventory } from "../rendering/inventory.js";
-import { buildUserStatsText } from "../rendering/userStats.js";
 
 /**
  * Helper to get inventory from tracker data (handles both flat and object formats)

@@ -7,12 +7,9 @@ import {
 	saveChatData,
 	updateMessageSwipeData,
 } from "../../core/persistence.js";
-import { extensionSettings } from "../../core/state.js";
 import { sanitizeItemName } from "../../utils/security.js";
-import {
-	buildInventorySummary,
-	getTrackerDataForContext,
-} from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
+import { buildInventorySummary } from "../generation/inventoryFormatter.js";
 import { renderInventory } from "../rendering/inventory.js";
 
 /**

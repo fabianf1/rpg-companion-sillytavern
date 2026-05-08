@@ -11,11 +11,9 @@ import {
 } from "../../../../../../../script.js";
 import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
-import {
-	DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT,
-	formatHistoricalTrackerData,
-	generateContextualSummary,
-} from "./promptBuilder.js";
+import { DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT } from "./promptBuilder.js";
+import { generateContextualSummary } from "./trackerInstructionsBuilder.js";
+import { formatHistoricalTrackerData } from "./valueFormatter.js";
 import { evaluateSuppression } from "./suppression.js";
 
 // ============================================================================

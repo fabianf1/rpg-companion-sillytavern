@@ -10,7 +10,7 @@ import {
 } from "../../../../../../script.js";
 import { getContext } from "../../../../../extensions.js";
 import { updateDiceDisplay } from "../systems/features/dice.js";
-import { getTrackerDataForContext } from "../systems/generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../systems/generation/trackerDataUtils.js";
 import { renderInfoBox } from "../systems/rendering/infoBox.js";
 import { renderInventory } from "../systems/rendering/inventory.js";
 import { renderQuests } from "../systems/rendering/quests.js";

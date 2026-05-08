@@ -3,10 +3,9 @@
  * Handles desktop-specific UI functionality: tab navigation and strip widgets
  */
 
-import { getContext } from "../../../../../../extensions.js";
 import { i18n } from "../../core/i18n.js";
 import { extensionSettings } from "../../core/state.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { hexToRgba } from "./theme.js";
 
 /**

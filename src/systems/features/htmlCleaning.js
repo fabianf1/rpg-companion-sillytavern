@@ -136,7 +136,7 @@ export async function ensureHtmlCleaningRegex(
 
 /**
  * Automatically imports a regex script to clean tracker JSON from outgoing prompts.
- * This is useful when switching from together mode to separate mode mid-roleplay,
+ * This is useful when switching mode  mode mid-roleplay,
  * as it prevents old tracker JSON from chat history being sent to the AI.
  * @param {Object} st_extension_settings - SillyTavern extension settings object
  * @param {Function} saveSettingsDebounced - Function to save settings

@@ -34,10 +34,8 @@ import {
 } from "../ui/mobile.js";
 import { removeLocks, restoreLockedContent } from "./lockManager.js";
 import { parseResponse } from "./parser.js";
-import {
-	generateSeparateUpdatePrompt,
-	getTrackerDataForContext,
-} from "./promptBuilder.js";
+import { getTrackerDataForContext } from "./trackerDataUtils.js";
+import { generateSeparateUpdatePrompt } from "./separatePromptBuilder.js";
 
 /**
  * Gets the current preset name using the /preset command

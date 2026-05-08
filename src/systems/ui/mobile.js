@@ -6,7 +6,7 @@
 import { i18n } from "../../core/i18n.js";
 import { saveSettings } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { removeDesktopTabs, setupDesktopTabs } from "./desktop.js";
 import {
 	closeMobilePanelWithAnimation,

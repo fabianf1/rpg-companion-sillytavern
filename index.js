@@ -114,7 +114,6 @@ import {
 	toggleDynamicWeather,
 	updateWeatherEffect,
 } from "./src/systems/ui/weatherEffects.js";
-import { migrateToV3JSON } from "./src/utils/jsonMigration.js";
 import { log, error as logError } from "./src/utils/logger.js";
 
 /**
@@ -397,18 +396,6 @@ jQuery(async () => {
 			loadSettings();
 		} catch (error) {
 			logError("Settings load failed, continuing with defaults:", error);
-		}
-
-		// Check if migration to v3 JSON format is needed
-		try {
-			if (extensionSettings.settingsVersion < 3) {
-				await migrateToV3JSON();
-				updateExtensionSettings({ settingsVersion: 3 });
-				await saveSettings();
-			}
-		} catch (error) {
-			logError("Migration to v3 failed:", error);
-			// Non-critical - extension can still work with v2 format
 		}
 
 		// Initialize i18n early for the settings panel

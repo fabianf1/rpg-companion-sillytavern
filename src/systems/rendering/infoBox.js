@@ -12,7 +12,7 @@ import {
 import { $infoBoxContainer, extensionSettings } from "../../core/state.js";
 import { convertTimeFormat } from "../../utils/itemParser.js";
 import { isItemLocked } from "../generation/lockManager.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { updateFabWidgets } from "../ui/mobile.js";
 
 /**
@@ -148,8 +148,8 @@ export function renderInfoBox() {
 			weekdayDisplay = weekdayDisplay.substring(0, 3).toUpperCase();
 		} else if (dateFormat === "yyyy-mm-dd") {
 			// ISO format - show full names
-			monthDisplay = monthDisplay;
-			weekdayDisplay = weekdayDisplay;
+			// monthDisplay = monthDisplay;
+			// weekdayDisplay = weekdayDisplay;
 		}
 
 		const dateLockIconHtml = getLockIconHtml(TRACKER_NAME, "date");

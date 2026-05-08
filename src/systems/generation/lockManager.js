@@ -4,14 +4,12 @@
  * Locks prevent AI from modifying specific values
  */
 
-import { getContext } from "../../../../../../extensions.js";
 import {
 	saveChatData,
 	updateMessageSwipeData,
 } from "../../core/persistence.js";
 import { extensionSettings, isGenerating } from "../../core/state.js";
-import { repairJSON } from "../../utils/jsonRepair.js";
-import { getTrackerDataForContext } from "./promptBuilder.js";
+import { getTrackerDataForContext } from "./trackerDataUtils.js";
 
 /**
  * Get lock settings from swipeStore for current message/swipe

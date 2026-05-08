@@ -3,13 +3,7 @@
  * Handles parsing of AI responses to extract tracker data
  * Supports both legacy text format and new v3 JSON format
  */
-
-import { saveSettings } from "../../core/persistence.js";
-import {
-	addDebugLog,
-	extensionSettings,
-	FEATURE_FLAGS,
-} from "../../core/state.js";
+import { addDebugLog, extensionSettings } from "../../core/state.js";
 import { convertTimeFormat } from "../../utils/itemParser.js";
 import { repairJSON } from "../../utils/jsonRepair.js";
 

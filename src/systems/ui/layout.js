@@ -15,7 +15,7 @@ import {
 	setInventoryContainer,
 	setQuestsContainer,
 } from "../../core/state.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import {
 	removeDesktopTabs,
 	setupDesktopTabs,

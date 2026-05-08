@@ -11,7 +11,7 @@ import {
 } from "../../core/persistence.js";
 import { $appearanceContainer, extensionSettings } from "../../core/state.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
-import { getTrackerDataForContext } from "../generation/promptBuilder.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 
 /**
  * Helper to generate lock icon HTML if setting is enabled
