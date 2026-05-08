@@ -458,7 +458,7 @@ export function generateTrackerInstructions(
 				const pathDescriptions = userStatsSubSections.map(
 					(s) => `"userStats.${s}"`,
 				);
-				instructions += `\nThe JSON example below shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields (stats, status, skills, and any non-selected sub-sections) exactly as they appear in <previous> above. `;
+				instructions += `\nThe JSON example below shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields (stats, status, skills, and any non-selected sub-sections) exactly as they appear in <previous_tracker_state> above. `;
 			}
 		}
 
@@ -468,7 +468,7 @@ export function generateTrackerInstructions(
 			instructions += customPrompt.replace(/{userName}/g, userName);
 		} else {
 			instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: "Location" becomes "Forest Clearing", "Mood Emoji" becomes "😊". DO NOT include ${userName} in the characters section, only NPCs. `;
-			instructions += `Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user's actions, the passage of time, and logical consequences.`;
+			instructions += `The tracker values above (in <previous_tracker_state>) represent the state BEFORE the last assistant message. Update them to reflect ONLY what changed DURING that last message — no more, no less. If the narrative describes time passing, injuries, item usage, dialogue, or other events, reflect those changes. If nothing changed, keep values identical. Do NOT invent events, advance time, or project consequences beyond what the last message explicitly or implicitly describes.`;
 		}
 
 		// Add lock instruction
@@ -1548,8 +1548,8 @@ export function generateRPGPromptText(selectedSections = null) {
 
 	let promptText = "";
 
-	promptText += `Here are the previous trackers in the roleplay that you should consider when responding:\n`;
-	promptText += `<previous>\n`;
+	promptText += `Here are the previous tracker values (state BEFORE the last assistant message) that you should use as a reference:\n`;
+	promptText += `<previous_tracker_state>\n`;
 
 	// Get data from authoritative swipe store
 	const userStatsData = getTrackerDataForContext("userStats");
@@ -1589,7 +1589,7 @@ export function generateRPGPromptText(selectedSections = null) {
 		promptText += `None - this is the first update.\n`;
 	}
 
-	promptText += `</previous>\n`;
+	promptText += `</previous_tracker_state>\n`;
 
 	// Don't include HTML prompt, continuation instruction, or attributes for separate tracker generation
 	promptText += generateTrackerInstructions(
@@ -1859,7 +1859,7 @@ function buildSeparateInstructionMessage(selectedSections = null) {
 		// For nested sub-sections within userStats, add extra clarity
 		if (nestedParts.length > 0) {
 			const pathDescriptions = nestedParts.map((s) => `"userStats.${s}"`);
-			instructionMessage += `\nThe JSON example shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields exactly as they appear in <previous> above. `;
+			instructionMessage += `\nThe JSON example shows the full userStats structure for reference, but you should ONLY modify the ${pathDescriptions.join(" and ")} field(s) within userStats. Copy all other userStats fields exactly as they appear in <previous_tracker_state> above. `;
 		}
 
 		instructionMessage += `Do not include any roleplay response, other text, or commentary. Remember, all placeholders MUST be replaced with actual content. Do NOT wrap the JSON in code fences (\`\`\`json). Output the JSON object directly.`;
