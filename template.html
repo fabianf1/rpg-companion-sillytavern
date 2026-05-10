@@ -171,6 +171,9 @@
                     <i class="fa-solid fa-sliders"></i> <span data-i18n-key="template.mainPanel.editTrackersButton">Edit
                         Trackers</span>
                 </button>
+                <button id="rpg-open-relationships" class="rpg-btn-settings rpg-btn-half">
+                    <i class="fa-solid fa-heart"></i> <span data-i18n-key="template.mainPanel.relationshipsButton">Relationships</span>
+                </button>
                 <button id="rpg-open-settings" class="rpg-btn-settings rpg-btn-half">
                     <i class="fa-solid fa-gear"></i> <span
                         data-i18n-key="template.mainPanel.settingsButton">Settings</span>
@@ -354,6 +357,15 @@
                 </small>
 
                 <label class="checkbox_label">
+                    <input type="checkbox" id="rpg-toggle-relationships" />
+                    <span data-i18n-key="template.settingsModal.display.showRelationships">Show Relationships</span>
+                </label>
+                <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
+                    data-i18n-key="template.settingsModal.display.showRelationshipsNote">
+                    Track relationship pairs between characters with directional feels, secrets, and status.
+                </small>
+
+                <label class="checkbox_label">
                     <input type="checkbox" id="rpg-toggle-lock-icons" />
                     <span data-i18n-key="template.settingsModal.display.showLockIcons">Show Locking/Unlocking Trackers</span>
                 </label>
@@ -426,6 +438,21 @@
                     Display the "Last Roll" indicator in the panel
                 </small>
 
+            </div>
+
+            <!-- Relationships Configuration Section -->
+            <div class="rpg-settings-group" id="rpg-relationships-settings-group">
+                <h4 data-i18n-key="template.settingsModal.relationshipsTitle"><i class="fa-solid fa-heart" aria-hidden="true"></i> Relationships</h4>
+                <small class="notes" style="display: block; margin-bottom: 10px;"
+                    data-i18n-key="template.settingsModal.relationshipsNote">
+                    Configure relationship tracking between characters. Relationships are updated after each message in a separate API call.
+                </small>
+
+                <div class="rpg-setting-row">
+                    <label for="rpg-relationship-status-options" data-i18n-key="template.settingsModal.relationships.statusOptions">Status Options:</label>
+                    <input type="text" id="rpg-relationship-status-options" class="rpg-input" value="Friends, Enemies, Lovers, Rivals, Family, Neutral" />
+                    <small data-i18n-key="template.settingsModal.relationships.statusOptionsNote">Comma-separated list of relationship statuses the AI can choose from.</small>
+                </div>
             </div>
 
             <!-- Mobile FAB Options Section -->
@@ -783,6 +810,10 @@
                     <input type="checkbox" value="characterThoughts" checked>
                     <span data-i18n-key="template.partialRefreshModal.section.characterThoughts">Character Thoughts</span>
                 </label>
+                <label class="rpg-partial-refresh-section">
+                    <input type="checkbox" value="relationships" checked>
+                    <span data-i18n-key="template.partialRefreshModal.section.relationships">Relationships</span>
+                </label>
             </div>
         </div>
         <footer class="rpg-partial-refresh-popup-footer">
@@ -1058,6 +1089,29 @@
                     <i class="fa-solid fa-save"></i> Save Changes
                 </button>
             </div>
+        </footer>
+    </div>
+</div>
+
+<!-- Relationships Modal -->
+<div id="rpg-relationships-popup" class="rpg-relationships-popup" role="dialog" aria-modal="true"
+    aria-labelledby="rpg-relationships-title">
+    <div class="rpg-relationships-popup-content">
+        <header class="rpg-relationships-popup-header">
+            <h3 id="rpg-relationships-title">
+                <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                <span data-i18n-key="template.relationshipsModal.title">Character Relationships</span>
+            </h3>
+            <button id="rpg-close-relationships" class="rpg-popup-close" type="button"
+                aria-label="Close relationships">&times;</button>
+        </header>
+        <div class="rpg-relationships-popup-body">
+            <!-- Content rendered by JavaScript -->
+        </div>
+        <footer class="rpg-relationships-popup-footer">
+            <button id="rpg-close-relationships-btn" class="rpg-btn-primary" type="button">
+                <span data-i18n-key="global.close">Close</span>
+            </button>
         </footer>
     </div>
 </div>

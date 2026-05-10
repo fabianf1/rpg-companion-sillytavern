@@ -333,6 +333,13 @@ export function updateSectionVisibility() {
 		$("#rpg-quests").hide();
 	}
 
+	// Show/hide relationships button based on showRelationships setting
+	if (extensionSettings.showRelationships) {
+		$("#rpg-open-relationships").show();
+	} else {
+		$("#rpg-open-relationships").hide();
+	}
+
 	// Show/hide dividers intelligently
 	// Divider after User Stats: shown if User Stats is visible AND at least one section after it is visible
 	const showDividerAfterStats =

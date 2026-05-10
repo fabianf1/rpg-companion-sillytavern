@@ -13,7 +13,7 @@ import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
 import { DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT } from "./promptBuilder.js";
 import { generateContextualSummary } from "./trackerInstructionsBuilder.js";
-import { formatHistoricalTrackerData } from "./valueFormatter.js";
+import { formatHistoricalTrackerData, formatRelationshipsForContext } from "./valueFormatter.js";
 import { evaluateSuppression } from "./suppression.js";
 
 // ============================================================================
@@ -143,10 +143,19 @@ function buildHistoricalContextMap() {
 			continue;
 		}
 
+		// Add relationships data if available
+		let relationshipsContext = "";
+		if (trackerData.relationships && Array.isArray(trackerData.relationships)) {
+			const formattedRelationships = formatRelationshipsForContext(trackerData.relationships);
+			if (formattedRelationships) {
+				relationshipsContext = `\n${formattedRelationships}`;
+			}
+		}
+
 		// Build the context wrapper
 		const preamble =
 			historyPersistence.contextPreamble || "Context for that moment:";
-		const wrappedContext = `\n${preamble}\n${formattedContext}`;
+		const wrappedContext = `\n${preamble}\n${formattedContext}${relationshipsContext}`;
 
 		// Determine which message index to store based on injection position
 		let targetIndex = i; // Default: the assistant message itself

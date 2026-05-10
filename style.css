@@ -11017,3 +11017,234 @@ body:has(.rpg-panel[data-theme="light"]) .rpg-strip-widget {
 		min-width: 2.5rem !important;
 	}
 }
+/* ============================================
+   RELATIONSHIPS MODAL
+   ============================================ */
+.rpg-relationships-popup {
+	display: none;
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(4px);
+	animation: rpgFadeIn 0.2s ease;
+}
+
+.rpg-relationships-popup.is-open {
+	display: flex;
+}
+
+.rpg-relationships-popup.is-closing {
+	display: flex;
+	animation: rpgFadeOut 0.2s ease forwards;
+}
+
+.rpg-relationships-popup-content {
+	background: var(--rpg-bg, #1a1a2e);
+	border: 2px solid var(--rpg-border, #2a2a4a);
+	border-radius: 1em;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+	max-width: 600px;
+	width: 90%;
+	max-height: 80vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: rpgSlideUp 0.25s ease;
+}
+
+.rpg-relationships-popup.is-closing .rpg-relationships-popup-content {
+	animation: rpgSlideDown 0.2s ease forwards;
+}
+
+.rpg-relationships-popup-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1em 1.25em;
+	background: var(--rpg-accent, #16213e);
+	border-bottom: 2px solid var(--rpg-border, #2a2a4a);
+	flex-shrink: 0;
+}
+
+.rpg-relationships-popup-header h3 {
+	margin: 0;
+	font-size: 1.2em;
+	color: var(--rpg-text, #eaeaea);
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.rpg-relationships-popup-header h3 i {
+	color: #e94560;
+}
+
+.rpg-relationships-popup-body {
+	padding: 1em 1.25em;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.rpg-relationships-popup-footer {
+	padding: 0.75em 1.25em;
+	border-top: 2px solid var(--rpg-border, #2a2a4a);
+	display: flex;
+	justify-content: flex-end;
+	flex-shrink: 0;
+}
+
+/* Relationship Cards */
+.rpg-relationships-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+}
+
+.rpg-relationship-card {
+	background: var(--rpg-accent, #16213e);
+	border: 1px solid var(--rpg-border, #2a2a4a);
+	border-radius: 0.75em;
+	padding: 0.875em 1em;
+	transition: all 0.2s ease;
+}
+
+.rpg-relationship-card:hover {
+	border-color: var(--rpg-highlight, #e94560);
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.rpg-relationship-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75em;
+	margin-bottom: 0.5em;
+}
+
+.rpg-relationship-names {
+	font-weight: 700;
+	font-size: 1.05em;
+	color: var(--rpg-text, #eaeaea);
+}
+
+.rpg-relationship-status {
+	font-size: 0.8em;
+	font-weight: 600;
+	padding: 0.2em 0.6em;
+	border-radius: 1em;
+	white-space: nowrap;
+}
+
+.rpg-rel-status-friends {
+	background: rgba(52, 152, 219, 0.25);
+	color: #5dade2;
+	border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+.rpg-rel-status-enemies {
+	background: rgba(231, 76, 60, 0.25);
+	color: #e74c3c;
+	border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.rpg-rel-status-lovers {
+	background: rgba(233, 69, 96, 0.25);
+	color: #e94560;
+	border: 1px solid rgba(233, 69, 96, 0.4);
+}
+
+.rpg-rel-status-rivals {
+	background: rgba(243, 156, 18, 0.25);
+	color: #f39c12;
+	border: 1px solid rgba(243, 156, 18, 0.4);
+}
+
+.rpg-rel-status-family {
+	background: rgba(46, 204, 113, 0.25);
+	color: #2ecc71;
+	border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.rpg-rel-status-neutral {
+	background: rgba(149, 165, 166, 0.25);
+	color: #bdc3c7;
+	border: 1px solid rgba(149, 165, 166, 0.4);
+}
+
+.rpg-relationship-direction {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	padding: 0.375em 0 0.375em 0.75em;
+	border-left: 2px solid var(--rpg-border, #2a2a4a);
+	margin-top: 0.25em;
+}
+
+.rpg-relationship-direction + .rpg-relationship-direction {
+	margin-top: 0.5em;
+}
+
+.rpg-relationship-arrow {
+	font-size: 0.85em;
+	font-weight: 600;
+	color: var(--rpg-highlight, #e94560);
+}
+
+.rpg-relationship-feels {
+	font-size: 0.9em;
+	color: var(--rpg-text, #eaeaea);
+	font-style: italic;
+}
+
+.rpg-relationship-secret {
+	font-size: 0.85em;
+	color: #95a5a6;
+}
+
+.rpg-rel-label {
+	font-weight: 600;
+	color: #7f8c8d;
+}
+
+.rpg-relationships-empty {
+	text-align: center;
+	padding: 2em;
+	color: #7f8c8d;
+	font-style: italic;
+}
+
+/* Theme variants for relationships modal */
+.rpg-relationships-popup[data-theme="sci-fi"] .rpg-relationships-popup-content {
+	background: linear-gradient(135deg, #0a0a2e, #1a1a3e);
+	border-color: #ff00ff;
+	box-shadow: 0 0 30px rgba(255, 0, 255, 0.2), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.rpg-relationships-popup[data-theme="fantasy"] .rpg-relationships-popup-content {
+	background: linear-gradient(135deg, #2c1810, #3d2317);
+	border-color: #8b6914;
+	box-shadow: 0 0 30px rgba(139, 105, 20, 0.2), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.rpg-relationships-popup[data-theme="cyberpunk"] .rpg-relationships-popup-content {
+	background: linear-gradient(135deg, #0a0a0a, #1a0a2e);
+	border-color: #00ffff;
+	box-shadow: 0 0 30px rgba(0, 255, 255, 0.2), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+	.rpg-relationships-popup-content {
+		max-width: 95%;
+		max-height: 90vh;
+	}
+
+	.rpg-relationship-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.375em;
+	}
+}

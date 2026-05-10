@@ -470,6 +470,56 @@ export function formatTrackerDataForContext(jsonData, trackerType, userName) {
 }
 
 /**
+ * Formats relationship data for AI context injection.
+ * Converts the relationships array into a readable text format.
+ *
+ * @param {Array} relationships - Array of relationship objects
+ * @returns {string} Formatted relationship text or empty string
+ */
+export function formatRelationshipsForContext(relationships) {
+	if (
+		!relationships ||
+		!Array.isArray(relationships) ||
+		relationships.length === 0
+	) {
+		return "";
+	}
+	console.log(
+		`[RPG Companion] Formatting ${relationships.length} relationships for context.`,
+	);
+
+	const lines = relationships.map((rel) => {
+		const c1 = rel.character1 || "?";
+		const c2 = rel.character2 || "?";
+		const status = rel.status || "Neutral";
+
+		// Character 1 → Character 2
+		const feelsTowards = rel.feelsTowards ? ` [${rel.feelsTowards}]` : "";
+		const wantsFrom = rel.wantsFrom ? ` [wants: ${rel.wantsFrom}]` : "";
+		const secretsFrom = rel.secretsFrom ? ` [secret: ${rel.secretsFrom}]` : "";
+
+		// Character 2 → Character 1
+		const feelsTowards2 = rel.feelsTowards2 ? ` [${rel.feelsTowards2}]` : "";
+		const wantsFrom2 = rel.wantsFrom2 ? ` [wants: ${rel.wantsFrom2}]` : "";
+		const secretsFrom2 = rel.secretsFrom2
+			? ` [secret: ${rel.secretsFrom2}]`
+			: "";
+
+		const c1ToC2 = `${c1} → ${c2}:${feelsTowards}${wantsFrom}${secretsFrom}`;
+		const c2ToC1 = `${c2} → ${c1}:${feelsTowards2}${wantsFrom2}${secretsFrom2}`;
+
+		return `${c1} ↔ ${c2}: ${status} | ${c1ToC2} | ${c2ToC1}`;
+	});
+
+	const output = `Relationships:\n${lines.join("\n")}`;
+	console.log(
+		`[RPG Companion] Formatted relationships for context:\n${output}`,
+	);
+
+	return output;
+}
+
+/**
  * Formats historical tracker data from a message's rpg_companion_swipes data.
  * Only includes tracker fields that have persistInHistory enabled in trackerConfig,
  * unless useAllEnabled is true, in which case it includes all enabled fields.

@@ -25,6 +25,7 @@ export let extensionSettings = {
 	showCharacterThoughts: true,
 	showInventory: true, // Show inventory section (v2 system)
 	showQuests: true, // Show quests section
+	showRelationships: true, // Show relationships tracking and button
 	showThoughtsInChat: true, // Show thoughts overlay in chat
 	narratorMode: false, // Use character card as narrator instead of fixed character references
 	customNarratorPrompt: "", // Custom narrator mode prompt text (empty = use default)
@@ -235,6 +236,8 @@ export let extensionSettings = {
 					Enemy: "⚔️",
 					Neutral: "⚖️",
 				},
+				// Status options for the relationship tracking system
+				statusOptions: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
 			},
 			// Legacy fields kept for backward compatibility
 			relationshipFields: ["Lover", "Friend", "Ally", "Enemy", "Neutral"],
@@ -278,6 +281,11 @@ export let extensionSettings = {
 					{ id: "health", name: "Health", enabled: true },
 					{ id: "arousal", name: "Arousal", enabled: true },
 				],
+			},
+			// Per-pair relationship tracking configuration
+			relationships: {
+				enabled: true,
+				statusOptions: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
 			},
 		},
 	},

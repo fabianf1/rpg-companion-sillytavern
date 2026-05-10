@@ -6,6 +6,7 @@ import {
 import {
 	renderExtensionTemplateAsync,
 	extension_settings as st_extension_settings,
+	getContext,
 } from "../../../extensions.js";
 
 // Core modules
@@ -42,6 +43,7 @@ import {
 	getAvailableConnectionProfiles,
 	updateRPGData,
 } from "./src/systems/generation/apiClient.js";
+import { updateRelationships } from "./src/systems/generation/relationshipApiClient.js";
 import { onGenerationStarted } from "./src/systems/generation/injector.js";
 // Integration modules
 import {
@@ -61,6 +63,7 @@ import { renderAppearance } from "./src/systems/rendering/appearance.js";
 import { renderInfoBox } from "./src/systems/rendering/infoBox.js";
 import { renderInventory } from "./src/systems/rendering/inventory.js";
 import { renderQuests } from "./src/systems/rendering/quests.js";
+import { renderRelationships } from "./src/systems/rendering/relationships.js";
 import {
 	renderThoughts,
 	updateChatThoughts,
@@ -92,6 +95,7 @@ import {
 	openPartialRefreshPopup,
 	setupDiceRoller,
 	setupPartialRefreshPopup,
+	setupRelationshipsPopup,
 	setupSettingsPopup,
 	updateDiceDisplay,
 } from "./src/systems/ui/modals.js";
@@ -299,16 +303,35 @@ async function initUI() {
 	// Full Refresh button (left half of split button)
 	$("#rpg-full-refresh").on("click", async () => {
 		if (!extensionSettings.enabled) return;
-		await updateRPGData(false, null);
+		const context = getContext();
+		const chat = context.chat;
+		const targetMessage =
+			chat && chat.length > 0 ? chat[chat.length - 1] : null;
+		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
+		await updateRPGData(false, null, targetMessage, targetSwipeId);
+		await updateRelationships(targetMessage, targetSwipeId);
 	});
 
 	// Partial Refresh button (right half of split button) - opens modal
 	$("#rpg-partial-refresh").on("click", () => {
 		if (!extensionSettings.enabled) return;
+		const context = getContext();
+		const chat = context.chat;
+		const targetMessage =
+			chat && chat.length > 0 ? chat[chat.length - 1] : null;
+		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
 		const modal = getPartialRefreshModal();
 		if (modal) {
 			modal.onExecute = async (selectedSections) => {
-				await updateRPGData(false, selectedSections);
+				await updateRPGData(
+					false,
+					selectedSections,
+					targetMessage,
+					targetSwipeId,
+				);
+				if (selectedSections.includes("relationships")) {
+					await updateRelationships(targetMessage, targetSwipeId);
+				}
 			};
 			openPartialRefreshPopup();
 		}
@@ -323,7 +346,13 @@ async function initUI() {
 	// Strip widget refresh button
 	$("#rpg-strip-refresh").on("click", async () => {
 		if (!extensionSettings.enabled) return;
-		await updateRPGData(false);
+		const context = getContext();
+		const chat = context.chat;
+		const targetMessage =
+			chat && chat.length > 0 ? chat[chat.length - 1] : null;
+		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
+		await updateRPGData(false, null, targetMessage, targetSwipeId);
+		await updateRelationships(targetMessage, targetSwipeId);
 	});
 
 	// Strip cancel button
@@ -362,6 +391,7 @@ async function initUI() {
 	renderInventory();
 	renderAppearance();
 	renderQuests();
+	renderRelationships();
 	updateDiceDisplay();
 	updateFabWidgets();
 	updateStripWidgets();
@@ -369,6 +399,7 @@ async function initUI() {
 	setupClassicStatsButtons();
 	setupSettingsPopup();
 	setupPartialRefreshPopup();
+	setupRelationshipsPopup();
 	initTrackerEditor();
 	initPromptsEditor();
 	addDiceQuickReply();

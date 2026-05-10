@@ -25,6 +25,10 @@ import {
 	rollDice as rollDiceCore,
 	updateDiceDisplay as updateDiceDisplayCore,
 } from "../features/dice.js";
+import {
+	openRelationshipsModal,
+	closeRelationshipsModal,
+} from "../rendering/relationships.js";
 
 /**
  * Modern DiceModal ES6 Class
@@ -731,4 +735,31 @@ export function closePartialRefreshPopup() {
  */
 export function getPartialRefreshModal() {
 	return partialRefreshModal;
+}
+
+/**
+ * Sets up the relationships popup functionality.
+ */
+export function setupRelationshipsPopup() {
+	// Open relationships modal
+	$("#rpg-open-relationships").on("click", () => {
+		openRelationshipsModal();
+	});
+
+	// Close button (X)
+	$("#rpg-close-relationships").on("click", () => {
+		closeRelationshipsModal();
+	});
+
+	// Close button (footer)
+	$("#rpg-close-relationships-btn").on("click", () => {
+		closeRelationshipsModal();
+	});
+
+	// Close on backdrop click
+	$("#rpg-relationships-popup").on("click", function (e) {
+		if (e.target === this) {
+			closeRelationshipsModal();
+		}
+	});
 }

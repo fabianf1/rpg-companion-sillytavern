@@ -30,12 +30,14 @@ import {
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 // Generation & Parsing
 import { updateRPGData } from "../generation/apiClient.js";
+import { updateRelationships } from "../generation/relationshipApiClient.js";
 import { initHistoryInjectionListeners } from "../generation/injector.js";
 import { getLockedItemsFromSwipeStore } from "../generation/lockManager.js";
 import { renderAppearance } from "../rendering/appearance.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
 import { renderInventory } from "../rendering/inventory.js";
 import { renderQuests } from "../rendering/quests.js";
+import { renderRelationships } from "../rendering/relationships.js";
 import { renderThoughts, updateChatThoughts } from "../rendering/thoughts.js";
 // Rendering
 import { renderUserStats } from "../rendering/userStats.js";
@@ -90,6 +92,14 @@ export function onMessageSent() {
 	// This allows auto-update to distinguish between new generations and loading chat history
 	setIsAwaitingNewMessage(true);
 
+	// // Trigger relationship update in a separate LLM call
+	// // This runs after the message is sent, using a focused prompt on relationships only
+	// if (extensionSettings.autoUpdate) {
+	// 	setTimeout(async () => {
+	// 		await updateRelationships();
+	// 	}, 500);
+	// }
+
 	// FAB spinning is handled by apiClient.js when updateRPGData() is called
 }
 
@@ -111,8 +121,17 @@ export async function onMessageReceived(_data) {
 	// Trigger auto-update if enabled
 	// Only trigger if this is a newly generated message, not loading chat history
 	if (extensionSettings.autoUpdate && isAwaitingNewMessage) {
+		// Capture the target message and swipe ID before any async work
+		// so both updateRPGData and updateRelationships know where to store results
+		const context = getContext();
+		const chat = context.chat;
+		const targetMessage =
+			chat && chat.length > 0 ? chat[chat.length - 1] : null;
+		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
+
 		setTimeout(async () => {
-			await updateRPGData(true); // Auto-update
+			await updateRPGData(true, null, targetMessage, targetSwipeId); // Auto-update first
+			await updateRelationships(targetMessage, targetSwipeId); // Then update relationships
 		}, 500);
 	}
 
@@ -164,6 +183,7 @@ export function onCharacterChanged() {
 	renderInventory();
 	renderAppearance();
 	renderQuests();
+	renderRelationships();
 
 	// Update FAB widgets and strip widgets with loaded data
 	updateFabWidgets();
@@ -226,6 +246,7 @@ export function onMessageSwiped(messageIndex) {
 	renderThoughts();
 	renderInventory();
 	renderQuests();
+	renderRelationships();
 
 	// Reload lock settings from the current message's swipeStore
 	reloadLocksFromSwipeStore();
@@ -256,6 +277,7 @@ export function onMessageDeleted() {
 	renderThoughts();
 	renderInventory();
 	renderQuests();
+	renderRelationships();
 
 	// Update widget strips.
 	updateFabWidgets();

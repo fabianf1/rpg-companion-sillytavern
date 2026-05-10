@@ -302,5 +302,19 @@
 	"stats.con": "CON",
 	"stats.int": "INT",
 	"stats.wis": "WIS",
-	"stats.cha": "CHA"
+	"stats.cha": "CHA",
+	"template.mainPanel.relationshipsButton": "Relationships",
+	"template.relationshipsModal.title": "Character Relationships",
+	"relationships.noRelationships": "No relationships tracked yet. Relationships will be generated after messages are sent.",
+	"relationships.secret": "Secret",
+	"relationships.wants": "Wants",
+	"relationships.feels": "Feels",
+	"template.settingsModal.display.showRelationships": "Show Relationships",
+	"template.settingsModal.display.showRelationshipsNote": "Track relationship pairs between characters with directional feels, secrets, and status.",
+	"template.settingsModal.relationshipsTitle": "Relationships",
+	"template.settingsModal.relationshipsNote": "Configure relationship tracking between characters. Relationships are updated after each message in a separate API call.",
+	"template.settingsModal.relationships.statusOptions": "Status Options:",
+	"template.settingsModal.relationships.statusOptionsNote": "Comma-separated list of relationship statuses the AI can choose from.",
+	"template.partialRefreshModal.section.relationships": "Relationships",
+	"global.close": "Close"
 }

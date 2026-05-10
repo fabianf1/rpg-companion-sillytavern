@@ -24,6 +24,7 @@ import { renderAppearance } from "../rendering/appearance.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
 import { renderInventory } from "../rendering/inventory.js";
 import { renderQuests } from "../rendering/quests.js";
+import { renderRelationships } from "../rendering/relationships.js";
 import { renderThoughts } from "../rendering/thoughts.js";
 import { renderUserStats } from "../rendering/userStats.js";
 import { setStripCancelState, updateStripWidgets } from "../ui/desktop.js";
@@ -165,6 +166,8 @@ export function getCurrentProfile() {
 export async function updateRPGData(
 	isAutoUpdate = false,
 	selectedSections = null,
+	targetMessage = null,
+	targetSwipeId = null,
 ) {
 	if (isGenerating) {
 		// console.log('[RPG Companion] Already generating, skipping...');
@@ -310,8 +313,17 @@ export async function updateRPGData(
 			// console.log('[RPG Companion] parsedData.userStats:', parsedData.userStats ? parsedData.userStats.substring(0, 100) + '...' : 'null');
 
 			// Store RPG data for the last assistant message (separate mode)
+			// Use pre-captured targetMessage/targetSwipeId if provided (from onMessageReceived),
+			// otherwise fall back to deriving from chat tail (for manual refresh)
 			const lastMessage =
-				chat && chat.length > 0 ? chat[chat.length - 1] : null;
+				targetMessage ||
+				(chat && chat.length > 0 ? chat[chat.length - 1] : null);
+			const currentSwipeId =
+				targetSwipeId !== null
+					? targetSwipeId
+					: lastMessage
+						? lastMessage.swipe_id || 0
+						: 0;
 			// console.log('[RPG Companion] Last message is_user:', lastMessage ? lastMessage.is_user : 'no message');
 
 			// Double-check message still exists and hasn't changed (defensive)
@@ -367,7 +379,7 @@ export async function updateRPGData(
 					lastMessage.extra.rpg_companion_swipes = {};
 				}
 
-				const currentSwipeId = lastMessage.swipe_id || 0;
+				// currentSwipeId already derived above (from targetSwipeId or lastMessage.swipe_id)
 
 				// For partial refresh, merge with existing data instead of overwriting
 				if (selectedSections) {
@@ -413,6 +425,9 @@ export async function updateRPGData(
 						characterThoughts: selectedSections.includes("characterThoughts")
 							? parsedData.characterThoughts
 							: existingData.characterThoughts,
+						relationships: selectedSections.includes("relationships")
+							? parsedData.relationships || []
+							: existingData.relationships || [],
 						lockedItems: {
 							userStats: getLockedItemsFromStore
 								? getLockedItemsFromStore.userStats
@@ -430,6 +445,7 @@ export async function updateRPGData(
 						userStats: parsedData.userStats,
 						infoBox: parsedData.infoBox,
 						characterThoughts: parsedData.characterThoughts,
+						relationships: parsedData.relationships || [],
 						lockedItems: {
 							userStats: getLockedItemsFromStore
 								? getLockedItemsFromStore.userStats
@@ -462,6 +478,7 @@ export async function updateRPGData(
 				renderAppearance();
 				renderInventory();
 				renderQuests();
+				renderRelationships();
 			}
 
 			// Save to chat metadata

@@ -13,7 +13,10 @@ import {
 } from "./jsonPromptHelpers.js";
 import { applyLocks } from "./lockManager.js";
 import { getTrackerDataForContext } from "./trackerDataUtils.js";
-import { formatTrackerDataForContext } from "./valueFormatter.js";
+import {
+	formatRelationshipsForContext,
+	formatTrackerDataForContext,
+} from "./valueFormatter.js";
 import { buildAttributesString } from "./characterInfoBuilder.js";
 
 // ============================================================================
@@ -342,6 +345,24 @@ export function generateContextualSummary() {
 			} catch (e) {
 				console.warn(
 					"[RPG Companion] Failed to format characters for context:",
+					e,
+				);
+			}
+		}
+	}
+
+	// Add Relationships data if enabled
+	if (extensionSettings.showRelationships) {
+		const relationshipsData = getTrackerDataForContext("relationships");
+		if (relationshipsData && Array.isArray(relationshipsData)) {
+			try {
+				const formatted = formatRelationshipsForContext(relationshipsData);
+				if (formatted) {
+					summary += formatted + "\n";
+				}
+			} catch (e) {
+				console.warn(
+					"[RPG Companion] Failed to format relationships for context:",
 					e,
 				);
 			}

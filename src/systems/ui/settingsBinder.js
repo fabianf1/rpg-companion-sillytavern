@@ -105,6 +105,18 @@ export const SETTING_BINDINGS = [
 		type: "boolean",
 		onUpdate: updateDiceDisplay,
 	},
+	{
+		selector: "#rpg-toggle-relationships",
+		key: "showRelationships",
+		type: "boolean",
+		onUpdate: updateSectionVisibility,
+	},
+	{
+		selector: "#rpg-relationship-status-options",
+		key: "trackerConfig.presentCharacters.relationships.statusOptions",
+		type: "commaSeparated",
+		defaultValue: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
+	},
 
 	// ── Feature Toggles ──
 	{
@@ -550,6 +562,11 @@ export function bindSettingsUI() {
 				value = $(this).prop("checked");
 			} else if (binding.type === "int") {
 				value = parseInt(String($(this).val()), 10) || 0;
+			} else if (binding.type === "commaSeparated") {
+				value = String($(this).val())
+					.split(",")
+					.map((s) => s.trim())
+					.filter((s) => s.length > 0);
 			} else {
 				value = String($(this).val());
 			}
@@ -604,6 +621,8 @@ export function syncSettingsUI() {
 			$el.prop("checked", !!resolved);
 		} else if (binding.type === "int") {
 			$el.val(Number(resolved));
+		} else if (binding.type === "commaSeparated") {
+			$el.val(Array.isArray(resolved) ? resolved.join(", ") : String(resolved));
 		} else {
 			$el.val(String(resolved));
 		}

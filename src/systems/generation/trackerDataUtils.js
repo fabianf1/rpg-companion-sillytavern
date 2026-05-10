@@ -48,7 +48,7 @@ export function getSwipeData(message, swipeId) {
  * Reads tracker data from the authoritative swipe store.
  * Searches backward through chat to find the last assistant message with swipe data.
  *
- * @param {string} trackerKey - Which tracker to read: 'userStats', 'infoBox', or 'characterThoughts'
+ * @param {string} trackerKey - Which tracker to read: 'userStats', 'infoBox', 'characterThoughts', or 'relationships'
  * @param {Array} currentChat - The chat array to search (defaults to getContext().chat)
  * @returns {string|null} The tracker data for this key, or null if not found
  */
