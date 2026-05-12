@@ -18,9 +18,16 @@ import { getTrackerDataForContext } from "./trackerDataUtils.js";
 export function generateRelationshipUpdatePrompt() {
 	const userName = getContext().name1;
 	const depth = extensionSettings.updateDepth;
-	const statusOptions =
-		extensionSettings.trackerConfig?.presentCharacters?.relationships?.statusOptions
-		|| ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"];
+	// Get status options from relationshipEmojis keys (the keys define allowed statuses)
+	const relationshipEmojis = extensionSettings.trackerConfig?.presentCharacters
+		?.relationships?.relationshipEmojis || {
+		Lover: "❤️",
+		Friend: "⭐",
+		Ally: "🤝",
+		Enemy: "⚔️",
+		Neutral: "⚖️",
+	};
+	const statusOptions = Object.keys(relationshipEmojis);
 
 	const messages = [];
 
@@ -39,7 +46,10 @@ export function generateRelationshipUpdatePrompt() {
 	}
 
 	// Instruction message
-	const instructionMessage = buildRelationshipInstructionMessage(userName, statusOptions);
+	const instructionMessage = buildRelationshipInstructionMessage(
+		userName,
+		statusOptions,
+	);
 	messages.push({ role: "user", content: instructionMessage });
 
 	return messages;

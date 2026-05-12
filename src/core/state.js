@@ -229,6 +229,7 @@ export let extensionSettings = {
 			relationships: {
 				enabled: true,
 				// Relationship to emoji mapping (shown on character portraits)
+				// Keys define the allowed status options for AI prompts
 				relationshipEmojis: {
 					Lover: "❤️",
 					Friend: "⭐",
@@ -236,17 +237,6 @@ export let extensionSettings = {
 					Enemy: "⚔️",
 					Neutral: "⚖️",
 				},
-				// Status options for the relationship tracking system
-				statusOptions: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
-			},
-			// Legacy fields kept for backward compatibility
-			relationshipFields: ["Lover", "Friend", "Ally", "Enemy", "Neutral"],
-			relationshipEmojis: {
-				Lover: "❤️",
-				Friend: "⭐",
-				Ally: "🤝",
-				Enemy: "⚔️",
-				Neutral: "⚖️",
 			},
 			// Custom fields (appearance, demeanor, etc. - shown after relationship, separated by |)
 			customFields: [
@@ -281,11 +271,6 @@ export let extensionSettings = {
 					{ id: "health", name: "Health", enabled: true },
 					{ id: "arousal", name: "Arousal", enabled: true },
 				],
-			},
-			// Per-pair relationship tracking configuration
-			relationships: {
-				enabled: true,
-				statusOptions: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
 			},
 		},
 	},

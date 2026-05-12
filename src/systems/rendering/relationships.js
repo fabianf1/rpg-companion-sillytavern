@@ -27,7 +27,18 @@ export function renderRelationships() {
 	const $body = $modal.find(".rpg-relationships-popup-body");
 	const relationships = getTrackerDataForContext("relationships");
 
-	if (!relationships || !Array.isArray(relationships) || relationships.length === 0) {
+	console.log(
+		"[RPG Companion] Rendering relationships with data:",
+		relationships,
+	);
+	if (
+		!relationships ||
+		!Array.isArray(relationships) ||
+		relationships.length === 0
+	) {
+		console.log(
+			"[RPG Companion] No relationships data found, showing empty state.",
+		);
 		$body.html(
 			`<div class="rpg-relationships-empty">${i18n.getTranslation("relationships.noRelationships")}</div>`,
 		);
@@ -141,10 +152,22 @@ export function closeRelationshipsModal() {
 function _applyCustomTheme($modal) {
 	const $content = $modal.find(".rpg-relationships-popup-content");
 	if ($content.length && extensionSettings.customColors) {
-		$content[0].style.setProperty("--rpg-bg", extensionSettings.customColors.bg);
-		$content[0].style.setProperty("--rpg-accent", extensionSettings.customColors.accent);
-		$content[0].style.setProperty("--rpg-text", extensionSettings.customColors.text);
-		$content[0].style.setProperty("--rpg-highlight", extensionSettings.customColors.highlight);
+		$content[0].style.setProperty(
+			"--rpg-bg",
+			extensionSettings.customColors.bg,
+		);
+		$content[0].style.setProperty(
+			"--rpg-accent",
+			extensionSettings.customColors.accent,
+		);
+		$content[0].style.setProperty(
+			"--rpg-text",
+			extensionSettings.customColors.text,
+		);
+		$content[0].style.setProperty(
+			"--rpg-highlight",
+			extensionSettings.customColors.highlight,
+		);
 	}
 }
 

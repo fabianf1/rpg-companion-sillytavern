@@ -521,13 +521,6 @@ function migrateToTrackerConfig() {
 						placeholder: "Observable Demeanor Cue (one trait)",
 					},
 					{
-						id: "relationship",
-						label: "Relationship",
-						enabled: true,
-						type: "relationship",
-						placeholder: "Enemy/Neutral/Friend/Lover",
-					},
-					{
 						id: "internalMonologue",
 						label: "Internal Monologue",
 						enabled: true,
@@ -621,15 +614,6 @@ function migrateToTrackerConfig() {
 			if (hasOldFormat) {
 				// console.log('[RPG Companion] Migrating Present Characters to new structure');
 
-				// Extract relationship fields from old customFields
-				const relationshipFields = [
-					"Lover",
-					"Friend",
-					"Ally",
-					"Enemy",
-					"Neutral",
-				];
-
 				// Extract non-relationship fields and convert to new format
 				const newCustomFields = pc.customFields
 					.filter(
@@ -655,7 +639,6 @@ function migrateToTrackerConfig() {
 				};
 
 				// Update to new structure
-				pc.relationshipFields = relationshipFields;
 				pc.customFields = newCustomFields;
 				pc.thoughts = thoughts;
 
@@ -664,26 +647,11 @@ function migrateToTrackerConfig() {
 			}
 		}
 
-		// Ensure new structure exists even if migration wasn't needed
-		if (!pc.relationshipFields) {
-			pc.relationshipFields = ["Lover", "Friend", "Ally", "Enemy", "Neutral"];
-		}
-		if (!pc.relationshipEmojis) {
-			// Create default emoji mapping from relationshipFields
-			pc.relationshipEmojis = {
-				Lover: "❤️",
-				Friend: "⭐",
-				Ally: "🤝",
-				Enemy: "⚔️",
-				Neutral: "⚖️",
-			};
-		}
-
-		// Migrate to new relationships structure if not already present
+		// Ensure relationships structure exists
 		if (!pc.relationships) {
 			pc.relationships = {
-				enabled: true, // Default to enabled for backward compatibility
-				relationshipEmojis: pc.relationshipEmojis || {
+				enabled: true,
+				relationshipEmojis: {
 					Lover: "❤️",
 					Friend: "⭐",
 					Ally: "🤝",

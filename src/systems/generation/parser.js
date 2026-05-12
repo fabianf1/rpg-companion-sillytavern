@@ -112,7 +112,6 @@ function stripBrackets(text) {
 			"field",
 			"value",
 			"details",
-			"relationship",
 			"thoughts",
 			"stat",
 			"status",

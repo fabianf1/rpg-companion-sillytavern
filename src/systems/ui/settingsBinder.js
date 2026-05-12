@@ -111,12 +111,6 @@ export const SETTING_BINDINGS = [
 		type: "boolean",
 		onUpdate: updateSectionVisibility,
 	},
-	{
-		selector: "#rpg-relationship-status-options",
-		key: "trackerConfig.presentCharacters.relationships.statusOptions",
-		type: "commaSeparated",
-		defaultValue: ["Friends", "Enemies", "Lovers", "Rivals", "Family", "Neutral"],
-	},
 
 	// ── Feature Toggles ──
 	{

@@ -11,6 +11,7 @@ import {
 } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
 import { renderRelationships } from "../rendering/relationships.js";
+import { renderThoughts } from "../rendering/thoughts.js";
 import { getCurrentProfile } from "./apiClient.js";
 import { generateRelationshipUpdatePrompt } from "./relationshipPromptBuilder.js";
 
@@ -90,6 +91,7 @@ export async function updateRelationships(
 					parsedData.relationships;
 				// Re-render the relationships display
 				renderRelationships();
+				renderThoughts();
 			}
 
 			// Save to chat metadata

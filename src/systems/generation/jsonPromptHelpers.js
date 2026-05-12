@@ -206,8 +206,6 @@ export function buildCharactersJSONInstruction() {
 	const enabledFields =
 		presentCharsConfig?.customFields?.filter((f) => f && f.enabled && f.name) ||
 		[];
-	const relationshipsEnabled =
-		presentCharsConfig?.relationships?.enabled !== false;
 	const thoughtsConfig = presentCharsConfig?.thoughts;
 	const characterStats = presentCharsConfig?.characterStats;
 	const enabledCharStats =
@@ -230,14 +228,6 @@ export function buildCharactersJSONInstruction() {
 			instruction += `      "${fieldKey}": "${field.description}"${comma}\n`;
 		}
 		instruction += "    }";
-	}
-
-	// Relationship
-	if (relationshipsEnabled) {
-		const relationshipFields = presentCharsConfig?.relationshipFields || [];
-		const options = relationshipFields.join("/");
-		instruction +=
-			',\n    "relationship": {"status": "(choose one: ' + options + ')"}';
 	}
 
 	// Stats

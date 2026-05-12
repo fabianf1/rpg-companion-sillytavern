@@ -4,6 +4,7 @@
  */
 
 import { characters, this_chid } from "../../../../../../../script.js";
+import { getContext } from "../../../../../../extensions.js";
 import {
 	getGroupMembers,
 	selected_group,
@@ -164,7 +165,7 @@ function namesMatch(cardName, aiName) {
 
 /**
  * Renders character thoughts (Present Characters) panel.
- * Displays character cards with avatars, relationship badges, and traits.
+ * Displays character cards with avatars, relationship emojis, and traits.
  * Includes event listeners for editable character fields.
  */
 export function renderThoughts({ preserveScroll = false } = {}) {
@@ -215,8 +216,6 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 				(s) => s && s.enabled && s.name,
 			)) ||
 		[];
-	const relationshipFields = config?.relationshipFields || [];
-	const hasRelationshipEnabled = relationshipFields.length > 0;
 
 	// Read character thoughts data from swipe store
 	const characterThoughtsData = thoughtsData || "";
@@ -283,16 +282,6 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 							character[field.name] = stripBrackets(char[fieldKey]);
 						}
 					}
-				}
-
-				// Extract relationship
-				// Prefer the new flat format (char.Relationship) over the old nested format (char.relationship.status)
-				if (char.Relationship) {
-					character.Relationship = stripBrackets(char.Relationship);
-				} else if (char.relationship) {
-					character.Relationship = stripBrackets(
-						char.relationship.status || char.relationship,
-					);
 				}
 
 				// Extract thoughts content for bubble display
@@ -404,12 +393,6 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 					debugLog(`[RPG Thoughts] Parsed field ${fieldName}: ${parts[i + 1]}`);
 				}
 			}
-			// Check if this is a Relationship line
-			else if (line.trim().startsWith("Relationship:") && currentCharacter) {
-				const relationship = line.substring(line.indexOf(":") + 1).trim();
-				currentCharacter.Relationship = relationship;
-				debugLog(`[RPG Thoughts] Parsed relationship: ${relationship}`);
-			}
 			// Check if this is a Stats line
 			else if (
 				line.trim().startsWith("Stats:") &&
@@ -439,13 +422,6 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 		}
 	} // End of text format parsing
 
-	// Get relationship emojis from config (with fallback defaults)
-	const relationshipEmojis = config?.relationshipEmojis || {
-		Enemy: "⚔️",
-		Neutral: "⚖️",
-		Friend: "⭐",
-		Lover: "❤️",
-	};
 	debugLog(
 		"[RPG Thoughts] ==================== PARSING COMPLETE ====================",
 	);
@@ -585,20 +561,32 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 					characterPortrait.substring(0, 50) + "...",
 				);
 
-				// Get relationship badge - only if relationships are enabled in config
+				// Get relationship badge from the standalone relationships module
 				let relationshipBadge = "⚖️"; // Default
-				const relationshipFieldName = "Relationship";
 
-				if (hasRelationshipEnabled) {
-					// In the new format, relationship is always stored in char.Relationship
-					if (char.Relationship) {
-						// console.log(`[RPG Companion] Rendering ${char.name} - char.Relationship:`, char.Relationship);
-						// console.log('[RPG Companion] relationshipEmojis mapping:', relationshipEmojis);
-						// Try to map text to emoji
-						relationshipBadge =
-							relationshipEmojis[char.Relationship] || char.Relationship;
-						// console.log('[RPG Companion] Final relationshipBadge:', relationshipBadge);
+				try {
+					const relationshipsData = getTrackerDataForContext("relationships");
+					if (relationshipsData && Array.isArray(relationshipsData)) {
+						const userName = getContext()?.name1;
+						if (userName) {
+							// Find relationship between user and this character
+							const rel = relationshipsData.find(
+								(r) =>
+									(r.character1 === userName && r.character2 === char.name) ||
+									(r.character2 === userName && r.character1 === char.name),
+							);
+							if (rel?.status) {
+								const emojiMap =
+									config?.relationships?.relationshipEmojis || {};
+								relationshipBadge = emojiMap[rel.status] || rel.status;
+							}
+						}
 					}
+				} catch (relError) {
+					debugLog(
+						`[RPG Thoughts] Error looking up relationship:`,
+						relError.message,
+					);
 				}
 
 				debugLog(`[RPG Thoughts] Building HTML card for ${char.name}...`);
@@ -608,7 +596,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
                         <div class="rpg-character-header-row">
                             <div class="rpg-character-avatar rpg-avatar-upload" data-character="${char.name}" title="${i18n.getTranslation("thoughts.clickToUpload")}">
                                 <img src="${characterPortrait}" alt="${char.name}" onerror="this.style.opacity='0.5';this.onerror=null;" />
-                                ${hasRelationshipEnabled ? `<div class="rpg-relationship-badge rpg-editable" contenteditable="true" data-character="${char.name}" data-field="${relationshipFieldName}" title="${i18n.getTranslation("thoughts.clickToEdit")} (emoji: ⚔️ ⚖️ ⭐ ❤️)">${relationshipBadge}</div>` : ""}
+                                <div class="rpg-relationship-badge" data-character="${char.name}" title="Relationship">${relationshipBadge}</div>
                             </div>
                             <div class="rpg-character-header">
                                 <span class="rpg-character-emoji rpg-editable" contenteditable="true" data-character="${char.name}" data-field="emoji" title="${i18n.getTranslation("thoughts.clickToEdit")}">${char.emoji}</span>
@@ -986,7 +974,6 @@ export function addNewCharacter() {
 		(characterStats?.enabled &&
 			characterStats?.customStats?.filter((s) => s && s.enabled && s.name)) ||
 		[];
-	const hasRelationship = presentCharsConfig?.relationshipFields?.length > 0;
 
 	// Read current character thoughts from swipe store
 	let characterThoughtsData = getTrackerDataForContext("characterThoughts");
@@ -1029,11 +1016,6 @@ export function addNewCharacter() {
 			newCharacter.details[field.name] = "";
 		}
 
-		// Add relationship if enabled
-		if (hasRelationship) {
-			newCharacter.relationship = "Neutral";
-		}
-
 		// Add stats if enabled
 		if (enabledCharStats.length > 0) {
 			newCharacter.stats = {};
@@ -1064,11 +1046,6 @@ export function addNewCharacter() {
 			// Add custom detail fields as standalone lines
 			for (const customField of enabledFields) {
 				newCharacterLines.push(`  ${customField.name}: `);
-			}
-
-			// Add Relationship field if enabled
-			if (hasRelationship) {
-				newCharacterLines.push(`  Relationship: Neutral`);
 			}
 
 			// Add Stats if enabled
@@ -1109,7 +1086,7 @@ export function addNewCharacter() {
  * Works with the new multi-line format.
  *
  * @param {string} characterName - Name of the character to update
- * @param {string} field - Field to update (emoji, name, custom field name, Relationship, stat name)
+ * @param {string} field - Field to update (emoji, name, custom field name, stat name)
  * @param {string} value - New value for the field
  */
 export function updateCharacterField(characterName, field, value) {
@@ -1122,19 +1099,6 @@ export function updateCharacterField(characterName, field, value) {
 		(characterStats?.enabled &&
 			characterStats?.customStats?.filter((s) => s && s.enabled && s.name)) ||
 		[];
-
-	// Get relationship emoji mappings from config
-	const relationshipEmojis = presentCharsConfig?.relationshipEmojis || {
-		Enemy: "⚔️",
-		Neutral: "⚖️",
-		Friend: "⭐",
-		Lover: "❤️",
-	};
-	// Create reverse mapping (emoji → name)
-	const emojiToRelationship = {};
-	for (const [name, emoji] of Object.entries(relationshipEmojis)) {
-		emojiToRelationship[emoji] = name;
-	}
 
 	// Read current character thoughts from swipe store
 	let characterThoughtsData = getTrackerDataForContext("characterThoughts");
@@ -1179,30 +1143,6 @@ export function updateCharacterField(characterName, field, value) {
 				char.name = value;
 			} else if (field === "emoji") {
 				char.emoji = value;
-			} else if (field === "Relationship") {
-				// Store relationship in the correct nested format
-				// Remove old flat format if it exists
-				if (char.Relationship) {
-					delete char.Relationship;
-				}
-
-				// First check if it's an emoji → convert to text
-				let relationshipValue;
-				if (emojiToRelationship[value]) {
-					relationshipValue = emojiToRelationship[value];
-				} else {
-					// It's text - find matching relationship name (case-insensitive)
-					const matchingRelationship = Object.keys(relationshipEmojis).find(
-						(name) => name.toLowerCase() === value.toLowerCase(),
-					);
-					relationshipValue = matchingRelationship || value;
-				}
-
-				// Store in the correct nested format
-				char.relationship = { status: relationshipValue };
-				// console.log('[RPG Companion] After update - char.relationship:', char.relationship);
-				// console.log('[RPG Companion] relationshipEmojis:', relationshipEmojis);
-				// console.log('[RPG Companion] emojiToRelationship:', emojiToRelationship);
 			} else if (
 				field.toLowerCase() === "thoughts" ||
 				field === (presentCharsConfig?.thoughts?.name || "Thoughts")
@@ -1380,20 +1320,6 @@ export function updateCharacterField(characterName, field, value) {
 				continue;
 			}
 
-			// Check for Relationship field
-			if (field === "Relationship" && line.startsWith("Relationship:")) {
-				const emojiToRelationship = {
-					"⚔️": "Enemy",
-					"⚖️": "Neutral",
-					"⭐": "Friend",
-					"❤️": "Lover",
-				};
-				const relationshipValue = emojiToRelationship[value] || value;
-				lines[i] = `Relationship: ${relationshipValue}`;
-				fieldUpdated = true;
-				continue;
-			}
-
 			// Check for Thoughts field
 			if (isThoughtsField && line.startsWith(thoughtsFieldName + ":")) {
 				lines[i] = `  ${thoughtsFieldName}: ${value}`;
@@ -1485,21 +1411,6 @@ export function updateCharacterField(characterName, field, value) {
 				} else {
 					newCharacterLines.push(`  ${customField.name}: `);
 				}
-			}
-
-			// Add Relationship field if enabled
-			if (presentCharsConfig?.relationshipFields?.length > 0) {
-				const emojiToRelationship = {
-					"⚔️": "Enemy",
-					"⚖️": "Neutral",
-					"⭐": "Friend",
-					"❤️": "Lover",
-				};
-				const relationshipValue =
-					field === "Relationship"
-						? emojiToRelationship[value] || value
-						: "Neutral";
-				newCharacterLines.push(`  Relationship: ${relationshipValue}`);
 			}
 
 			// Add Stats if enabled

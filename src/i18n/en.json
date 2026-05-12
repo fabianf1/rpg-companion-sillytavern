@@ -312,9 +312,7 @@
 	"template.settingsModal.display.showRelationships": "Show Relationships",
 	"template.settingsModal.display.showRelationshipsNote": "Track relationship pairs between characters with directional feels, secrets, and status.",
 	"template.settingsModal.relationshipsTitle": "Relationships",
-	"template.settingsModal.relationshipsNote": "Configure relationship tracking between characters. Relationships are updated after each message in a separate API call.",
-	"template.settingsModal.relationships.statusOptions": "Status Options:",
-	"template.settingsModal.relationships.statusOptionsNote": "Comma-separated list of relationship statuses the AI can choose from.",
+	"template.settingsModal.relationshipsNote": "Configure relationship tracking between characters. Relationships are updated after each message in a separate API call. Use the Tracker Editor to customize relationship status types and their emoji badges.",
 	"template.partialRefreshModal.section.relationships": "Relationships",
 	"global.close": "Close"
 }

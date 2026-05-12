@@ -13,7 +13,10 @@ import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
 import { DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT } from "./promptBuilder.js";
 import { generateContextualSummary } from "./trackerInstructionsBuilder.js";
-import { formatHistoricalTrackerData, formatRelationshipsForContext } from "./valueFormatter.js";
+import {
+	formatHistoricalTrackerData,
+	formatRelationshipsForContext,
+} from "./valueFormatter.js";
 import { evaluateSuppression } from "./suppression.js";
 
 // ============================================================================
@@ -146,7 +149,9 @@ function buildHistoricalContextMap() {
 		// Add relationships data if available
 		let relationshipsContext = "";
 		if (trackerData.relationships && Array.isArray(trackerData.relationships)) {
-			const formattedRelationships = formatRelationshipsForContext(trackerData.relationships);
+			const formattedRelationships = formatRelationshipsForContext(
+				trackerData.relationships,
+			);
 			if (formattedRelationships) {
 				relationshipsContext = `\n${formattedRelationships}`;
 			}

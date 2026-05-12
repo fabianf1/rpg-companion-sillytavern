@@ -417,7 +417,7 @@ export async function updateRPGData(
 						mergedUserStats = existingData.userStats;
 					}
 
-					lastMessage.extra.rpg_companion_swipes[currentSwipeId] = {
+					let newData = {
 						userStats: mergedUserStats,
 						infoBox: selectedSections.includes("infoBox")
 							? parsedData.infoBox
@@ -425,9 +425,6 @@ export async function updateRPGData(
 						characterThoughts: selectedSections.includes("characterThoughts")
 							? parsedData.characterThoughts
 							: existingData.characterThoughts,
-						relationships: selectedSections.includes("relationships")
-							? parsedData.relationships || []
-							: existingData.relationships || [],
 						lockedItems: {
 							userStats: getLockedItemsFromStore
 								? getLockedItemsFromStore.userStats
@@ -440,12 +437,16 @@ export async function updateRPGData(
 								: [],
 						},
 					};
+					if (existingData.relationships) {
+						newData.relationships = existingData.relationships;
+					}
+
+					lastMessage.extra.rpg_companion_swipes[currentSwipeId] = newData;
 				} else {
 					lastMessage.extra.rpg_companion_swipes[currentSwipeId] = {
 						userStats: parsedData.userStats,
 						infoBox: parsedData.infoBox,
 						characterThoughts: parsedData.characterThoughts,
-						relationships: parsedData.relationships || [],
 						lockedItems: {
 							userStats: getLockedItemsFromStore
 								? getLockedItemsFromStore.userStats

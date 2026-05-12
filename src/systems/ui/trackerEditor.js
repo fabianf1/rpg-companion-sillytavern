@@ -474,14 +474,6 @@ function resetToDefaults() {
 					Neutral: "⚖️",
 				},
 			},
-			relationshipFields: ["Lover", "Friend", "Ally", "Enemy", "Neutral"],
-			relationshipEmojis: {
-				Lover: "❤️",
-				Friend: "⭐",
-				Ally: "🤝",
-				Enemy: "⚔️",
-				Neutral: "⚖️",
-			},
 			customFields: [
 				{
 					id: "appearance",
@@ -615,10 +607,9 @@ function migrateTrackerPreset(config) {
 				enabled: migrated.presentCharacters.enableRelationships || true,
 				relationshipEmojis: migrated.presentCharacters.relationshipEmojis,
 			};
-			// Keep legacy fields for backward compatibility
-			migrated.presentCharacters.relationshipFields = Object.keys(
-				migrated.presentCharacters.relationshipEmojis,
-			);
+			// Remove legacy fields
+			delete migrated.presentCharacters.relationshipEmojis;
+			delete migrated.presentCharacters.relationshipFields;
 		}
 
 		// Ensure relationships object exists
@@ -1366,8 +1357,7 @@ function renderPresentCharactersTab() {
 	html +=
 		'<div class="rpg-relationship-mapping-list" id="rpg-relationship-mapping-list">';
 	// Show existing relationships as field → emoji pairs
-	const relationshipEmojis = config.relationships?.relationshipEmojis ||
-		config.relationshipEmojis || {
+	const relationshipEmojis = config.relationships?.relationshipEmojis || {
 			Lover: "❤️",
 			Friend: "⭐",
 			Ally: "🤝",
@@ -1515,24 +1505,6 @@ function setupPresentCharactersListeners() {
 				relationshipName
 			] = "😊";
 
-			// Also update legacy fields for backward compatibility
-			if (
-				!extensionSettings.trackerConfig.presentCharacters.relationshipEmojis
-			) {
-				extensionSettings.trackerConfig.presentCharacters.relationshipEmojis =
-					{};
-			}
-			extensionSettings.trackerConfig.presentCharacters.relationshipEmojis[
-				relationshipName
-			] = "😊";
-
-			// Sync relationshipFields
-			const emojis =
-				extensionSettings.trackerConfig.presentCharacters.relationships
-					.relationshipEmojis;
-			extensionSettings.trackerConfig.presentCharacters.relationshipFields =
-				Object.keys(emojis);
-
 			renderPresentCharactersTab();
 		});
 
@@ -1550,21 +1522,6 @@ function setupPresentCharactersListeners() {
 				delete extensionSettings.trackerConfig.presentCharacters.relationships
 					.relationshipEmojis[relationship];
 			}
-
-			// Remove from legacy structure
-			if (
-				extensionSettings.trackerConfig.presentCharacters.relationshipEmojis
-			) {
-				delete extensionSettings.trackerConfig.presentCharacters
-					.relationshipEmojis[relationship];
-			}
-
-			// Sync relationshipFields
-			const emojis =
-				extensionSettings.trackerConfig.presentCharacters.relationships
-					?.relationshipEmojis || {};
-			extensionSettings.trackerConfig.presentCharacters.relationshipFields =
-				Object.keys(emojis);
 
 			renderPresentCharactersTab();
 		});
@@ -1584,12 +1541,6 @@ function setupPresentCharactersListeners() {
 					relationshipEmojis: {},
 				};
 			}
-			if (
-				!extensionSettings.trackerConfig.presentCharacters.relationshipEmojis
-			) {
-				extensionSettings.trackerConfig.presentCharacters.relationshipEmojis =
-					{};
-			}
 
 			// Find the old name by matching the emoji in new structure
 			const emojis =
@@ -1603,17 +1554,6 @@ function setupPresentCharactersListeners() {
 				// Update new structure
 				delete emojis[oldName];
 				emojis[newName] = emoji;
-
-				// Update legacy structure
-				delete extensionSettings.trackerConfig.presentCharacters
-					.relationshipEmojis[oldName];
-				extensionSettings.trackerConfig.presentCharacters.relationshipEmojis[
-					newName
-				] = emoji;
-
-				// Sync relationshipFields
-				extensionSettings.trackerConfig.presentCharacters.relationshipFields =
-					Object.keys(emojis);
 			}
 		});
 
@@ -1633,18 +1573,9 @@ function setupPresentCharactersListeners() {
 					relationshipEmojis: {},
 				};
 			}
-			if (
-				!extensionSettings.trackerConfig.presentCharacters.relationshipEmojis
-			) {
-				extensionSettings.trackerConfig.presentCharacters.relationshipEmojis =
-					{};
-			}
 
-			// Update both structures
+			// Update structure
 			extensionSettings.trackerConfig.presentCharacters.relationships.relationshipEmojis[
-				name
-			] = $(this).val();
-			extensionSettings.trackerConfig.presentCharacters.relationshipEmojis[
 				name
 			] = $(this).val();
 		});
