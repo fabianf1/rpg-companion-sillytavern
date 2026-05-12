@@ -237,190 +237,92 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 	let presentCharacters = [];
 
 	// Try parsing as JSON first (new format)
-	try {
-		const parsed =
-			typeof characterThoughtsData === "object"
-				? characterThoughtsData
-				: JSON.parse(characterThoughtsData);
+	const parsed =
+		typeof characterThoughtsData === "object"
+			? characterThoughtsData
+			: JSON.parse(characterThoughtsData);
 
-		// Handle both {characters: [...]} and direct array formats
-		const charactersArray = Array.isArray(parsed)
-			? parsed
-			: parsed.characters || [];
+	// Handle both {characters: [...]} and direct array formats
+	const charactersArray = Array.isArray(parsed)
+		? parsed
+		: parsed.characters || [];
 
-		if (charactersArray.length > 0) {
-			// JSON format: array of character objects
-			presentCharacters = charactersArray.map((char) => {
-				const character = {
-					name: char.name,
-					emoji: char.emoji || "👤",
-				};
+	if (charactersArray.length > 0) {
+		// JSON format: array of character objects
+		presentCharacters = charactersArray.map((char) => {
+			const character = {
+				name: char.name,
+				emoji: char.emoji || "👤",
+			};
 
-				// Extract details (appearance, demeanor, etc.)
-				if (char.details) {
-					// Map details object to custom fields
-					for (const field of enabledFields) {
-						// First try exact field name (for manually edited values)
-						if (char.details[field.name] !== undefined) {
-							character[field.name] = stripBrackets(char.details[field.name]);
-						} else {
-							// Fall back to snake_case for AI-generated values
-							const fieldKey = toSnakeCase(field.name);
-							if (char.details[fieldKey] !== undefined) {
-								character[field.name] = stripBrackets(char.details[fieldKey]);
-							}
-						}
-					}
-				}
-
-				// Also check for fields at root level (for backward compatibility)
-				// Only use if not already set from details
+			// Extract details (appearance, demeanor, etc.)
+			if (char.details) {
+				// Map details object to custom fields
 				for (const field of enabledFields) {
-					if (character[field.name] === undefined) {
-						const fieldKey = toSnakeCase(field.name);
-						if (char[fieldKey] !== undefined) {
-							character[field.name] = stripBrackets(char[fieldKey]);
-						}
-					}
-				}
-
-				// Extract thoughts content for bubble display
-				if (char.thoughts) {
-					character.ThoughtsContent = stripBrackets(
-						char.thoughts.content || char.thoughts,
-					);
-				}
-
-				// Extract character stats if present
-				if (char.stats && enabledCharStats.length > 0) {
-					// Handle both object format {Health: 100, Energy: 95} and array format [{name: "Health", value: 100}]
-					if (Array.isArray(char.stats)) {
-						// Array format: [{name: "Health", value: 100}, {name: "Energy", value: 95}]
-						for (const statObj of char.stats) {
-							if (statObj.name && statObj.value !== undefined) {
-								const matchingStat = enabledCharStats.find(
-									(s) => s.name === statObj.name,
-								);
-								if (matchingStat) {
-									character[statObj.name] = statObj.value;
-								}
-							}
-						}
+					// First try exact field name (for manually edited values)
+					if (char.details[field.name] !== undefined) {
+						character[field.name] = stripBrackets(char.details[field.name]);
 					} else {
-						// Object format: {Health: 100, Energy: 95}
-						for (const stat of enabledCharStats) {
-							if (char.stats[stat.name] !== undefined) {
-								character[stat.name] = char.stats[stat.name];
-							}
+						// Fall back to snake_case for AI-generated values
+						const fieldKey = toSnakeCase(field.name);
+						if (char.details[fieldKey] !== undefined) {
+							character[field.name] = stripBrackets(char.details[fieldKey]);
 						}
 					}
 				}
-
-				return character;
-			});
-
-			debugLog(
-				"[RPG Thoughts] ✓ Parsed JSON format, characters:",
-				presentCharacters.length,
-			);
-		}
-	} catch (e) {
-		debugLog("[RPG Thoughts] Not JSON format, falling back to text parsing");
-	}
-
-	// If JSON parsing failed or returned empty, try text format
-	if (presentCharacters.length === 0) {
-		const lines = characterThoughtsData.split("\n");
-		debugLog("[RPG Thoughts] Split into lines count:", lines.length);
-		debugLog("[RPG Thoughts] Lines:", lines);
-
-		// Parse new multi-line format:
-		// - [Name]
-		// Details: [Emoji] | [Field1] | [Field2] | ...
-		// Relationship: [Relationship]
-		// Stats: Stat1: X% | Stat2: X% | ...
-		// Thoughts: [Description]
-		let lineNumber = 0;
-		let currentCharacter = null;
-
-		for (const line of lines) {
-			lineNumber++;
-
-			// Skip empty lines, headers, dividers, and code fences
-			if (
-				!line.trim() ||
-				line.includes("Present Characters") ||
-				line.includes("---") ||
-				line.trim().startsWith("```") ||
-				line.trim() === "- …" ||
-				line.includes("(Repeat the format")
-			) {
-				continue;
 			}
 
-			debugLog(`[RPG Thoughts] Processing line ${lineNumber}:`, line);
-
-			// Check if this is a character name line (starts with "- ")
-			if (line.trim().startsWith("- ")) {
-				const name = line.trim().substring(2).trim();
-
-				if (name && name.toLowerCase() !== "unavailable") {
-					currentCharacter = { name };
-					presentCharacters.push(currentCharacter);
-					debugLog(`[RPG Thoughts] ✓ Started new character: ${name}`);
-				} else {
-					currentCharacter = null;
-					debugLog(
-						`[RPG Thoughts] ✗ Rejected character - name: "${name}" (unavailable or empty)`,
-					);
-				}
-			}
-			// Check if this is a Details line
-			else if (line.trim().startsWith("Details:") && currentCharacter) {
-				const detailsContent = line.substring(line.indexOf(":") + 1).trim();
-				const parts = detailsContent.split("|").map((p) => p.trim());
-
-				// First part is the emoji
-				if (parts.length > 0) {
-					currentCharacter.emoji = parts[0];
-					debugLog(`[RPG Thoughts] Parsed emoji: ${parts[0]}`);
-				}
-
-				// Remaining parts are custom fields
-				for (let i = 0; i < enabledFields.length && i + 1 < parts.length; i++) {
-					const fieldName = enabledFields[i].name;
-					currentCharacter[fieldName] = parts[i + 1];
-					debugLog(`[RPG Thoughts] Parsed field ${fieldName}: ${parts[i + 1]}`);
-				}
-			}
-			// Check if this is a Stats line
-			else if (
-				line.trim().startsWith("Stats:") &&
-				currentCharacter &&
-				enabledCharStats.length > 0
-			) {
-				const statsContent = line.substring(line.indexOf(":") + 1).trim();
-				const statParts = statsContent.split("|").map((p) => p.trim());
-
-				for (const statPart of statParts) {
-					const statMatch = statPart.match(/^(.+?):\s*(\d+)%$/);
-					if (statMatch) {
-						const statName = statMatch[1].trim();
-						const statValue = parseInt(statMatch[2]);
-						currentCharacter[statName] = statValue;
-						debugLog(`[RPG Thoughts] Parsed stat: ${statName} = ${statValue}%`);
+			// Also check for fields at root level (for backward compatibility)
+			// Only use if not already set from details
+			for (const field of enabledFields) {
+				if (character[field.name] === undefined) {
+					const fieldKey = toSnakeCase(field.name);
+					if (char[fieldKey] !== undefined) {
+						character[field.name] = stripBrackets(char[fieldKey]);
 					}
 				}
 			}
-			// Check if this is a Thoughts line (handled separately for thought bubbles)
-			else if (line.trim().match(/^[A-Z][a-z]+:/) && currentCharacter) {
-				// This could be Thoughts, Feelings, etc. - skip for now, handled in thought bubble rendering
-				debugLog(
-					`[RPG Thoughts] Skipping thoughts/feelings line (handled in bubble rendering)`,
+
+			// Extract thoughts content for bubble display
+			if (char.thoughts) {
+				character.ThoughtsContent = stripBrackets(
+					char.thoughts.content || char.thoughts,
 				);
 			}
-		}
-	} // End of text format parsing
+
+			// Extract character stats if present
+			if (char.stats && enabledCharStats.length > 0) {
+				// Handle both object format {Health: 100, Energy: 95} and array format [{name: "Health", value: 100}]
+				if (Array.isArray(char.stats)) {
+					// Array format: [{name: "Health", value: 100}, {name: "Energy", value: 95}]
+					for (const statObj of char.stats) {
+						if (statObj.name && statObj.value !== undefined) {
+							const matchingStat = enabledCharStats.find(
+								(s) => s.name === statObj.name,
+							);
+							if (matchingStat) {
+								character[statObj.name] = statObj.value;
+							}
+						}
+					}
+				} else {
+					// Object format: {Health: 100, Energy: 95}
+					for (const stat of enabledCharStats) {
+						if (char.stats[stat.name] !== undefined) {
+							character[stat.name] = char.stats[stat.name];
+						}
+					}
+				}
+			}
+
+			return character;
+		});
+
+		debugLog(
+			"[RPG Thoughts] ✓ Parsed JSON format, characters:",
+			presentCharacters.length,
+		);
+	}
 
 	debugLog(
 		"[RPG Thoughts] ==================== PARSING COMPLETE ====================",
@@ -579,11 +481,19 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 								const emojiMap =
 									config?.relationships?.relationshipEmojis || {};
 								relationshipBadge = emojiMap[rel.status] || rel.status;
+								console.log(
+									`[RPG Thoughts] Relationship for ${char.name}:`,
+									rel.status,
+									"Badge:",
+									relationshipBadge,
+								);
+								console.log("[RPG Thoughts] config:", config);
+								console.log("[RPG Thoughts] EmojiMap:", emojiMap);
 							}
 						}
 					}
 				} catch (relError) {
-					debugLog(
+					console.log(
 						`[RPG Thoughts] Error looking up relationship:`,
 						relError.message,
 					);
@@ -1462,32 +1372,6 @@ export function updateCharacterField(characterName, field, value) {
 		updateChatThoughts();
 	}
 	// Note: Don't call renderThoughts() here - it would overwrite the user's edits
-}
-
-/**
- * Renders only the sidebar thoughts panel without updating chat bubbles
- */
-function renderThoughtsSidebarOnly() {
-	if (!extensionSettings.showCharacterThoughts || !$thoughtsContainer) {
-		return;
-	}
-
-	// This is a simplified version that only updates the sidebar
-	// Copy the rendering logic from renderThoughts but skip the updateChatThoughts call
-	const thoughtsData = getTrackerDataForContext("characterThoughts");
-	if (!thoughtsData) {
-		$thoughtsContainer.html(
-			'<div class="rpg-inventory-empty">No character data generated yet</div>',
-		);
-		return;
-	}
-
-	// Re-render sidebar content (this would be the full logic from renderThoughts)
-	// For now, just call renderThoughts but set a flag
-	const originalShowInChat = extensionSettings.showThoughtsInChat;
-	extensionSettings.showThoughtsInChat = false;
-	renderThoughts();
-	extensionSettings.showThoughtsInChat = originalShowInChat;
 }
 
 /**

@@ -309,6 +309,7 @@
 	"relationships.secret": "Secret",
 	"relationships.wants": "Wants",
 	"relationships.feels": "Feels",
+	"relationships.clickToEdit": "Click to edit",
 	"template.settingsModal.display.showRelationships": "Show Relationships",
 	"template.settingsModal.display.showRelationshipsNote": "Track relationship pairs between characters with directional feels, secrets, and status.",
 	"template.settingsModal.relationshipsTitle": "Relationships",

@@ -164,11 +164,9 @@ export function loadSettings() {
 		}
 
 		// Migrate to trackerConfig if it doesn't exist
-		if (!extensionSettings.trackerConfig) {
-			// console.log('[RPG Companion] Migrating to trackerConfig format');
-			migrateToTrackerConfig();
-			saveSettings(); // Persist migration
-		}
+		// Or migrate internal structures if necessary
+		migrateToTrackerConfig();
+		saveSettings(); // Persist migration
 
 		// Migrate to preset manager system if presets don't exist
 		migrateToPresetManager();
@@ -470,6 +468,7 @@ function validateStoredInventoryStructure(stored) {
  * Converts statNames to customStats array and sets up default config
  */
 function migrateToTrackerConfig() {
+	console.log("[RPG Companion] Migrating to trackerConfig format");
 	// Initialize trackerConfig if it doesn't exist
 	if (!extensionSettings.trackerConfig) {
 		extensionSettings.trackerConfig = {
@@ -648,7 +647,9 @@ function migrateToTrackerConfig() {
 		}
 
 		// Ensure relationships structure exists
+		console.log("[RPG Companion] Ensuring relationships structure exists");
 		if (!pc.relationships) {
+			console.log("[RPG Companion] Initializing relationships structure");
 			pc.relationships = {
 				enabled: true,
 				relationshipEmojis: {

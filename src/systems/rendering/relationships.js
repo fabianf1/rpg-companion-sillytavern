@@ -6,6 +6,7 @@
 import { i18n } from "../../core/i18n.js";
 import { extensionSettings } from "../../core/state.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
+import { updateMessageSwipeData, saveChatData } from "../../core/persistence.js";
 
 /**
  * Helper to log debug messages
@@ -14,6 +15,27 @@ function debugLog(message, data = null) {
 	if (extensionSettings.debugMode) {
 		console.log(`[RPG Relationships] ${message}`, data || "");
 	}
+}
+
+/**
+ * Gets the allowed relationship status options from configuration
+ * @returns {string[]} Array of allowed status values
+ */
+function getAllowedRelationshipStatuses() {
+	const relationshipEmojis =
+		extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipEmojis || {};
+	return Object.keys(relationshipEmojis);
+}
+
+/**
+ * Gets the emoji for a relationship status
+ * @param {string} status - The relationship status
+ * @returns {string} The corresponding emoji or empty string
+ */
+function getRelationshipEmoji(status) {
+	const relationshipEmojis =
+		extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipEmojis || {};
+	return relationshipEmojis[status] || "";
 }
 
 /**
@@ -45,9 +67,11 @@ export function renderRelationships() {
 		return;
 	}
 
+	const allowedStatuses = getAllowedRelationshipStatuses();
 	let html = '<div class="rpg-relationships-list">';
 
-	for (const rel of relationships) {
+	for (let i = 0; i < relationships.length; i++) {
+		const rel = relationships[i];
 		const c1 = rel.character1 || "?";
 		const c2 = rel.character2 || "?";
 		const status = rel.status || "Neutral";
@@ -61,46 +85,41 @@ export function renderRelationships() {
 		html += '<div class="rpg-relationship-card">';
 		html += `<div class="rpg-relationship-header">`;
 		html += `<span class="rpg-relationship-names">${escapeHtml(c1)} ↔ ${escapeHtml(c2)}</span>`;
-		html += `<span class="rpg-relationship-status rpg-rel-status-${status.toLowerCase()}">${escapeHtml(status)}</span>`;
+		
+		// Status dropdown with emoji
+		html += `<select class="rpg-relationship-status-select rpg-rel-status-${status.toLowerCase()}" data-index="${i}" data-field="status" title="${i18n.getTranslation("relationships.clickToEdit")}">`;
+		for (const allowedStatus of allowedStatuses) {
+			const statusEmoji = getRelationshipEmoji(allowedStatus);
+			const selected = allowedStatus === status ? " selected" : "";
+			html += `<option value="${escapeHtml(allowedStatus)}"${selected}>${statusEmoji} ${escapeHtml(allowedStatus)}</option>`;
+		}
+		html += `</select>`;
 		html += `</div>`;
 
 		// Character 1 → Character 2 (feelsTowards, wantsFrom, secretsFrom)
-		if (feelsTowards || wantsFrom || secretsFrom) {
-			html += '<div class="rpg-relationship-direction">';
-			html += `<span class="rpg-relationship-arrow">${escapeHtml(c1)} → ${escapeHtml(c2)}</span>`;
-			if (feelsTowards) {
-				html += `<span class="rpg-relationship-feels">${escapeHtml(feelsTowards)}</span>`;
-			}
-			if (wantsFrom) {
-				html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> ${escapeHtml(wantsFrom)}</span>`;
-			}
-			if (secretsFrom) {
-				html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> ${escapeHtml(secretsFrom)}</span>`;
-			}
-			html += "</div>";
-		}
+		html += '<div class="rpg-relationship-direction">';
+		html += `<span class="rpg-relationship-arrow">${escapeHtml(c1)} → ${escapeHtml(c2)}</span>`;
+		html += `<span class="rpg-relationship-feels rpg-editable" contenteditable="true" data-index="${i}" data-field="feelsTowards" data-placeholder="${i18n.getTranslation("relationships.feels")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(feelsTowards)}</span>`;
+		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="wantsFrom" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(wantsFrom)}</span></span>`;
+		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="secretsFrom" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(secretsFrom)}</span></span>`;
+		html += "</div>";
 
 		// Character 2 → Character 1 (feelsTowards2, wantsFrom2, secretsFrom2)
-		if (feelsTowards2 || wantsFrom2 || secretsFrom2) {
-			html += '<div class="rpg-relationship-direction">';
-			html += `<span class="rpg-relationship-arrow">${escapeHtml(c2)} → ${escapeHtml(c1)}</span>`;
-			if (feelsTowards2) {
-				html += `<span class="rpg-relationship-feels">${escapeHtml(feelsTowards2)}</span>`;
-			}
-			if (wantsFrom2) {
-				html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> ${escapeHtml(wantsFrom2)}</span>`;
-			}
-			if (secretsFrom2) {
-				html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> ${escapeHtml(secretsFrom2)}</span>`;
-			}
-			html += "</div>";
-		}
+		html += '<div class="rpg-relationship-direction">';
+		html += `<span class="rpg-relationship-arrow">${escapeHtml(c2)} → ${escapeHtml(c1)}</span>`;
+		html += `<span class="rpg-relationship-feels rpg-editable" contenteditable="true" data-index="${i}" data-field="feelsTowards2" data-placeholder="${i18n.getTranslation("relationships.feels")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(feelsTowards2)}</span>`;
+		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="wantsFrom2" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(wantsFrom2)}</span></span>`;
+		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="secretsFrom2" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(secretsFrom2)}</span></span>`;
+		html += "</div>";
 
 		html += "</div>";
 	}
 
 	html += "</div>";
 	$body.html(html);
+
+	// Attach event handlers for editing
+	_attachEditHandlers($body);
 }
 
 /**
@@ -168,6 +187,105 @@ function _applyCustomTheme($modal) {
 			"--rpg-highlight",
 			extensionSettings.customColors.highlight,
 		);
+	}
+}
+
+/**
+ * Attaches edit event handlers to editable fields in the relationships modal
+ * @param {jQuery} $body - The modal body element
+ */
+function _attachEditHandlers($body) {
+	// Handle status dropdown changes
+	$body.find(".rpg-relationship-status-select").on("change", function () {
+		const index = parseInt($(this).data("index"));
+		const value = $(this).val();
+		_updateRelationshipField(index, "status", value);
+
+		// Update the dropdown's status class
+		const allowedStatuses = getAllowedRelationshipStatuses();
+		for (const status of allowedStatuses) {
+			$(this).removeClass(`rpg-rel-status-${status.toLowerCase()}`);
+		}
+		$(this).addClass(`rpg-rel-status-${value.toLowerCase()}`);
+	});
+
+	// Handle editable text field blur
+	$body.find(".rpg-editable").on("blur", function () {
+		const index = parseInt($(this).data("index"));
+		const field = $(this).data("field");
+		const value = $(this).text().trim();
+		_updateRelationshipField(index, field, value);
+	});
+
+	// Prevent click events on editable elements from bubbling
+	$body.find(".rpg-editable").on("click mousedown", (e) => {
+		e.stopPropagation();
+	});
+
+	// Handle empty field focus - remove placeholder styling
+	$body.find(".rpg-editable.rpg-empty-field").on("focus", function () {
+		$(this).removeClass("rpg-empty-field");
+		$(this).removeAttr("data-placeholder");
+	});
+
+	// Restore placeholder if field becomes empty on blur
+	$body.find(".rpg-editable").on("blur", function () {
+		const $this = $(this);
+		if (!$this.text().trim()) {
+			const field = $this.data("field");
+			if (field) {
+				$this.addClass("rpg-empty-field");
+				$this.attr("data-placeholder", field);
+			}
+		}
+	});
+
+	// Handle Enter key on editable fields - blur to save
+	$body.find(".rpg-editable").on("keydown", function (e) {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			$(this).trigger("blur");
+		}
+	});
+}
+
+/**
+ * Updates a single field in a relationship and persists the change
+ * @param {number} index - Index of the relationship in the array
+ * @param {string} field - Field name to update
+ * @param {string} value - New value
+ */
+function _updateRelationshipField(index, field, value) {
+	const relationships = getTrackerDataForContext("relationships");
+	if (!relationships || !Array.isArray(relationships)) {
+		console.warn("[RPG Companion] No relationships data to update");
+		return;
+	}
+
+	if (index < 0 || index >= relationships.length) {
+		console.warn(`[RPG Companion] Invalid relationship index: ${index}`);
+		return;
+	}
+
+	const rel = relationships[index];
+	if (!rel) {
+		console.warn(`[RPG Companion] Relationship at index ${index} not found`);
+		return;
+	}
+
+	// Update the field
+	rel[field] = value;
+
+	debugLog(`Updated relationship ${index}.${field} =`, value);
+
+	// Persist to swipe store
+	updateMessageSwipeData("relationships", relationships);
+	saveChatData();
+
+	// Don't re-render for text field edits to avoid losing focus
+	// Re-render for status changes to update styling
+	if (field === "status") {
+		renderRelationships();
 	}
 }
 
