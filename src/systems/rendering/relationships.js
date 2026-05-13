@@ -6,7 +6,10 @@
 import { i18n } from "../../core/i18n.js";
 import { extensionSettings } from "../../core/state.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
-import { updateMessageSwipeData, saveChatData } from "../../core/persistence.js";
+import {
+	updateMessageSwipeData,
+	saveChatData,
+} from "../../core/persistence.js";
 
 /**
  * Helper to log debug messages
@@ -23,7 +26,8 @@ function debugLog(message, data = null) {
  */
 function getAllowedRelationshipStatuses() {
 	const relationshipEmojis =
-		extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipEmojis || {};
+		extensionSettings.trackerConfig?.presentCharacters?.relationships
+			?.relationshipEmojis || {};
 	return Object.keys(relationshipEmojis);
 }
 
@@ -34,7 +38,8 @@ function getAllowedRelationshipStatuses() {
  */
 function getRelationshipEmoji(status) {
 	const relationshipEmojis =
-		extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipEmojis || {};
+		extensionSettings.trackerConfig?.presentCharacters?.relationships
+			?.relationshipEmojis || {};
 	return relationshipEmojis[status] || "";
 }
 
@@ -85,7 +90,7 @@ export function renderRelationships() {
 		html += '<div class="rpg-relationship-card">';
 		html += `<div class="rpg-relationship-header">`;
 		html += `<span class="rpg-relationship-names">${escapeHtml(c1)} ↔ ${escapeHtml(c2)}</span>`;
-		
+
 		// Status dropdown with emoji
 		html += `<select class="rpg-relationship-status-select rpg-rel-status-${status.toLowerCase()}" data-index="${i}" data-field="status" title="${i18n.getTranslation("relationships.clickToEdit")}">`;
 		for (const allowedStatus of allowedStatuses) {

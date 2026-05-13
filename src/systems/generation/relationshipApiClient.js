@@ -6,7 +6,6 @@
 
 import { getContext } from "../../../../../../extensions.js";
 import {
-	updateMessageSwipeData,
 	saveChatData,
 } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
@@ -76,7 +75,7 @@ export async function updateRelationships(
 			const parsedData = parseRelationshipResponse(response);
 			console.log("[RPG Companion] Parsed relationship data:", parsedData);
 
-			if (parsedData && parsedData.relationships) {
+			if (parsedData?.relationships) {
 				// Use pre-captured message/swipeId if provided, otherwise fall back to updateMessageSwipeData
 				if (!targetMessage.extra) {
 					targetMessage.extra = {};
@@ -114,7 +113,7 @@ export async function updateRelationships(
  * @returns {Object|null} Parsed relationship data with relationships array, or null
  */
 function parseRelationshipResponse(response) {
-	if (!response || !response.content) return null;
+	if (!response?.content) return null;
 
 	const content = response.content;
 

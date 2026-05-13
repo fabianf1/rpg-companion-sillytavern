@@ -50,7 +50,7 @@ let historyInjectionDone = false;
  */
 function buildHistoricalContextMap() {
 	const historyPersistence = extensionSettings.historyPersistence;
-	if (!historyPersistence || !historyPersistence.enabled) {
+	if (!historyPersistence?.enabled) {
 		return new Map();
 	}
 
@@ -203,7 +203,7 @@ function buildHistoricalContextMap() {
  */
 function prepareHistoricalContextInjection() {
 	const historyPersistence = extensionSettings.historyPersistence;
-	if (!historyPersistence || !historyPersistence.enabled) {
+	if (!historyPersistence?.enabled) {
 		pendingContextMap = new Map();
 		return;
 	}
@@ -448,7 +448,7 @@ function injectContextIntoFinalMesSend(finalMesSend) {
 		// Skip any finalMesSend entries that don't match (they're injected content)
 		while (mesSendIdx < finalMesSend.length) {
 			const mesSendObj = finalMesSend[mesSendIdx];
-			if (!mesSendObj || !mesSendObj.message) {
+			if (!mesSendObj?.message) {
 				mesSendIdx++;
 				continue;
 			}
@@ -483,7 +483,7 @@ function injectContextIntoFinalMesSend(finalMesSend) {
 		}
 
 		const mesSendObj = finalMesSend[targetMesSendIdx];
-		if (!mesSendObj || !mesSendObj.message) {
+		if (!mesSendObj?.message) {
 			continue;
 		}
 

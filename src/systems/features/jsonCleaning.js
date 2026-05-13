@@ -36,7 +36,7 @@ export async function ensureJsonCleaningRegex(
 
 		const existingScript = existingScripts.find(
 			(script) =>
-				script && script.scriptName && script.scriptName === scriptName,
+				script?.scriptName && script.scriptName === scriptName,
 		);
 
 		if (existingScript) {
@@ -173,7 +173,7 @@ export function removeJsonCleaningRegex(
 
 		st_extension_settings.regex = st_extension_settings.regex.filter(
 			(script) =>
-				!script || !script.scriptName || script.scriptName !== scriptName,
+				!script?.scriptName && script.scriptName !== scriptName,
 		);
 
 		if (st_extension_settings.regex.length < initialLength) {

@@ -676,7 +676,7 @@ export function formatHistoricalTrackerData(
 		}
 
 		// Process appearance if present and has persistence-enabled fields
-		if (trackerData.userStats && trackerData.userStats.appearance) {
+		if (trackerData?.userStats?.appearance) {
 			const userStatsConfig = trackerConfig.userStats;
 			const appearanceData = trackerData.userStats.appearance;
 			const shouldIncludeAppearance =
@@ -816,7 +816,7 @@ export function formatHistoricalTrackerData(
 				: charsData.characters || [];
 
 			for (const char of characters) {
-				if (!char || !char.name) continue;
+				if (!char?.name) continue;
 
 				let charFormatted = "";
 

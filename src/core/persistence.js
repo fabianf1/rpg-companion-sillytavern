@@ -4,7 +4,6 @@
  */
 
 import {
-	chat_metadata,
 	saveChatDebounced,
 	saveSettingsDebounced,
 } from "../../../../../../script.js";
@@ -19,7 +18,6 @@ import {
 	updateChatThoughts,
 } from "../systems/rendering/thoughts.js";
 import { renderUserStats } from "../systems/rendering/userStats.js";
-import { validateStoredInventory } from "../utils/security.js";
 import { extensionSettings, updateExtensionSettings } from "./state.js";
 
 const extensionName = "third-party/rpg-companion-sillytavern";
@@ -471,6 +469,9 @@ function migrateToTrackerConfig() {
 	console.log("[RPG Companion] Migrating to trackerConfig format");
 	// Initialize trackerConfig if it doesn't exist
 	if (!extensionSettings.trackerConfig) {
+		console.log(
+			"[RPG Companion] Initializing trackerConfig with default structure",
+		);
 		extensionSettings.trackerConfig = {
 			userStats: {
 				customStats: [],
@@ -553,23 +554,23 @@ function migrateToTrackerConfig() {
 		// console.log('[RPG Companion] Migrated statNames to customStats array');
 	}
 
-	// Migrate old showRPGAttributes boolean to rpgAttributes array
-	if (
-		extensionSettings.trackerConfig.userStats.showRPGAttributes !== undefined
-	) {
-		const shouldShow =
-			extensionSettings.trackerConfig.userStats.showRPGAttributes;
-		extensionSettings.trackerConfig.userStats.rpgAttributes = [
-			{ id: "str", name: "STR", enabled: shouldShow },
-			{ id: "dex", name: "DEX", enabled: shouldShow },
-			{ id: "con", name: "CON", enabled: shouldShow },
-			{ id: "int", name: "INT", enabled: shouldShow },
-			{ id: "wis", name: "WIS", enabled: shouldShow },
-			{ id: "cha", name: "CHA", enabled: shouldShow },
-		];
-		delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
-		// console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
-	}
+	// // Migrate old showRPGAttributes boolean to rpgAttributes array
+	// if (
+	// 	extensionSettings.trackerConfig.userStats.showRPGAttributes !== undefined
+	// ) {
+	// 	const shouldShow =
+	// 		extensionSettings.trackerConfig.userStats.showRPGAttributes;
+	// 	extensionSettings.trackerConfig.userStats.rpgAttributes = [
+	// 		{ id: "str", name: "STR", enabled: shouldShow },
+	// 		{ id: "dex", name: "DEX", enabled: shouldShow },
+	// 		{ id: "con", name: "CON", enabled: shouldShow },
+	// 		{ id: "int", name: "INT", enabled: shouldShow },
+	// 		{ id: "wis", name: "WIS", enabled: shouldShow },
+	// 		{ id: "cha", name: "CHA", enabled: shouldShow },
+	// 	];
+	// 	delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
+	// 	// console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
+	// }
 
 	// Ensure rpgAttributes exists even if no migration was needed
 	if (!extensionSettings.trackerConfig.userStats.rpgAttributes) {
@@ -797,7 +798,7 @@ export function migrateAppearanceData() {
 
 	// Check if we have clothing in inventory; Empty clothing means no clothing, so migrate anyway in that case
 	const inventoryData = currentData.inventory;
-	if (!inventoryData || !inventoryData.clothing) {
+	if (!inventoryData?.clothing) {
 		// No clothing data to migrate
 		console.log(
 			"[RPG Companion] No clothing data found in inventory, skipping appearance migration",
@@ -933,7 +934,7 @@ export function saveToPreset(presetId) {
  */
 export function loadPreset(presetId) {
 	const preset = extensionSettings.presetManager.presets[presetId];
-	if (preset && preset.trackerConfig) {
+	if (preset?.trackerConfig) {
 		extensionSettings.trackerConfig = JSON.parse(
 			JSON.stringify(preset.trackerConfig),
 		);
@@ -1169,7 +1170,7 @@ export function importPresets(importData, overwrite = false) {
 		),
 	);
 
-	for (const [originalId, preset] of Object.entries(importData.presets)) {
+	for (const preset of Object.values(importData.presets)) {
 		if (!preset.name || !preset.trackerConfig) {
 			continue; // Skip invalid presets
 		}
@@ -1240,7 +1241,7 @@ export function clearCache(options) {
 		for (let i = 0; i < chat.length; i++) {
 			const message = chat[i];
 			const swipeId = message.swipe_id || 0;
-			if (message.extra && message.extra.rpg_companion_swipes) {
+			if (message.extra?.rpg_companion_swipes) {
 				// Clear only selected items from each message
 				if (customSelection.includes("userStats") || dataType === "all") {
 					delete message.extra.rpg_companion_swipes[swipeId].userStats;

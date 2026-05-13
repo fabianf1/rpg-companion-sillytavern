@@ -208,12 +208,12 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 	// Get tracker configuration
 	const config = extensionSettings.trackerConfig?.presentCharacters;
 	const enabledFields =
-		config?.customFields?.filter((f) => f && f.enabled && f.name) || [];
+		config?.customFields?.filter((f) => f?.enabled && f?.name) || [];
 	const characterStatsConfig = config?.characterStats;
 	const enabledCharStats =
 		(characterStatsConfig?.enabled &&
 			characterStatsConfig?.customStats?.filter(
-				(s) => s && s.enabled && s.name,
+				(s) => s?.enabled && s?.name,
 			)) ||
 		[];
 
@@ -366,8 +366,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 
 				// First, check if user manually uploaded a custom avatar
 				if (
-					extensionSettings.npcAvatars &&
-					extensionSettings.npcAvatars[char.name]
+					extensionSettings.npcAvatars?.[char?.name]
 				) {
 					characterPortrait = extensionSettings.npcAvatars[char.name];
 					debugLog("[RPG Thoughts] Found custom uploaded avatar");
@@ -387,12 +386,11 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 						if (groupMembers && groupMembers.length > 0) {
 							const matchingMember = groupMembers.find(
 								(member) =>
-									member && member.name && namesMatch(member.name, char.name),
+									member?.name && namesMatch(member.name, char.name),
 							);
 
 							if (
-								matchingMember &&
-								matchingMember.avatar &&
+								matchingMember?.avatar &&
 								matchingMember.avatar !== "none"
 							) {
 								const thumbnailUrl = getSafeThumbnailUrl(
@@ -422,12 +420,11 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 					debugLog("[RPG Thoughts] Searching all characters...");
 
 					const matchingCharacter = characters.find(
-						(c) => c && c.name && namesMatch(c.name, char.name),
+						(c) => c?.name && namesMatch(c.name, char.name),
 					);
 
 					if (
-						matchingCharacter &&
-						matchingCharacter.avatar &&
+						matchingCharacter?.avatar &&
 						matchingCharacter.avatar !== "none"
 					) {
 						const thumbnailUrl = getSafeThumbnailUrl(
@@ -444,8 +441,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 				// If this is the current character in a 1-on-1 chat, use their portrait
 				if (
 					this_chid !== undefined &&
-					characters[this_chid] &&
-					characters[this_chid].name &&
+					characters[this_chid]?.name &&
 					namesMatch(characters[this_chid].name, char.name)
 				) {
 					const thumbnailUrl = getSafeThumbnailUrl(
@@ -786,10 +782,10 @@ export function removeCharacter(characterName) {
 				? characterThoughtsData
 				: JSON.parse(characterThoughtsData);
 
-		if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
+		if (Array.isArray(parsedData) || (parsedData?.characters || parsedData.characters)) {
 			isJSON = true;
 		}
-	} catch (e) {
+	} catch {
 		// Not JSON, treat as text format
 	}
 
@@ -797,7 +793,7 @@ export function removeCharacter(characterName) {
 		// JSON format - remove character from array
 		let characters = Array.isArray(parsedData)
 			? parsedData
-			: parsedData.characters;
+			: parsedData?.characters;
 		characters = characters.filter((char) => char.name !== characterName);
 
 		if (Array.isArray(parsedData)) {
@@ -877,12 +873,14 @@ export function removeCharacter(characterName) {
 export function addNewCharacter() {
 	const presentCharsConfig = extensionSettings.trackerConfig?.presentCharacters;
 	const enabledFields =
-		presentCharsConfig?.customFields?.filter((f) => f && f.enabled && f.name) ||
+		presentCharsConfig?.customFields?.filter((f) => f?.enabled && f?.name) ||
 		[];
 	const characterStats = presentCharsConfig?.characterStats;
 	const enabledCharStats =
 		(characterStats?.enabled &&
-			characterStats?.customStats?.filter((s) => s && s.enabled && s.name)) ||
+			characterStats?.customStats?.filter(
+				(s) => s?.enabled && s?.name,
+			)) ||
 		[];
 
 	// Read current character thoughts from swipe store
@@ -902,10 +900,10 @@ export function addNewCharacter() {
 				? characterThoughtsData
 				: JSON.parse(characterThoughtsData);
 
-		if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
+		if (Array.isArray(parsedData) || (parsedData?.characters || parsedData.characters)) {
 			isJSON = true;
 		}
-	} catch (e) {
+	} catch {
 		// Not JSON, treat as text format
 	}
 
@@ -913,7 +911,7 @@ export function addNewCharacter() {
 		// JSON format - add new character object
 		const charactersArray = Array.isArray(parsedData)
 			? parsedData
-			: parsedData.characters || [];
+			: parsedData?.characters || [];
 
 		const newCharacter = {
 			name: "New Character",
@@ -1002,12 +1000,14 @@ export function addNewCharacter() {
 export function updateCharacterField(characterName, field, value) {
 	const presentCharsConfig = extensionSettings.trackerConfig?.presentCharacters;
 	const enabledFields =
-		presentCharsConfig?.customFields?.filter((f) => f && f.enabled && f.name) ||
+		presentCharsConfig?.customFields?.filter((f) => f?.enabled && f?.name) ||
 		[];
 	const characterStats = presentCharsConfig?.characterStats;
 	const enabledCharStats =
 		(characterStats?.enabled &&
-			characterStats?.customStats?.filter((s) => s && s.enabled && s.name)) ||
+			characterStats?.customStats?.filter(
+				(s) => s?.enabled && s?.name,
+			)) ||
 		[];
 
 	// Read current character thoughts from swipe store
@@ -1026,10 +1026,10 @@ export function updateCharacterField(characterName, field, value) {
 				? characterThoughtsData
 				: JSON.parse(characterThoughtsData);
 
-		if (Array.isArray(parsedData) || (parsedData && parsedData.characters)) {
+		if (Array.isArray(parsedData) || (parsedData?.characters || parsedData.characters)) {
 			isJSON = true;
 		}
-	} catch (e) {
+	} catch {
 		// Not JSON, continue with text format
 	}
 
@@ -1065,7 +1065,7 @@ export function updateCharacterField(characterName, field, value) {
 					enabledCharStats.findIndex((s) => s.name === field) !== -1;
 				if (isStatField) {
 					let numValue = parseInt(value.replace("%", "").trim());
-					if (isNaN(numValue)) numValue = 0;
+					if (Number.isNaN(numValue)) numValue = 0;
 					numValue = Math.max(0, Math.min(100, numValue));
 
 					// Handle both array format (from LLM) and object format
@@ -1226,14 +1226,12 @@ export function updateCharacterField(characterName, field, value) {
 			// Check for name update
 			if (field === "name" && line.startsWith("- ")) {
 				lines[i] = `- ${value}`;
-				fieldUpdated = true;
 				continue;
 			}
 
 			// Check for Thoughts field
 			if (isThoughtsField && line.startsWith(thoughtsFieldName + ":")) {
 				lines[i] = `  ${thoughtsFieldName}: ${value}`;
-				fieldUpdated = true;
 				continue;
 			}
 
@@ -1250,7 +1248,7 @@ export function updateCharacterField(characterName, field, value) {
 			// Clean the value: remove % if present, parse as integer, clamp 0-100
 			const cleanValue = value.replace("%", "").trim();
 			let numValue = parseInt(cleanValue);
-			if (isNaN(numValue)) {
+			if (Number.isNaN(numValue)) {
 				numValue = 0;
 			}
 			numValue = Math.max(0, Math.min(100, numValue));
@@ -1330,7 +1328,7 @@ export function updateCharacterField(characterName, field, value) {
 						// Clean the value: remove % if present, parse as integer, clamp 0-100
 						const cleanValue = value.replace("%", "").trim();
 						let numValue = parseInt(cleanValue);
-						if (isNaN(numValue)) {
+						if (Number.isNaN(numValue)) {
 							numValue = 0;
 						}
 						numValue = Math.max(0, Math.min(100, numValue));
@@ -1413,7 +1411,7 @@ export function updateChatThoughts() {
 		.map((char) => ({
 			name: (char.name || "").toLowerCase(),
 			emoji: char.emoji || "👤",
-			thought: char.thoughts.content,
+			thought: char.thoughts?.content,
 		}));
 
 	if (thoughtsArray.length === 0) {
@@ -1792,8 +1790,6 @@ export function createThoughtPanel($message, thoughtsArray) {
 		return;
 	}
 
-	const avatarRect = $avatar[0].getBoundingClientRect();
-	const panelPosition = extensionSettings.panelPosition;
 	const theme = extensionSettings.theme;
 
 	// Build thought bubbles HTML
@@ -1989,8 +1985,7 @@ export function createThoughtPanel($message, thoughtsArray) {
 
 		// Load saved icon position in mobile, or default to center of viewport
 		if (
-			extensionSettings.thoughtIconPosition &&
-			extensionSettings.thoughtIconPosition.top &&
+			extensionSettings.thoughtIconPosition?.top &&
 			extensionSettings.thoughtIconPosition.left
 		) {
 			const pos = extensionSettings.thoughtIconPosition;

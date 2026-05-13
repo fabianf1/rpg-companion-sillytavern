@@ -3,7 +3,6 @@
  * Helper functions for building JSON format tracker prompts
  */
 
-import { getContext } from "../../../../../../extensions.js";
 import { i18n } from "../../core/i18n.js";
 import { extensionSettings } from "../../core/state.js";
 import { getWeatherKeywordsAsPromptString } from "../ui/weatherEffects.js";
@@ -41,11 +40,10 @@ function toFieldKey(name) {
  * @returns {string} JSON format instruction for user stats
  */
 export function buildUserStatsJSONInstruction() {
-	const userName = getContext().name1;
 	const trackerConfig = extensionSettings.trackerConfig;
 	const userStatsConfig = trackerConfig?.userStats;
 	const enabledStats =
-		userStatsConfig?.customStats?.filter((s) => s && s.enabled && s.name) || [];
+		userStatsConfig?.customStats?.filter((s) => s?.enabled && s?.name) || [];
 	const displayMode = userStatsConfig?.statsDisplayMode || "percentage";
 
 	const sections = [];
@@ -201,16 +199,15 @@ export function buildInfoBoxJSONInstruction() {
  * @returns {string} JSON format instruction for present characters
  */
 export function buildCharactersJSONInstruction() {
-	const userName = getContext().name1;
 	const presentCharsConfig = extensionSettings.trackerConfig?.presentCharacters;
 	const enabledFields =
-		presentCharsConfig?.customFields?.filter((f) => f && f.enabled && f.name) ||
+		presentCharsConfig?.customFields?.filter((f) => f?.enabled && f?.name) ||
 		[];
 	const thoughtsConfig = presentCharsConfig?.thoughts;
 	const characterStats = presentCharsConfig?.characterStats;
 	const enabledCharStats =
 		(characterStats?.enabled &&
-			characterStats?.customStats?.filter((s) => s && s.enabled && s.name)) ||
+			characterStats?.customStats?.filter((s) => s?.enabled && s?.name)) ||
 		[];
 
 	let instruction = "[\n";

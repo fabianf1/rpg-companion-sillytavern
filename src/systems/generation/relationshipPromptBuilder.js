@@ -62,11 +62,11 @@ export function generateRelationshipUpdatePrompt() {
  * @param {string[]} statusOptions - Available relationship status options
  * @returns {string} The system message
  */
-function buildRelationshipSystemMessage(userName, statusOptions) {
+function buildRelationshipSystemMessage(userName, _statusOptions) {
 	let systemMessage = `You are an RPG Companion module that tracks character relationships. Your ONLY task is to update the relationship data between characters based on the conversation history.\n\n`;
 
 	systemMessage += `Here is the description of the protagonist for reference:\n`;
-	systemMessage += `<protagonist>\n{{persona}}\n</protagonist>\n\n`;
+	systemMessage += `<protagonist name="${userName}">\n{{persona}}\n</protagonist>\n\n`;
 
 	systemMessage += `Here are the last few messages in the conversation history:\n<history>`;
 
@@ -80,7 +80,7 @@ function buildRelationshipSystemMessage(userName, statusOptions) {
  * @param {string[]} statusOptions - Available relationship status options
  * @returns {string} The instruction message
  */
-function buildRelationshipInstructionMessage(userName, statusOptions) {
+function buildRelationshipInstructionMessage() {
 	const statusList = statusOptions.map((s) => `"${s}"`).join(", ");
 
 	let instruction = `</history>\n\n`;

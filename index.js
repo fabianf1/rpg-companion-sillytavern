@@ -24,7 +24,6 @@ import {
 	setQuestsContainer,
 	setThoughtsContainer,
 	setUserStatsContainer,
-	updateExtensionSettings,
 } from "./src/core/state.js";
 import { setupClassicStatsButtons } from "./src/systems/features/classicStats.js";
 import {

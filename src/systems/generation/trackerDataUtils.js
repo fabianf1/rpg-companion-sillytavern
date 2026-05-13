@@ -70,7 +70,7 @@ export function getTrackerDataForContext(trackerKey, currentChat = null) {
 		// Found an assistant message - try to get its swipe data
 		const swipeId = message.swipe_id || 0;
 		const swipeData = getSwipeData(message, swipeId);
-		if (swipeData && swipeData[trackerKey]) {
+		if (swipeData?.[trackerKey]) {
 			console.log(
 				`[RPG Companion] Found tracker data for "${trackerKey}" in message ID ${message.id}. Message: ${i}/${chatToSearch.length - 1}, swipe ${swipeId}`,
 			);
