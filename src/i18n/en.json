@@ -95,6 +95,7 @@
 	"template.settingsModal.advanced.clearCacheDataTypeUserStats": "User stats",
 	"template.settingsModal.advanced.clearCacheDataTypeInfoBox": "Info box",
 	"template.settingsModal.advanced.clearCacheDataTypeCharacterThoughts": "Character thoughts",
+	"template.settingsModal.advanced.clearCacheDataTypeRelationships": "Relationships",
 	"template.settingsModal.advanced.clearCacheDataTypeInventory": "Inventory",
 	"template.settingsModal.advanced.clearCacheDataTypeQuests": "Quests",
 	"template.settingsModal.advanced.clearCacheDataTypeLocks": "Locks",

@@ -80,7 +80,7 @@ function buildRelationshipSystemMessage(userName, _statusOptions) {
  * @param {string[]} statusOptions - Available relationship status options
  * @returns {string} The instruction message
  */
-function buildRelationshipInstructionMessage() {
+function buildRelationshipInstructionMessage(_userName, statusOptions) {
 	const statusList = statusOptions.map((s) => `"${s}"`).join(", ");
 
 	let instruction = `</history>\n\n`;

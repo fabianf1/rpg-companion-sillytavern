@@ -13,6 +13,7 @@ import { getTrackerDataForContext } from "../systems/generation/trackerDataUtils
 import { renderInfoBox } from "../systems/rendering/infoBox.js";
 import { renderInventory } from "../systems/rendering/inventory.js";
 import { renderQuests } from "../systems/rendering/quests.js";
+import { renderRelationships } from "../systems/rendering/relationships.js";
 import {
 	renderThoughts,
 	updateChatThoughts,
@@ -1255,6 +1256,9 @@ export function clearCache(options) {
 				) {
 					delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
 				}
+				if (customSelection.includes("relationships") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].relationships;
+				}
 				if (customSelection.includes("locks") || dataType === "all") {
 					delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
 				}
@@ -1346,6 +1350,10 @@ export function clearCache(options) {
 					);
 					updateMessageSwipeData("characterThoughts", data);
 				}
+				if (customSelection.includes("relationships") || dataType === "all") {
+					const data = JSON.stringify([], null, 2);
+					updateMessageSwipeData("relationships", data);
+				}
 				if (customSelection.includes("locks") || dataType === "all") {
 					updateMessageSwipeData("lockedItems", {
 						userStats: {},
@@ -1369,6 +1377,9 @@ export function clearCache(options) {
 				) {
 					delete message.extra.rpg_companion_swipes[swipeId].characterThoughts;
 				}
+				if (customSelection.includes("relationships") || dataType === "all") {
+					delete message.extra.rpg_companion_swipes[swipeId].relationships;
+				}
 				if (customSelection.includes("locks") || dataType === "all") {
 					delete message.extra.rpg_companion_swipes[swipeId].lockedItems;
 				}
@@ -1387,6 +1398,7 @@ export function clearCache(options) {
 	renderUserStats();
 	renderInfoBox();
 	renderThoughts();
+	renderRelationships();
 	updateChatThoughts();
 	updateDiceDisplay();
 	renderInventory();
