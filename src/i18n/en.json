@@ -66,6 +66,8 @@
 	"template.settingsModal.advanced.generationMode": "Generation Mode:",
 	"template.settingsModal.advanced.generationModeOptions.single": "Single Generation",
 	"template.settingsModal.advanced.generationModeNote": "Generates RPG data separately (manual or auto).",
+	"template.settingsModal.advanced.parallelTrackerGeneration": "Parallel tracker generation",
+	"template.settingsModal.advanced.parallelTrackerGenerationNote": "Run RPG data and relationships updates concurrently when refreshing tracker information.",
 	"template.settingsModal.advanced.retryAttempts": "Retry Attempts:",
 	"template.settingsModal.advanced.retryAttemptsNote": "Number of times to retry failed API requests (0 = no retries)",
 	"template.settingsModal.advanced.retryBaseDelay": "Retry Delay (ms):",

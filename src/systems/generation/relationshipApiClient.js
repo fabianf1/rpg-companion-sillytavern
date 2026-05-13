@@ -5,9 +5,7 @@
  */
 
 import { getContext } from "../../../../../../extensions.js";
-import {
-	saveChatData,
-} from "../../core/persistence.js";
+import { saveChatData } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
 import { renderRelationships } from "../rendering/relationships.js";
 import { renderThoughts } from "../rendering/thoughts.js";

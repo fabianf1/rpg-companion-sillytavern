@@ -417,7 +417,7 @@ export async function updateRPGData(
 						mergedUserStats = existingData.userStats;
 					}
 
-					let newData = {
+					const newData = {
 						userStats: mergedUserStats,
 						infoBox: selectedSections.includes("infoBox")
 							? parsedData.infoBox
@@ -443,6 +443,8 @@ export async function updateRPGData(
 
 					lastMessage.extra.rpg_companion_swipes[currentSwipeId] = newData;
 				} else {
+					const existingData =
+						lastMessage.extra.rpg_companion_swipes[currentSwipeId] || {};
 					lastMessage.extra.rpg_companion_swipes[currentSwipeId] = {
 						userStats: parsedData.userStats,
 						infoBox: parsedData.infoBox,
@@ -458,6 +460,7 @@ export async function updateRPGData(
 								? getLockedItemsFromStore.characters
 								: [],
 						},
+						relationships: existingData.relationships,
 					};
 				}
 

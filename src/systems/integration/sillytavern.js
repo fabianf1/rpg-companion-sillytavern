@@ -130,8 +130,12 @@ export async function onMessageReceived(_data) {
 		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
 
 		setTimeout(async () => {
-			await updateRPGData(true, null, targetMessage, targetSwipeId); // Auto-update first
-			await updateRelationships(targetMessage, targetSwipeId); // Then update relationships
+			await runTrackerAndRelationshipUpdate(
+				true,
+				null,
+				targetMessage,
+				targetSwipeId,
+			);
 		}, 500);
 	}
 
@@ -154,6 +158,37 @@ export async function onMessageReceived(_data) {
 /**
  * Event handler for character change.
  */
+export async function runTrackerAndRelationshipUpdate(
+	isAutoUpdate = false,
+	selectedSections = null,
+	targetMessage = null,
+	targetSwipeId = null,
+) {
+	const updateRPG = updateRPGData(
+		isAutoUpdate,
+		selectedSections,
+		targetMessage,
+		targetSwipeId,
+	);
+
+	if (!extensionSettings.showRelationships) {
+		await updateRPG;
+		return;
+	}
+
+	const updateRelationshipsTask = updateRelationships(
+		targetMessage,
+		targetSwipeId,
+	);
+
+	if (extensionSettings.parallelTrackerGeneration) {
+		await Promise.all([updateRPG, updateRelationshipsTask]);
+	} else {
+		await updateRPG;
+		await updateRelationshipsTask;
+	}
+}
+
 export function onCharacterChanged() {
 	console.log("[RPG Companion] 🟠 EVENT: onCharacterChanged");
 	// Abort any pending or in-flight generation so

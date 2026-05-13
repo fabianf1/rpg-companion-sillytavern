@@ -212,6 +212,11 @@ export const SETTING_BINDINGS = [
 		onUpdate: updateGenerationModeUI,
 	},
 	{
+		selector: "#rpg-parallel-tracker-generation",
+		key: "parallelTrackerGeneration",
+		type: "boolean",
+	},
+	{
 		selector: "#rpg-retry-attempts",
 		key: "retryAttempts",
 		type: "int",

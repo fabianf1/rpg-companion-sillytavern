@@ -42,7 +42,6 @@ import {
 	getAvailableConnectionProfiles,
 	updateRPGData,
 } from "./src/systems/generation/apiClient.js";
-import { updateRelationships } from "./src/systems/generation/relationshipApiClient.js";
 import { onGenerationStarted } from "./src/systems/generation/injector.js";
 // Integration modules
 import {
@@ -55,6 +54,7 @@ import {
 	onMessageSent,
 	onMessageSwiped,
 	updatePersonaAvatar,
+	runTrackerAndRelationshipUpdate,
 } from "./src/systems/integration/sillytavern.js";
 // Interaction modules
 import { initInventoryEventListeners } from "./src/systems/interaction/inventoryActions.js";
@@ -307,8 +307,12 @@ async function initUI() {
 		const targetMessage =
 			chat && chat.length > 0 ? chat[chat.length - 1] : null;
 		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
-		await updateRPGData(false, null, targetMessage, targetSwipeId);
-		await updateRelationships(targetMessage, targetSwipeId);
+		await runTrackerAndRelationshipUpdate(
+			false,
+			null,
+			targetMessage,
+			targetSwipeId,
+		);
 	});
 
 	// Partial Refresh button (right half of split button) - opens modal
@@ -322,14 +326,20 @@ async function initUI() {
 		const modal = getPartialRefreshModal();
 		if (modal) {
 			modal.onExecute = async (selectedSections) => {
-				await updateRPGData(
-					false,
-					selectedSections,
-					targetMessage,
-					targetSwipeId,
-				);
 				if (selectedSections.includes("relationships")) {
-					await updateRelationships(targetMessage, targetSwipeId);
+					await runTrackerAndRelationshipUpdate(
+						false,
+						selectedSections,
+						targetMessage,
+						targetSwipeId,
+					);
+				} else {
+					await updateRPGData(
+						false,
+						selectedSections,
+						targetMessage,
+						targetSwipeId,
+					);
 				}
 			};
 			openPartialRefreshPopup();
@@ -350,8 +360,12 @@ async function initUI() {
 		const targetMessage =
 			chat && chat.length > 0 ? chat[chat.length - 1] : null;
 		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
-		await updateRPGData(false, null, targetMessage, targetSwipeId);
-		await updateRelationships(targetMessage, targetSwipeId);
+		await runTrackerAndRelationshipUpdate(
+			false,
+			null,
+			targetMessage,
+			targetSwipeId,
+		);
 	});
 
 	// Strip cancel button
