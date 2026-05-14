@@ -39,13 +39,6 @@ export async function updateRelationships(
 		return;
 	}
 
-	// Show loading spinner on the relationships button
-	const $relBtn = $("#rpg-open-relationships");
-	const $relIcon = $relBtn.find("i");
-	const originalIconClass = $relIcon.attr("class") || "fa-solid fa-heart";
-	$relIcon.removeClass().addClass("fa-solid fa-spinner fa-spin");
-	$relBtn.prop("disabled", true);
-
 	try {
 		const prompt = generateRelationshipUpdatePrompt();
 		const profile = getCurrentProfile();
@@ -96,10 +89,6 @@ export async function updateRelationships(
 		}
 	} catch (error) {
 		console.error("[RPG Companion] Error updating relationships:", error);
-	} finally {
-		// Restore button to original state
-		$relIcon.removeClass().addClass(originalIconClass);
-		$relBtn.prop("disabled", false);
 	}
 }
 

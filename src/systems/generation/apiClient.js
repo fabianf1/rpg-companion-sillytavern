@@ -211,24 +211,6 @@ export async function updateRPGData(
 		setFabCancelState(true); // Show cancel button on mobile
 		setStripCancelState(true); // Show cancel button on desktop
 
-		// Update split button to show "Updating..." state with spinner
-		const $splitBtn = $("#rpg-refresh-split-btn");
-		const $updateBtn = $("#rpg-full-refresh");
-		const $stripRefreshBtn = $("#rpg-strip-refresh");
-		const updatingText =
-			i18n.getTranslation("template.mainPanel.updating") || "Updating...";
-
-		// Add updating class to split container (shows cancel button, hides both halves)
-		$splitBtn.addClass("is-updating");
-		$updateBtn
-			.find(".rpg-btn-refresh-content")
-			.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
-
-		// Strip button stays as is (separate behavior for mobile)
-		$stripRefreshBtn
-			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
-			.prop("disabled", true);
-
 		const prompt = generateSeparateUpdatePrompt(selectedSections);
 
 		// Generate response
@@ -503,24 +485,6 @@ export async function updateRPGData(
 		updateStripWidgets(); // Update strip widgets with new data
 		renderUserStats(); // To show the outdated message
 		renderAppearance(); // To show the outdated appearance data
-
-		// Restore button to original state
-		const $splitBtn = $("#rpg-refresh-split-btn");
-		const $updateBtn = $("#rpg-full-refresh");
-		const $stripRefreshBtn = $("#rpg-strip-refresh");
-		const refreshText =
-			i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
-
-		// Remove updating class from split container (hides cancel, shows both halves)
-		$splitBtn.removeClass("is-updating");
-		$updateBtn
-			.find(".rpg-btn-refresh-content")
-			.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
-
-		// Strip button restore
-		$stripRefreshBtn
-			.html('<i class="fa-solid fa-sync"></i>')
-			.prop("disabled", false);
 
 		// Reset the flag after tracker generation completes
 		// This ensures the flag persists through both main generation AND tracker generation

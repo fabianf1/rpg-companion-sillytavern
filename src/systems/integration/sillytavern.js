@@ -26,6 +26,7 @@ import {
 	setIsPlotProgression,
 	setLastActionWasSwipe,
 } from "../../core/state.js";
+import { i18n } from "../../core/i18n.js";
 // Utils
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 // Generation & Parsing
@@ -156,7 +157,8 @@ export async function onMessageReceived(_data) {
 }
 
 /**
- * Event handler for character change.
+ * Orchestrates tracker and relationship updates with parallel or sequential execution.
+ * Manages refresh button UI state before, during, and after generation.
  */
 export async function runTrackerAndRelationshipUpdate(
 	isAutoUpdate = false,
@@ -164,31 +166,72 @@ export async function runTrackerAndRelationshipUpdate(
 	targetMessage = null,
 	targetSwipeId = null,
 ) {
-	const updateRPG = updateRPGData(
-		isAutoUpdate,
-		selectedSections,
-		targetMessage,
-		targetSwipeId,
-	);
+	try {
+		// Show button state
+		const $splitBtn = $("#rpg-refresh-split-btn");
+		const $updateBtn = $("#rpg-full-refresh");
+		const $stripRefreshBtn = $("#rpg-strip-refresh");
+		const updatingText =
+			i18n.getTranslation("template.mainPanel.updating") || "Updating...";
 
-	if (!extensionSettings.showRelationships) {
-		await updateRPG;
-		return;
-	}
+		// Add updating class to split container (shows cancel button, hides both halves)
+		$splitBtn.addClass("is-updating");
+		$updateBtn
+			.find(".rpg-btn-refresh-content")
+			.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
 
-	const updateRelationshipsTask = updateRelationships(
-		targetMessage,
-		targetSwipeId,
-	);
+		// Strip button: show spinner and disable
+		$stripRefreshBtn
+			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
+			.prop("disabled", true);
 
-	if (extensionSettings.parallelTrackerGeneration) {
-		await Promise.all([updateRPG, updateRelationshipsTask]);
-	} else {
-		await updateRPG;
-		await updateRelationshipsTask;
+		const updateRPG = updateRPGData(
+			isAutoUpdate,
+			selectedSections,
+			targetMessage,
+			targetSwipeId,
+		);
+
+		if (!extensionSettings.showRelationships) {
+			await updateRPG;
+			return;
+		}
+
+		const updateRelationshipsTask = updateRelationships(
+			targetMessage,
+			targetSwipeId,
+		);
+
+		if (extensionSettings.parallelTrackerGeneration) {
+			await Promise.all([updateRPG, updateRelationshipsTask]);
+		} else {
+			await updateRPG;
+			await updateRelationshipsTask;
+		}
+	} finally {
+		// Restore button state
+		const $splitBtn = $("#rpg-refresh-split-btn");
+		const $updateBtn = $("#rpg-full-refresh");
+		const $stripRefreshBtn = $("#rpg-strip-refresh");
+		const refreshText =
+			i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
+
+		// Remove updating class from split container (hides cancel, shows both halves)
+		$splitBtn.removeClass("is-updating");
+		$updateBtn
+			.find(".rpg-btn-refresh-content")
+			.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
+
+		// Strip button restore
+		$stripRefreshBtn
+			.html('<i class="fa-solid fa-sync"></i>')
+			.prop("disabled", false);
 	}
 }
 
+/**
+ * Event handler for character change.
+ */
 export function onCharacterChanged() {
 	console.log("[RPG Companion] 🟠 EVENT: onCharacterChanged");
 	// Abort any pending or in-flight generation so
