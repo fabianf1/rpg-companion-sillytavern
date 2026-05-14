@@ -92,7 +92,10 @@ function buildRelationshipInstructionMessage(userName, statusOptions) {
 	let currentRelationships = getTrackerDataForContext("relationships");
 	if (currentRelationships && currentRelationships.length > 0) {
 		// If protagonist-only mode is enabled, filter to only protagonist-involved pairs
-		if (extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipsProtagonistOnly) {
+		if (
+			extensionSettings.trackerConfig?.presentCharacters?.relationships
+				?.relationshipsProtagonistOnly
+		) {
 			currentRelationships = currentRelationships.filter((rel) => {
 				const c1 = rel.character1 || "";
 				const c2 = rel.character2 || "";
@@ -140,7 +143,10 @@ function buildRelationshipInstructionMessage(userName, statusOptions) {
 	instruction += `- Do NOT wrap the JSON in code fences. Output the JSON object directly.\n`;
 
 	// Add protagonist-only rule if enabled
-	if (extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipsProtagonistOnly) {
+	if (
+		extensionSettings.trackerConfig?.presentCharacters?.relationships
+			?.relationshipsProtagonistOnly
+	) {
 		instruction += `- Only include relationships where the protagonist ("${userName}") is one of the two characters (either character1 or character2). Exclude relationships between two NPCs.\n`;
 	}
 

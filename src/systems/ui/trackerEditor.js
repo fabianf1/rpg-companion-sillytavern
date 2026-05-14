@@ -1365,12 +1365,12 @@ function renderPresentCharactersTab() {
 		'<div class="rpg-relationship-mapping-list" id="rpg-relationship-mapping-list">';
 	// Show existing relationships as field → emoji pairs
 	const relationshipEmojis = config.relationships?.relationshipEmojis || {
-			Lover: "❤️",
-			Friend: "⭐",
-			Ally: "🤝",
-			Enemy: "⚔️",
-			Neutral: "⚖️",
-		};
+		Lover: "❤️",
+		Friend: "⭐",
+		Ally: "🤝",
+		Enemy: "⚔️",
+		Neutral: "⚖️",
+	};
 
 	for (const [relationship, emoji] of Object.entries(relationshipEmojis)) {
 		html += `

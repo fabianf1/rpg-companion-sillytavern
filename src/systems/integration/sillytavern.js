@@ -185,6 +185,16 @@ export async function runTrackerAndRelationshipUpdate(
 			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
 			.prop("disabled", true);
 
+		// If only "Relationships" is selected, run the relationship update flow which uses a specialized prompt and API call
+		if (
+			selectedSections &&
+			selectedSections.length === 1 &&
+			selectedSections[0] === "relationships"
+		) {
+			await updateRelationships(targetMessage, targetSwipeId);
+			return;
+		}
+
 		const updateRPG = updateRPGData(
 			isAutoUpdate,
 			selectedSections,
@@ -192,7 +202,10 @@ export async function runTrackerAndRelationshipUpdate(
 			targetSwipeId,
 		);
 
-		if (!extensionSettings.showRelationships) {
+		if (
+			!extensionSettings.showRelationships ||
+			(selectedSections && !selectedSections.includes("relationships"))
+		) {
 			await updateRPG;
 			return;
 		}

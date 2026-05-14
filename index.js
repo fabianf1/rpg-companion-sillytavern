@@ -326,21 +326,12 @@ async function initUI() {
 		const modal = getPartialRefreshModal();
 		if (modal) {
 			modal.onExecute = async (selectedSections) => {
-				if (selectedSections.includes("relationships")) {
-					await runTrackerAndRelationshipUpdate(
-						false,
-						selectedSections,
-						targetMessage,
-						targetSwipeId,
-					);
-				} else {
-					await updateRPGData(
-						false,
-						selectedSections,
-						targetMessage,
-						targetSwipeId,
-					);
-				}
+				await runTrackerAndRelationshipUpdate(
+					false,
+					selectedSections,
+					targetMessage,
+					targetSwipeId,
+				);
 			};
 			openPartialRefreshPopup();
 		}
