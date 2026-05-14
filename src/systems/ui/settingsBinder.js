@@ -111,6 +111,11 @@ export const SETTING_BINDINGS = [
 		type: "boolean",
 		onUpdate: updateSectionVisibility,
 	},
+	{
+		selector: "#rpg-toggle-relationships-protagonist-only",
+		key: "relationshipsProtagonistOnly",
+		type: "boolean",
+	},
 
 	// ── Feature Toggles ──
 	{

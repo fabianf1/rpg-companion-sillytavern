@@ -67,6 +67,26 @@ export async function updateRelationships(
 			console.log("[RPG Companion] Parsed relationship data:", parsedData);
 
 			if (parsedData?.relationships) {
+				// Apply protagonist-only filtering if enabled
+				const filteredRelationships = extensionSettings.trackerConfig
+					?.presentCharacters?.relationships?.relationshipsProtagonistOnly
+					? parsedData.relationships.filter((rel) => {
+							const protagonistName = getContext().name1 || "You";
+							return (
+								rel.character1 === protagonistName ||
+								rel.character2 === protagonistName
+							);
+						})
+					: parsedData.relationships;
+
+				console.log(
+					"[RPG Companion] Filtered relationships:",
+					filteredRelationships.length,
+					"(original:",
+					parsedData.relationships.length,
+					")",
+				);
+
 				// Use pre-captured message/swipeId if provided, otherwise fall back to updateMessageSwipeData
 				if (!targetMessage.extra) {
 					targetMessage.extra = {};
@@ -78,7 +98,7 @@ export async function updateRelationships(
 					targetMessage.extra.rpg_companion_swipes[targetSwipeId] = {};
 				}
 				targetMessage.extra.rpg_companion_swipes[targetSwipeId].relationships =
-					parsedData.relationships;
+					filteredRelationships;
 				// Re-render the relationships display
 				renderRelationships();
 				renderThoughts();

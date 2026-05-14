@@ -144,6 +144,8 @@
 	"template.trackerEditorModal.presentCharactersTab.relationshipStatusTitle": "Relationship Status Fields",
 	"template.trackerEditorModal.presentCharactersTab.enableRelationshipStatus": "Enable Relationship Status Fields",
 	"template.trackerEditorModal.presentCharactersTab.relationshipStatusHint": "Define relationship types with corresponding emojis shown on character portraits.",
+	"template.trackerEditorModal.presentCharactersTab.relationshipsProtagonistOnly": "Only track relationships with the main character",
+	"template.trackerEditorModal.presentCharactersTab.relationshipsProtagonistOnlyHint": "Only track relationships where the protagonist (\"You\") is one of the two characters. Exclude relationships between two NPCs.",
 	"template.trackerEditorModal.presentCharactersTab.newRelationshipButton": "New Relationship",
 	"template.trackerEditorModal.presentCharactersTab.appearanceDemeanorTitle": "Appearance/Demeanor Fields",
 	"template.trackerEditorModal.presentCharactersTab.appearanceDemeanorHint": "Fields shown below character name.",

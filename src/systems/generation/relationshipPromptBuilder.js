@@ -65,6 +65,8 @@ export function generateRelationshipUpdatePrompt() {
 function buildRelationshipSystemMessage(userName, _statusOptions) {
 	let systemMessage = `You are an RPG Companion module that tracks character relationships. Your ONLY task is to update the relationship data between characters based on the conversation history.\n\n`;
 
+	systemMessage += `Your task is to analyze the conversation and determine how each character feels toward, what they want from, and what interpersonal secrets they keep from the OTHER character in each pair.\n\n`;
+
 	systemMessage += `Here is the description of the protagonist for reference:\n`;
 	systemMessage += `<protagonist name="${userName}">\n{{persona}}\n</protagonist>\n\n`;
 
@@ -80,15 +82,23 @@ function buildRelationshipSystemMessage(userName, _statusOptions) {
  * @param {string[]} statusOptions - Available relationship status options
  * @returns {string} The instruction message
  */
-function buildRelationshipInstructionMessage(_userName, statusOptions) {
+function buildRelationshipInstructionMessage(userName, statusOptions) {
 	const statusList = statusOptions.map((s) => `"${s}"`).join(", ");
 
 	let instruction = `</history>\n\n`;
 	instruction += `Based on the conversation above, update the relationship data between characters.\n\n`;
 
 	// Include current relationships as context
-	const currentRelationships = getTrackerDataForContext("relationships");
+	let currentRelationships = getTrackerDataForContext("relationships");
 	if (currentRelationships && currentRelationships.length > 0) {
+		// If protagonist-only mode is enabled, filter to only protagonist-involved pairs
+		if (extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipsProtagonistOnly) {
+			currentRelationships = currentRelationships.filter((rel) => {
+				const c1 = rel.character1 || "";
+				const c2 = rel.character2 || "";
+				return c1 === userName || c2 === userName;
+			});
+		}
 		instruction += `<current_relationships>\n`;
 		instruction += JSON.stringify(currentRelationships, null, 2);
 		instruction += `\n</current_relationships>\n\n`;
@@ -108,10 +118,10 @@ function buildRelationshipInstructionMessage(_userName, statusOptions) {
 	instruction += `      "status": "Status",\n`;
 	instruction += `      "feelsTowards": "How character1 feels about character2 (keyword or very short sentence)",\n`;
 	instruction += `      "wantsFrom": "What character1 wants from character2 (keyword or very short sentence)",\n`;
-	instruction += `      "secretsFrom": "Secrets character1 keeps from character2 (keyword or very short sentence)",\n`;
+	instruction += `      "secretsFrom": "Secrets that character1 keeps hidden specifically FROM character2 (not general secrets about other people or things)",\n`;
 	instruction += `      "feelsTowards2": "How character2 feels about character1 (keyword or very short sentence)",\n`;
 	instruction += `      "wantsFrom2": "What character2 wants from character1 (keyword or very short sentence)",\n`;
-	instruction += `      "secretsFrom2": "Secrets character2 keeps from character1 (keyword or very short sentence)"\n`;
+	instruction += `      "secretsFrom2": "Secrets that character2 keeps hidden specifically FROM character1 (not general secrets about other people or things)"\n`;
 	instruction += `    }\n`;
 	instruction += `  ]\n`;
 	instruction += `}\n`;
@@ -123,11 +133,16 @@ function buildRelationshipInstructionMessage(_userName, statusOptions) {
 	instruction += `- If a character is not in the scene and/or not relevant, do NOT include or update their relationships\n`;
 	instruction += `- "feelsTowards" is from character1's perspective toward character2\n`;
 	instruction += `- "wantsFrom" is what character1 desires from character2\n`;
-	instruction += `- "secretsFrom" are secrets character1 keeps from character2\n`;
+	instruction += `- "secretsFrom" and "secretsFrom2" are INTERPERSONAL secrets BETWEEN the two characters in this pair only. Do NOT include secrets about third parties or unrelated matters.\n`;
 	instruction += `- "feelsTowards2", "wantsFrom2", "secretsFrom2" are from character2's perspective toward character1\n`;
 	instruction += `- Keep all fields concise (keywords or very short sentences)\n`;
 	instruction += `- If a relationship hasn't changed, keep the existing data\n`;
 	instruction += `- Do NOT wrap the JSON in code fences. Output the JSON object directly.\n`;
+
+	// Add protagonist-only rule if enabled
+	if (extensionSettings.trackerConfig?.presentCharacters?.relationships?.relationshipsProtagonistOnly) {
+		instruction += `- Only include relationships where the protagonist ("${userName}") is one of the two characters (either character1 or character2). Exclude relationships between two NPCs.\n`;
+	}
 
 	return instruction;
 }

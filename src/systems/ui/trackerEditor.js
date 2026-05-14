@@ -1352,6 +1352,13 @@ function renderPresentCharactersTab() {
 	html += `<label for="rpg-relationships-enabled">${i18n.getTranslation("template.trackerEditorModal.presentCharactersTab.enableRelationshipStatus")}</label>`;
 	html += "</div>";
 
+	// Protagonist-only relationships toggle
+	html += '<div class="rpg-editor-toggle-row">';
+	html += `<input type="checkbox" id="rpg-relationships-protagonist-only" ${config.relationships?.relationshipsProtagonistOnly ? "checked" : ""}>`;
+	html += `<label for="rpg-relationships-protagonist-only">${i18n.getTranslation("template.trackerEditorModal.presentCharactersTab.relationshipsProtagonistOnly")}</label>`;
+	html += "</div>";
+	html += `<p class="rpg-editor-hint">${i18n.getTranslation("template.trackerEditorModal.presentCharactersTab.relationshipsProtagonistOnlyHint")}</p>`;
+
 	html += `<p class="rpg-editor-hint">${i18n.getTranslation("template.trackerEditorModal.presentCharactersTab.relationshipStatusHint")}</p>`;
 
 	html +=
@@ -1465,6 +1472,20 @@ function setupPresentCharactersListeners() {
 				};
 			}
 			extensionSettings.trackerConfig.presentCharacters.relationships.enabled =
+				$(this).is(":checked");
+		});
+
+	// Protagonist-only relationships toggle
+	$("#rpg-relationships-protagonist-only")
+		.off("change")
+		.on("change", function () {
+			if (!extensionSettings.trackerConfig.presentCharacters.relationships) {
+				extensionSettings.trackerConfig.presentCharacters.relationships = {
+					enabled: true,
+					relationshipEmojis: {},
+				};
+			}
+			extensionSettings.trackerConfig.presentCharacters.relationships.relationshipsProtagonistOnly =
 				$(this).is(":checked");
 		});
 

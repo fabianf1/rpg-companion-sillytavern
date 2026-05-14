@@ -39,11 +39,11 @@
             <div class="rpg-strip-attributes-grid"></div>
         </div>
         <!-- Refresh Button (bottom) -->
-        <button id="rpg-strip-refresh" class="rpg-strip-refresh-btn" title="Refresh RPG Info">
+        <button type="button" id="rpg-strip-refresh" class="rpg-strip-refresh-btn" title="Refresh RPG Info">
             <i class="fa-solid fa-sync"></i>
         </button>
         <!-- Cancel Generation Button (hidden by default) -->
-        <button id="rpg-strip-cancel" class="rpg-strip-cancel-btn" style="display: none;" title="Cancel Generation">
+        <button type="button" id="rpg-strip-cancel" class="rpg-strip-cancel-btn" style="display: none;" title="Cancel Generation">
             <i class="fa-solid fa-stop"></i>
         </button>
     </div>
@@ -446,6 +446,15 @@
                 <small class="notes" style="display: block; margin-bottom: 10px;"
                     data-i18n-key="template.settingsModal.relationshipsNote">
                     Configure relationship tracking between characters. Relationships are updated after each message in a separate API call. Use the Tracker Editor to customize relationship status types and their emoji badges.
+                </small>
+
+                <label class="checkbox_label">
+                    <input type="checkbox" id="rpg-toggle-relationships-protagonist-only" />
+                    <span data-i18n-key="template.settingsModal.relationships.protagonistOnly">Only track relationships with the main character</span>
+                </label>
+                <small style="display: block; margin-left: 24px; margin-top: -8px; color: #888; font-size: 11px;"
+                    data-i18n-key="template.settingsModal.relationships.protagonistOnlyNote">
+                    Only track relationships where the protagonist ("You") is one of the two characters. Exclude relationships between two NPCs.
                 </small>
             </div>
 

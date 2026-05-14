@@ -238,6 +238,8 @@ export let extensionSettings = {
 					Enemy: "⚔️",
 					Neutral: "⚖️",
 				},
+				// Only track relationships where protagonist is one of the two characters
+				relationshipsProtagonistOnly: false,
 			},
 			// Custom fields (appearance, demeanor, etc. - shown after relationship, separated by |)
 			customFields: [
