@@ -210,6 +210,7 @@ export const SETTING_BINDINGS = [
 		},
 	},
 	{ selector: "#rpg-update-depth", key: "updateDepth", type: "int" },
+	{ selector: "#rpg-relation-update-depth", key: "relationUpdateDepth", type: "int" },
 	{
 		selector: "#rpg-generation-mode",
 		key: "generationMode",

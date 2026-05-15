@@ -22,6 +22,7 @@ import {
 	isAwaitingNewMessage,
 	isPlotProgression,
 	lastActionWasSwipe,
+	setGenerationAbortController,
 	setIsAwaitingNewMessage,
 	setIsPlotProgression,
 	setLastActionWasSwipe,
@@ -167,6 +168,11 @@ export async function runTrackerAndRelationshipUpdate(
 	targetSwipeId = null,
 ) {
 	try {
+		// Create shared abort controller so cancel aborts both RPG data and relationship updates
+		const controller = new AbortController();
+		setGenerationAbortController(controller);
+		const signal = controller.signal;
+
 		// Show button state
 		const $splitBtn = $("#rpg-refresh-split-btn");
 		const $updateBtn = $("#rpg-full-refresh");
@@ -191,7 +197,7 @@ export async function runTrackerAndRelationshipUpdate(
 			selectedSections.length === 1 &&
 			selectedSections[0] === "relationships"
 		) {
-			await updateRelationships(targetMessage, targetSwipeId);
+			await updateRelationships(targetMessage, targetSwipeId, signal);
 			return;
 		}
 
@@ -200,6 +206,7 @@ export async function runTrackerAndRelationshipUpdate(
 			selectedSections,
 			targetMessage,
 			targetSwipeId,
+			signal,
 		);
 
 		if (
@@ -213,6 +220,7 @@ export async function runTrackerAndRelationshipUpdate(
 		const updateRelationshipsTask = updateRelationships(
 			targetMessage,
 			targetSwipeId,
+			signal,
 		);
 
 		if (extensionSettings.parallelTrackerGeneration) {
@@ -222,6 +230,9 @@ export async function runTrackerAndRelationshipUpdate(
 			await updateRelationshipsTask;
 		}
 	} finally {
+		// Clear the shared abort controller
+		setGenerationAbortController(null);
+
 		// Restore button state
 		const $splitBtn = $("#rpg-refresh-split-btn");
 		const $updateBtn = $("#rpg-full-refresh");

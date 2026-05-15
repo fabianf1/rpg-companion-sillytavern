@@ -162,12 +162,18 @@ export function getCurrentProfile() {
  * Updates RPG tracker data using a dedicated API call.
  * Makes a dedicated API call to generate tracker data, then stores it
  * in the last assistant message's swipe data.
+ * @param {boolean} [isAutoUpdate=false] - Whether this is an automatic update
+ * @param {string[]|null} [selectedSections=null] - Specific sections to update
+ * @param {Object|null} [targetMessage=null] - Pre-captured assistant message to store results on
+ * @param {number|null} [targetSwipeId=null] - Pre-captured swipe ID for the target message
+ * @param {AbortSignal|null} [signal=null] - AbortSignal from a shared AbortController for cancellation
  */
 export async function updateRPGData(
 	isAutoUpdate = false,
 	selectedSections = null,
 	targetMessage = null,
 	targetSwipeId = null,
+	signal = null,
 ) {
 	if (isGenerating) {
 		// console.log('[RPG Companion] Already generating, skipping...');
@@ -216,9 +222,14 @@ export async function updateRPGData(
 		// Generate response
 		const profile = getCurrentProfile();
 
-		const controller = new AbortController();
-		const signal = controller.signal;
-		setGenerationAbortController(controller);
+		// Use the signal passed from runTrackerAndRelationshipUpdate (shared abort controller)
+		// If no signal was provided (standalone call), create a local abort controller
+		let abortSignal = signal;
+		if (!abortSignal) {
+			const controller = new AbortController();
+			setGenerationAbortController(controller);
+			abortSignal = controller.signal;
+		}
 
 		let response;
 		const maxRetries = extensionSettings.retryAttempts ?? 0;
@@ -231,7 +242,7 @@ export async function updateRPGData(
 						profile,
 						prompt,
 						0,
-						{ signal },
+						{ signal: abortSignal },
 					);
 				break; // Success, exit retry loop
 			} catch (error) {

@@ -448,6 +448,14 @@
                     Configure relationship tracking between characters. Relationships are updated after each message in a separate API call. Use the Tracker Editor to customize relationship status types and their emoji badges.
                 </small>
 
+                <div class="rpg-setting-row">
+                    <label for="rpg-relation-update-depth"
+                        data-i18n-key="template.settingsModal.advanced.relationContextMessages">Relationship Context Messages:</label>
+                    <input type="number" id="rpg-relation-update-depth" min="1" max="20" value="4" class="rpg-input" />
+                    <small data-i18n-key="template.settingsModal.advanced.relationContextMessagesNote">Number of recent messages
+                        to include for relationship updates</small>
+                </div>
+
                 <label class="checkbox_label">
                     <input type="checkbox" id="rpg-toggle-relationships-protagonist-only" />
                     <span data-i18n-key="template.settingsModal.relationships.protagonistOnly">Only track relationships with the main character</span>

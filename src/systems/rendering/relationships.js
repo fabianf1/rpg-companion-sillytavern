@@ -80,12 +80,20 @@ export function renderRelationships() {
 		const c1 = rel.character1 || "?";
 		const c2 = rel.character2 || "?";
 		const status = rel.status || "Neutral";
-		const feelsTowards = rel.feelsTowards || "";
-		const wantsFrom = rel.wantsFrom || "";
-		const secretsFrom = rel.secretsFrom || "";
-		const feelsTowards2 = rel.feelsTowards2 || "";
-		const wantsFrom2 = rel.wantsFrom2 || "";
-		const secretsFrom2 = rel.secretsFrom2 || "";
+		// Handle null values - convert to empty string for display, but mark as unknown
+		const feelsTowards = rel.feelsTowards ?? "";
+		const wantsFrom = rel.wantsFrom ?? "";
+		const secretsFrom = rel.secretsFrom ?? "";
+		const feelsTowards2 = rel.feelsTowards2 ?? "";
+		const wantsFrom2 = rel.wantsFrom2 ?? "";
+		const secretsFrom2 = rel.secretsFrom2 ?? "";
+		// Track which fields are unknown (null) for styling
+		const feelsTowardsUnknown = rel.feelsTowards === null;
+		const wantsFromUnknown = rel.wantsFrom === null;
+		const secretsFromUnknown = rel.secretsFrom === null;
+		const feelsTowards2Unknown = rel.feelsTowards2 === null;
+		const wantsFrom2Unknown = rel.wantsFrom2 === null;
+		const secretsFrom2Unknown = rel.secretsFrom2 === null;
 
 		html += '<div class="rpg-relationship-card">';
 		html += `<div class="rpg-relationship-header">`;
@@ -104,17 +112,17 @@ export function renderRelationships() {
 		// Character 1 → Character 2 (feelsTowards, wantsFrom, secretsFrom)
 		html += '<div class="rpg-relationship-direction">';
 		html += `<span class="rpg-relationship-arrow">${escapeHtml(c1)} → ${escapeHtml(c2)}</span>`;
-		html += `<span class="rpg-relationship-feels rpg-editable" contenteditable="true" data-index="${i}" data-field="feelsTowards" data-placeholder="${i18n.getTranslation("relationships.feels")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(feelsTowards)}</span>`;
-		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="wantsFrom" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(wantsFrom)}</span></span>`;
-		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="secretsFrom" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(secretsFrom)}</span></span>`;
+		html += `<span class="rpg-relationship-feels rpg-editable${feelsTowardsUnknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="feelsTowards" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${feelsTowardsUnknown ? "" : escapeHtml(feelsTowards)}</span>`;
+		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable${wantsFromUnknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="wantsFrom" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${wantsFromUnknown ? "" : escapeHtml(wantsFrom)}</span></span>`;
+		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable${secretsFromUnknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="secretsFrom" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${secretsFromUnknown ? "" : escapeHtml(secretsFrom)}</span></span>`;
 		html += "</div>";
 
 		// Character 2 → Character 1 (feelsTowards2, wantsFrom2, secretsFrom2)
 		html += '<div class="rpg-relationship-direction">';
 		html += `<span class="rpg-relationship-arrow">${escapeHtml(c2)} → ${escapeHtml(c1)}</span>`;
-		html += `<span class="rpg-relationship-feels rpg-editable" contenteditable="true" data-index="${i}" data-field="feelsTowards2" data-placeholder="${i18n.getTranslation("relationships.feels")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(feelsTowards2)}</span>`;
-		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="wantsFrom2" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(wantsFrom2)}</span></span>`;
-		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable" contenteditable="true" data-index="${i}" data-field="secretsFrom2" title="${i18n.getTranslation("relationships.clickToEdit")}">${escapeHtml(secretsFrom2)}</span></span>`;
+		html += `<span class="rpg-relationship-feels rpg-editable${feelsTowards2Unknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="feelsTowards2" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${feelsTowards2Unknown ? "" : escapeHtml(feelsTowards2)}</span>`;
+		html += `<span class="rpg-relationship-wants"><span class="rpg-rel-label">${i18n.getTranslation("relationships.wants")}:</span> <span class="rpg-editable${wantsFrom2Unknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="wantsFrom2" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${wantsFrom2Unknown ? "" : escapeHtml(wantsFrom2)}</span></span>`;
+		html += `<span class="rpg-relationship-secret"><span class="rpg-rel-label">${i18n.getTranslation("relationships.secret")}:</span> <span class="rpg-editable${secretsFrom2Unknown ? " rpg-empty-field" : ""}" contenteditable="true" data-index="${i}" data-field="secretsFrom2" data-placeholder="${i18n.getTranslation("relationships.unknown")}" title="${i18n.getTranslation("relationships.clickToEdit")}">${secretsFrom2Unknown ? "" : escapeHtml(secretsFrom2)}</span></span>`;
 		html += "</div>";
 
 		html += "</div>";
@@ -219,7 +227,14 @@ function _attachEditHandlers($body) {
 		const index = parseInt($(this).data("index"));
 		const field = $(this).data("field");
 		const value = $(this).text().trim();
-		_updateRelationshipField(index, field, value);
+		// Save null for empty fields to indicate "unknown"
+		_updateRelationshipField(index, field, value || null);
+		// Restore placeholder styling if field is empty
+		const $this = $(this);
+		if (!value) {
+			$this.addClass("rpg-empty-field");
+			$this.attr("data-placeholder", i18n.getTranslation("relationships.unknown"));
+		}
 	});
 
 	// Prevent click events on editable elements from bubbling
@@ -230,19 +245,6 @@ function _attachEditHandlers($body) {
 	// Handle empty field focus - remove placeholder styling
 	$body.find(".rpg-editable.rpg-empty-field").on("focus", function () {
 		$(this).removeClass("rpg-empty-field");
-		$(this).removeAttr("data-placeholder");
-	});
-
-	// Restore placeholder if field becomes empty on blur
-	$body.find(".rpg-editable").on("blur", function () {
-		const $this = $(this);
-		if (!$this.text().trim()) {
-			const field = $this.data("field");
-			if (field) {
-				$this.addClass("rpg-empty-field");
-				$this.attr("data-placeholder", field);
-			}
-		}
 	});
 
 	// Handle Enter key on editable fields - blur to save

@@ -24,6 +24,7 @@ export const defaultSettings = {
 	enabled: true,
 	autoUpdate: true,
 	updateDepth: 4, // How many messages to include in the context
+	relationUpdateDepth: 4, // How many messages to include for relationship updates
 	generationMode: "single", // 'single' - generates RPG data separately (manual or auto)
 	showUserStats: true,
 	showInfoBox: true,

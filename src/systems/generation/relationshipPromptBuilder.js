@@ -17,7 +17,7 @@ import { getTrackerDataForContext } from "./trackerDataUtils.js";
  */
 export function generateRelationshipUpdatePrompt() {
 	const userName = getContext().name1;
-	const depth = extensionSettings.updateDepth;
+	const depth = extensionSettings.relationUpdateDepth ?? extensionSettings.updateDepth;
 	// Get status options from relationshipEmojis keys (the keys define allowed statuses)
 	const relationshipEmojis = extensionSettings.trackerConfig?.presentCharacters
 		?.relationships?.relationshipEmojis || {
@@ -63,9 +63,13 @@ export function generateRelationshipUpdatePrompt() {
  * @returns {string} The system message
  */
 function buildRelationshipSystemMessage(userName, _statusOptions) {
-	let systemMessage = `You are an RPG Companion module that tracks character relationships. Your ONLY task is to update the relationship data between characters based on the conversation history.\n\n`;
+	let systemMessage = `You are an RPG Companion module that maintains a cumulative record of character relationships. Your task is to update the enduring relationship state between character pairs based on the conversation.\n\n`;
 
-	systemMessage += `Your task is to analyze the conversation and determine how each character feels toward, what they want from, and what interpersonal secrets they keep from the OTHER character in each pair.\n\n`;
+	systemMessage += `CRITICAL: You are tracking LONG-TERM RELATIONSHIP DYNAMICS, not momentary reactions.\n`;
+	systemMessage += `- Focus on the overall relationship trajectory, not the latest exchange\n`;
+	systemMessage += `- A single conversation should rarely cause dramatic relationship shifts\n`;
+	systemMessage += `- Relationships evolve gradually through accumulated interactions\n`;
+	systemMessage += `- If insufficient information exists for a field, use null rather than fabricating\n\n`;
 
 	systemMessage += `Here is the description of the protagonist for reference:\n`;
 	systemMessage += `<protagonist name="${userName}">\n{{persona}}\n</protagonist>\n\n`;
@@ -86,7 +90,7 @@ function buildRelationshipInstructionMessage(userName, statusOptions) {
 	const statusList = statusOptions.map((s) => `"${s}"`).join(", ");
 
 	let instruction = `</history>\n\n`;
-	instruction += `Based on the conversation above, update the relationship data between characters.\n\n`;
+	instruction += `Update the relationship data between characters based on the conversation above.\n\n`;
 
 	// Include current relationships as context
 	let currentRelationships = getTrackerDataForContext("relationships");
@@ -112,35 +116,33 @@ function buildRelationshipInstructionMessage(userName, statusOptions) {
 	instruction += `Provide ONLY the updated relationships array in the exact JSON format below. Do NOT include any other text, commentary, or roleplay response.\n\n`;
 
 	instruction += `FORMAT:\n`;
-	instruction += `\`\`\`json\n`;
 	instruction += `{\n`;
 	instruction += `  "relationships": [\n`;
 	instruction += `    {\n`;
 	instruction += `      "character1": "CharacterName",\n`;
 	instruction += `      "character2": "OtherCharacterName",\n`;
 	instruction += `      "status": "Status",\n`;
-	instruction += `      "feelsTowards": "How character1 feels about character2 (keyword or very short sentence)",\n`;
-	instruction += `      "wantsFrom": "What character1 wants from character2 (keyword or very short sentence)",\n`;
-	instruction += `      "secretsFrom": "Secrets that character1 keeps hidden specifically FROM character2 (not general secrets about other people or things)",\n`;
-	instruction += `      "feelsTowards2": "How character2 feels about character1 (keyword or very short sentence)",\n`;
-	instruction += `      "wantsFrom2": "What character2 wants from character1 (keyword or very short sentence)",\n`;
-	instruction += `      "secretsFrom2": "Secrets that character2 keeps hidden specifically FROM character1 (not general secrets about other people or things)"\n`;
+	instruction += `      "feelsTowards": "Enduring feeling of character1 toward character2, or null if unknown",\n`;
+	instruction += `      "wantsFrom": "Core desire of character1 from character2, or null if unknown",\n`;
+	instruction += `      "secretsFrom": "Secret character1 hides specifically FROM character2, or null if none",\n`;
+	instruction += `      "feelsTowards2": "Enduring feeling of character2 toward character1, or null if unknown",\n`;
+	instruction += `      "wantsFrom2": "Core desire of character2 from character1, or null if unknown",\n`;
+	instruction += `      "secretsFrom2": "Secret character2 hides specifically FROM character1, or null if none"\n`;
 	instruction += `    }\n`;
 	instruction += `  ]\n`;
-	instruction += `}\n`;
-	instruction += `\`\`\`\n\n`;
+	instruction += `}\n\n`;
 
 	instruction += `RULES:\n`;
 	instruction += `- Status must be one of: ${statusList}\n`;
-	instruction += `- Include ALL known character pairs that have interacted or have a defined relationship\n`;
-	instruction += `- If a character is not in the scene and/or not relevant, do NOT include or update their relationships\n`;
-	instruction += `- "feelsTowards" is from character1's perspective toward character2\n`;
-	instruction += `- "wantsFrom" is what character1 desires from character2\n`;
-	instruction += `- "secretsFrom" and "secretsFrom2" are INTERPERSONAL secrets BETWEEN the two characters in this pair only. Do NOT include secrets about third parties or unrelated matters.\n`;
-	instruction += `- "feelsTowards2", "wantsFrom2", "secretsFrom2" are from character2's perspective toward character1\n`;
-	instruction += `- Keep all fields concise (keywords or very short sentences)\n`;
-	instruction += `- If a relationship hasn't changed, keep the existing data\n`;
-	instruction += `- Do NOT wrap the JSON in code fences. Output the JSON object directly.\n`;
+	instruction += `- Only include character pairs that have a meaningful relationship history\n`;
+	instruction += `- If nothing meaningful has changed in a relationship, preserve the existing data exactly\n`;
+	instruction += `- Use null for any field you cannot reliably determine from the overall relationship context — do not fabricate\n`;
+	instruction += `- Each field must be 1-5 words capturing the underlying dynamic, not a description of recent events\n`;
+	instruction += `- "feelsTowards" / "feelsTowards2": the enduring emotional stance (e.g. "deep affection", "wary respect", "distrust"). NOT what they felt in the last scene\n`;
+	instruction += `- "wantsFrom" / "wantsFrom2": the core ongoing desire (e.g. "loyalty", "freedom", "revenge"). NOT a momentary request\n`;
+	instruction += `- "secretsFrom" / "secretsFrom2": interpersonal secrets BETWEEN the two characters only. NOT secrets about third parties or general matters. Use null if none exist\n`;
+	instruction += `- Do NOT reference specific dialogue, actions, or scenes — abstract to the relationship level\n`;
+	instruction += `- Output the JSON object directly, NOT wrapped in code fences\n`;
 
 	// Add protagonist-only rule if enabled
 	if (

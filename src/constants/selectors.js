@@ -55,6 +55,7 @@ export const TOGGLE_SHOW_NARRATOR_MODE = "#rpg-toggle-show-narrator-mode";
 // ── Settings Selects & Inputs ───────────────────────────────────
 export const POSITION_SELECT = "#rpg-position-select";
 export const UPDATE_DEPTH = "#rpg-update-depth";
+export const RELATION_UPDATE_DEPTH = "#rpg-relation-update-depth";
 export const GENERATION_MODE = "#rpg-generation-mode";
 export const RETRY_ATTEMPTS = "#rpg-retry-attempts";
 export const RETRY_BASE_DELAY = "#rpg-retry-base-delay";

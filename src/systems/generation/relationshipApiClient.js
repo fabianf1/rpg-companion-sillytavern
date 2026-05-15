@@ -19,10 +19,12 @@ import { generateRelationshipUpdatePrompt } from "./relationshipPromptBuilder.js
  *
  * @param {Object} [targetMessage] - Pre-captured assistant message to store results on
  * @param {number} [targetSwipeId] - Pre-captured swipe ID for the target message
+ * @param {AbortSignal} [signal] - AbortSignal from a shared AbortController for cancellation
  */
 export async function updateRelationships(
 	targetMessage = null,
 	targetSwipeId = null,
+	signal = null,
 ) {
 	console.log("[RPG Companion] Starting relationship update...");
 	if (!extensionSettings.enabled) {
@@ -55,6 +57,7 @@ export async function updateRelationships(
 				profile,
 				prompt,
 				0,
+				{ signal },
 			);
 
 		console.log(
@@ -108,6 +111,12 @@ export async function updateRelationships(
 			saveChatData();
 		}
 	} catch (error) {
+		if (error.name === "AbortError") {
+			console.log(
+				"[RPG Companion] Relationship update aborted by user or message deletion",
+			);
+			return;
+		}
 		console.error("[RPG Companion] Error updating relationships:", error);
 	}
 }
