@@ -233,7 +233,10 @@ function sanitizeUserStats(userStats) {
 		}
 
 		// Sanitize stored object (each location is an array of items)
-		if (result.inventory.stored && typeof result.inventory.stored === "object") {
+		if (
+			result.inventory.stored &&
+			typeof result.inventory.stored === "object"
+		) {
 			for (const location of Object.keys(result.inventory.stored)) {
 				if (Array.isArray(result.inventory.stored[location])) {
 					result.inventory.stored[location] = sanitizeArrayItems(
@@ -264,11 +267,7 @@ function sanitizeUserStats(userStats) {
 		);
 
 		// Sanitize array fields (clothing, accessories, physicalFeatures)
-		for (const arrayField of [
-			"clothing",
-			"accessories",
-			"physicalFeatures",
-		]) {
+		for (const arrayField of ["clothing", "accessories", "physicalFeatures"]) {
 			if (Array.isArray(result.appearance[arrayField])) {
 				result.appearance[arrayField] = sanitizeArrayItems(
 					result.appearance[arrayField],
@@ -281,7 +280,11 @@ function sanitizeUserStats(userStats) {
 
 	// Sanitize quests
 	if (result.quests && typeof result.quests === "object") {
-		result.quests = filterObjectKeys(result.quests, QUESTS_KEYS, "userStats.quests");
+		result.quests = filterObjectKeys(
+			result.quests,
+			QUESTS_KEYS,
+			"userStats.quests",
+		);
 
 		// Sanitize main quest
 		if (result.quests.main && typeof result.quests.main === "object") {
@@ -319,7 +322,11 @@ function sanitizeInfoBox(infoBox) {
 
 	// Sanitize date
 	if (result.date && typeof result.date === "object") {
-		result.date = filterObjectKeys(result.date, INFO_BOX_DATE_KEYS, "infoBox.date");
+		result.date = filterObjectKeys(
+			result.date,
+			INFO_BOX_DATE_KEYS,
+			"infoBox.date",
+		);
 	}
 
 	// Sanitize weather
@@ -342,7 +349,11 @@ function sanitizeInfoBox(infoBox) {
 
 	// Sanitize time
 	if (result.time && typeof result.time === "object") {
-		result.time = filterObjectKeys(result.time, INFO_BOX_TIME_KEYS, "infoBox.time");
+		result.time = filterObjectKeys(
+			result.time,
+			INFO_BOX_TIME_KEYS,
+			"infoBox.time",
+		);
 	}
 
 	// Sanitize location
@@ -394,7 +405,11 @@ function sanitizeCharacters(characters) {
 		}
 
 		// Filter top-level character keys
-		const sanitized = filterObjectKeys(char, CHARACTER_KEYS, `characters[${index}]`);
+		const sanitized = filterObjectKeys(
+			char,
+			CHARACTER_KEYS,
+			`characters[${index}]`,
+		);
 
 		// Sanitize details object
 		if (sanitized.details && typeof sanitized.details === "object") {
@@ -446,7 +461,7 @@ function toSnakeCase(str) {
  * @param {Object} parsed - The parsed JSON object from AI response
  * @returns {Object} Sanitized object with only whitelisted fields
  */
-function sanitizeParsedData(parsed) {
+export function sanitizeParsedData(parsed) {
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
 		return parsed;
 	}

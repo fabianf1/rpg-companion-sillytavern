@@ -22,11 +22,14 @@ import {
 	saveSettings,
 	saveToPreset,
 	setDefaultPreset,
+	updateMessageSwipeData,
 } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
 import { renderThoughts } from "../rendering/thoughts.js";
 import { renderUserStats } from "../rendering/userStats.js";
+import { sanitizeParsedData } from "../generation/parser.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { updateFabWidgets } from "./mobile.js";
 
 let $editorModal = null;
@@ -34,6 +37,8 @@ let activeTab = "userStats";
 let tempConfig = null; // Temporary config for cancel functionality
 let tempAssociation = null; // Temporary association state: { presetId: string|null, entityKey: string|null }
 let originalAssociation = null; // Original association when editor opened
+let pendingRawJsonData = null; // Parsed JSON from the Raw JSON tab, pending save
+let rawJsonOriginal = null; // Original JSON string to detect actual edits
 
 /**
  * Initialize the tracker editor modal
@@ -310,6 +315,8 @@ function closeTrackerEditor() {
 	// Discard pending association changes (cancel = no save)
 	tempAssociation = null;
 	originalAssociation = null;
+	pendingRawJsonData = null;
+	rawJsonOriginal = null;
 
 	$editorModal.removeClass("is-open").addClass("is-closing");
 	setTimeout(() => {
@@ -321,6 +328,29 @@ function closeTrackerEditor() {
  * Apply the tracker configuration and refresh all trackers
  */
 function applyTrackerConfig() {
+	// Handle pending Raw JSON data before clearing anything
+	if (pendingRawJsonData !== null) {
+		const sanitized = sanitizeParsedData(pendingRawJsonData);
+
+		// Map AI format → swipe store format
+		if (sanitized.userStats) {
+			updateMessageSwipeData("userStats", sanitized.userStats);
+		}
+		if (sanitized.infoBox) {
+			updateMessageSwipeData("infoBox", sanitized.infoBox);
+		}
+		if (sanitized.characters) {
+			updateMessageSwipeData("characterThoughts", sanitized.characters);
+		}
+
+		pendingRawJsonData = null;
+		toastr.success(
+			i18n.getTranslation(
+				"template.trackerEditorModal.rawJsonTab.saveSuccess",
+			),
+		);
+	}
+
 	tempConfig = null; // Clear temp config
 
 	// Apply pending association changes
@@ -872,6 +902,7 @@ function renderEditorUI() {
 	renderInfoBoxTab();
 	renderPresentCharactersTab();
 	renderHistoryPersistenceTab();
+	renderRawJsonTab();
 }
 
 /**
@@ -2079,4 +2110,128 @@ function setupHistoryPersistenceListeners() {
 			extensionSettings.trackerConfig.presentCharacters.thoughts.persistInHistory =
 				$(this).is(":checked");
 		});
+}
+
+/**
+ * Render the Raw JSON tab content.
+ * Shows the latest tracker data in AI format for direct JSON editing.
+ */
+function renderRawJsonTab() {
+	const $container = $("#rpg-editor-tab-rawJson");
+	if (!$container.length) return;
+
+	// Gather existing tracker data from the swipe store
+	const userStats = getTrackerDataForContext("userStats");
+	const infoBox = getTrackerDataForContext("infoBox");
+	const characterThoughts = getTrackerDataForContext("characterThoughts");
+	const relationships = getTrackerDataForContext("relationships");
+
+	// Build the combined object in AI format (characters key, not characterThoughts)
+	const combined = {};
+	if (userStats) combined.userStats = userStats;
+	if (infoBox) combined.infoBox = infoBox;
+	if (characterThoughts) combined.characters = characterThoughts;
+	if (relationships) combined.relationships = relationships;
+
+	const hasData = Object.keys(combined).length > 0;
+
+	if (!hasData) {
+		$container.html(`
+			<div class="rpg-raw-json-empty">
+				<p>${i18n.getTranslation("template.trackerEditorModal.rawJsonTab.noData")}</p>
+			</div>
+		`);
+		return;
+	}
+
+	const jsonStr = JSON.stringify(combined, null, 2);
+	rawJsonOriginal = jsonStr;
+
+	$container.html(`
+		<div class="rpg-raw-json-wrapper">
+			<p class="rpg-raw-json-description">${i18n.getTranslation("template.trackerEditorModal.rawJsonTab.description")}</p>
+			<div class="rpg-raw-json-editor">
+				<textarea id="rpg-raw-json-textarea" class="rpg-raw-json-textarea" spellcheck="false">${escapeHtml(jsonStr)}</textarea>
+				<div id="rpg-raw-json-status" class="rpg-raw-json-status rpg-raw-json-valid">
+					${i18n.getTranslation("template.trackerEditorModal.rawJsonTab.validJson")}
+				</div>
+			</div>
+		</div>
+	`);
+
+	setupRawJsonListeners();
+}
+
+/**
+ * Set up event listeners for the Raw JSON tab textarea.
+ * Validates JSON on input and stores parsed data when valid.
+ */
+function setupRawJsonListeners() {
+	const $textarea = $("#rpg-raw-json-textarea");
+	const $status = $("#rpg-raw-json-status");
+	if (!$textarea.length) return;
+
+	// Initialize with valid state (the original content is valid JSON)
+	pendingRawJsonData = null;
+
+	$textarea.off("input.rawjson").on("input.rawjson", function () {
+		const value = $(this).val().trim();
+
+		if (!value) {
+			$status
+				.removeClass("rpg-raw-json-valid")
+				.addClass("rpg-raw-json-invalid")
+				.text(
+					i18n.getTranslation(
+						"template.trackerEditorModal.rawJsonTab.invalidJson",
+					),
+				);
+			pendingRawJsonData = null;
+			return;
+		}
+
+		try {
+			const parsed = JSON.parse(value);
+
+			// Only mark as pending if the content was actually edited
+			if (value === rawJsonOriginal) {
+				pendingRawJsonData = null;
+			} else {
+				pendingRawJsonData = parsed;
+			}
+
+			$status
+				.removeClass("rpg-raw-json-invalid")
+				.addClass("rpg-raw-json-valid")
+				.text(
+					i18n.getTranslation(
+						"template.trackerEditorModal.rawJsonTab.validJson",
+					),
+				);
+		} catch {
+			pendingRawJsonData = null;
+			$status
+				.removeClass("rpg-raw-json-valid")
+				.addClass("rpg-raw-json-invalid")
+				.text(
+					i18n.getTranslation(
+						"template.trackerEditorModal.rawJsonTab.invalidJson",
+					),
+				);
+		}
+	});
+}
+
+/**
+ * Escape HTML entities for safe insertion into textarea.
+ * @param {string} str - The string to escape
+ * @returns {string} Escaped string
+ */
+function escapeHtml(str) {
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
 }
