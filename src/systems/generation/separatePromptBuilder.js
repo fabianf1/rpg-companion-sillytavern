@@ -273,7 +273,7 @@ function buildSeparateInstructionMessage(selectedSections = null) {
 			if (nestedParts.length > 0) {
 				// Be explicit about the JSON path for nested sub-sections
 				const pathParts = nestedParts.map((s) => `userStats.${s}`);
-				sectionNames.push('"' + pathParts.join('" and "') + '"');
+				sectionNames.push(`"${pathParts.join('" and "')}"`);
 			} else {
 				sectionNames.push('"userStats"');
 			}

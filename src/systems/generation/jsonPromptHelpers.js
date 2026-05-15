@@ -113,26 +113,75 @@ export function buildUserStatsJSONInstruction() {
 
 	// Inventory section
 	if (showInventory) {
-		sections.push(
-			'  "inventory": {\n    "onPerson": [\n      {"name": "Item1", "quantity": X},\n      {"name": "Item2", "quantity": X}\n    ],\n    "stored": {\n      "Location1": [\n        {"name": "Item", "quantity": X}\n      ]\n    },\n    "assets": [\n      {"name": "Asset1", "location": "Location"}\n    ]\n  }',
-		);
+		const inventoryFields = [];
+		inventoryFields.push('  "inventory": {');
+		inventoryFields.push('    "onPerson": [');
+		inventoryFields.push('      {"name": "Item1", "quantity": X},');
+		inventoryFields.push('      {"name": "Item2", "quantity": X}');
+		inventoryFields.push("    ],");
+		inventoryFields.push('    "stored": {');
+		inventoryFields.push('      "Location1": [');
+		inventoryFields.push('        {"name": "Item", "quantity": X}');
+		inventoryFields.push("      ]");
+		inventoryFields.push("    },");
+		inventoryFields.push('    "assets": [');
+		inventoryFields.push('      {"name": "Asset1", "location": "Location"}');
+		inventoryFields.push("    ]");
+		inventoryFields.push("  }");
+		sections.push(inventoryFields.join("\n"));
 	}
 
 	// Appearance section
 	if (showAppearance) {
-		sections.push(
-			'  "appearance": {\n    "clothing": [\n      {"name": "Clothing1"}\n    ],\n    "accessories": [\n      {"name": "accessory1"}\n    ],\n    "physicalFeatures": [\n      {"name": "physicalFeature1"}\n    ],\n    "hair": "Hair Description",\n    "scent": "Scent Description",\n    "posture": "Posture Description",\n    "demeanor": "Demeanor/Expression"\n  }',
+		const appearanceFields = [];
+		appearanceFields.push('  "appearance": {');
+		appearanceFields.push('    "clothing": [');
+		appearanceFields.push('      {"name": "Clothing1"},');
+		appearanceFields.push(
+			'      {"name": "Underwear"}  // ALWAYS include underwear. If unknown: "Unknown underwear". If not wearing any: "No underwear"',
 		);
+		appearanceFields.push("    ],");
+		appearanceFields.push('    "accessories": [');
+		appearanceFields.push('      {"name": "accessory1"}');
+		appearanceFields.push("    ],");
+		appearanceFields.push('    "physicalFeatures": [');
+		appearanceFields.push('      {"name": "physicalFeature1"}');
+		appearanceFields.push("    ],");
+		appearanceFields.push('    "hair": "Hair Description",');
+		appearanceFields.push('    "scent": "Scent Description",');
+		appearanceFields.push('    "posture": "Posture Description",');
+		appearanceFields.push('    "demeanor": "Demeanor/Expression"');
+		appearanceFields.push("  }");
+		sections.push(appearanceFields.join("\n"));
 	}
 
 	// Quests section
 	if (showQuests) {
-		sections.push(
-			'  "quests": {\n    "main": {\n      "title": "QuestTitle",\n      "completed": false,\n      "date": "Date and/or Time",\n      "location": "Location"\n    },\n    "optional": [\n      {\n        "title": "SideQuest1",\n        "completed": false,\n        "date": "Date and/or Time",\n        "location": "Location"\n      }\n    ]\n  }',
+		const questFields = [];
+		questFields.push('  "quests": {');
+		questFields.push('    "main": {');
+		questFields.push('      "title": "QuestTitle",');
+		questFields.push(
+			'      "completed": false,  // If true, consider replacing the main quest with a new one',
 		);
+		questFields.push(
+			'      "date": "Date and/or Time",  // Can also be ongoing or unknown',
+		);
+		questFields.push('      "location": "Location"  // Can also be unknown');
+		questFields.push("    },");
+		questFields.push('    "optional": [');
+		questFields.push("      {");
+		questFields.push('        "title": "SideQuest1",');
+		questFields.push('        "completed": false,');
+		questFields.push('        "date": "Date and/or Time",');
+		questFields.push('        "location": "Location"');
+		questFields.push("      }");
+		questFields.push("    ]");
+		questFields.push("  }");
+		sections.push(questFields.join("\n"));
 	}
 
-	return "{\n" + sections.join(",\n") + "\n}";
+	return `{\n${sections.join(",\n")}\n}`;
 }
 
 /**
@@ -178,8 +227,7 @@ export function buildInfoBoxJSONInstruction() {
 	}
 
 	if (widgets.location?.enabled) {
-		instruction +=
-			(hasFields ? ",\n" : "") + '  "location": {"value": "Location"}';
+		instruction += `${hasFields ? ",\n" : ""}  "location": {"value": "Location"}`;
 		hasFields = true;
 	}
 

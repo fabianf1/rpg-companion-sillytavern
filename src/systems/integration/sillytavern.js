@@ -191,6 +191,9 @@ export async function runTrackerAndRelationshipUpdate(
 			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
 			.prop("disabled", true);
 
+		// Small delay before starting generation.
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+
 		// If only "Relationships" is selected, run the relationship update flow which uses a specialized prompt and API call
 		if (
 			selectedSections &&
