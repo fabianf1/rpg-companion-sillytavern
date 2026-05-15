@@ -545,18 +545,19 @@ function attachQuestEventHandlers() {
 	$questsContainer.find('[data-action="clear-quest"]').on("click", function () {
 		const field = $(this).data("field");
 		if (field === "main") {
-			// Build quests data with cleared main quest
+			// Get full tracker data and modify quests in-place
 			const trackerData = getTrackerDataForContext("userStats");
-			const questsData = trackerData?.quests || { main: null, optional: [] };
-			questsData.main = {
+			if (!trackerData) return;
+
+			trackerData.quests.main = {
 				title: "None",
 				date: "",
 				location: "",
 				completed: false,
 			};
 
-			// Save directly to swipe store
-			updateMessageSwipeData("userStats", questsData);
+			// Save full trackerData to swipe store (not just quests)
+			updateMessageSwipeData("userStats", trackerData);
 			saveChatData();
 			renderQuests();
 		}
@@ -569,18 +570,18 @@ function attachQuestEventHandlers() {
 			const field = $(this).data("field");
 			const index = $(this).data("index");
 
-			// Get current quests data from swipe store
+			// Get full tracker data and modify quests in-place
 			const trackerData = getTrackerDataForContext("userStats");
-			const questsData = trackerData?.quests || { main: null, optional: [] };
+			if (!trackerData) return;
 
 			if (field === "main") {
-				questsData.main = null;
+				trackerData.quests.main = null;
 			} else {
-				questsData.optional.splice(index, 1);
+				trackerData.quests.optional.splice(index, 1);
 			}
 
-			// Save directly to swipe store
-			updateMessageSwipeData("userStats", questsData);
+			// Save full trackerData to swipe store (not just quests)
+			updateMessageSwipeData("userStats", trackerData);
 			saveChatData();
 			renderQuests();
 		});
