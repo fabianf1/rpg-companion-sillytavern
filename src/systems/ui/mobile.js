@@ -642,38 +642,38 @@ export function setupMobileTabs() {
 	if (hasStats) {
 		tabs.push(
 			'<button class="rpg-mobile-tab active" data-tab="stats"><i class="fa-solid fa-chart-bar"></i><span>' +
-				i18n.getTranslation("global.status") +
-				"</span></button>",
+			i18n.getTranslation("global.status") +
+			"</span></button>",
 		);
 	}
 	// Tab 2: Info (Info Box + Character Thoughts)
 	if (hasInfo) {
 		tabs.push(
 			'<button class="rpg-mobile-tab ' +
-				(tabs.length === 0 ? "active" : "") +
-				'" data-tab="info"><i class="fa-solid fa-book"></i><span>' +
-				i18n.getTranslation("global.info") +
-				"</span></button>",
+			(tabs.length === 0 ? "active" : "") +
+			'" data-tab="info"><i class="fa-solid fa-book"></i><span>' +
+			i18n.getTranslation("global.info") +
+			"</span></button>",
 		);
 	}
 	// Tab 3: Inventory
 	if (hasInventory) {
 		tabs.push(
 			'<button class="rpg-mobile-tab ' +
-				(tabs.length === 0 ? "active" : "") +
-				'" data-tab="inventory"><i class="fa-solid fa-box"></i><span>' +
-				i18n.getTranslation("global.inventory") +
-				"</span></button>",
+			(tabs.length === 0 ? "active" : "") +
+			'" data-tab="inventory"><i class="fa-solid fa-box"></i><span>' +
+			i18n.getTranslation("global.inventory") +
+			"</span></button>",
 		);
 	}
 	// Tab 4: Quests
 	if (hasQuests) {
 		tabs.push(
 			'<button class="rpg-mobile-tab ' +
-				(tabs.length === 0 ? "active" : "") +
-				'" data-tab="quests"><i class="fa-solid fa-scroll"></i><span>' +
-				i18n.getTranslation("global.quests") +
-				"</span></button>",
+			(tabs.length === 0 ? "active" : "") +
+			'" data-tab="quests"><i class="fa-solid fa-scroll"></i><span>' +
+			i18n.getTranslation("global.quests") +
+			"</span></button>",
 		);
 	}
 
@@ -689,23 +689,23 @@ export function setupMobileTabs() {
 	// Create tab content wrappers
 	const $statsTab = $(
 		'<div class="rpg-mobile-tab-content ' +
-			(firstTab === "stats" ? "active" : "") +
-			'" data-tab-content="stats"></div>',
+		(firstTab === "stats" ? "active" : "") +
+		'" data-tab-content="stats"></div>',
 	);
 	const $infoTab = $(
 		'<div class="rpg-mobile-tab-content ' +
-			(firstTab === "info" ? "active" : "") +
-			'" data-tab-content="info"></div>',
+		(firstTab === "info" ? "active" : "") +
+		'" data-tab-content="info"></div>',
 	);
 	const $inventoryTab = $(
 		'<div class="rpg-mobile-tab-content ' +
-			(firstTab === "inventory" ? "active" : "") +
-			'" data-tab-content="inventory"></div>',
+		(firstTab === "inventory" ? "active" : "") +
+		'" data-tab-content="inventory"></div>',
 	);
 	const $questsTab = $(
 		'<div class="rpg-mobile-tab-content ' +
-			(firstTab === "quests" ? "active" : "") +
-			'" data-tab-content="quests"></div>',
+		(firstTab === "quests" ? "active" : "") +
+		'" data-tab-content="quests"></div>',
 	);
 
 	// Move sections into their respective tabs (detach to preserve event handlers)
@@ -1718,10 +1718,10 @@ function hexToRgb(hex) {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 	return result
 		? {
-				r: parseInt(result[1], 16),
-				g: parseInt(result[2], 16),
-				b: parseInt(result[3], 16),
-			}
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16),
+		}
 		: null;
 }
 

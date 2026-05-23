@@ -611,9 +611,9 @@ export function formatHistoricalTrackerData(
 			) {
 				const skillsList = Array.isArray(userStatsData.skills)
 					? userStatsData.skills
-							.map((s) => getValue(s))
-							.filter((s) => s)
-							.join(", ")
+						.map((s) => getValue(s))
+						.filter((s) => s)
+						.join(", ")
 					: getValue(userStatsData.skills);
 				if (skillsList) statsFormatted += `Skills: ${skillsList}, `;
 			}

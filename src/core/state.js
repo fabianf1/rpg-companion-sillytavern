@@ -405,25 +405,6 @@ export function abortCurrentGeneration() {
 }
 
 /**
- * Debug logs array for troubleshooting
- */
-export const debugLogs = [];
-
-/**
- * Add a debug log entry
- * @param {string} message - The log message
- * @param {any} data - Optional data to log
- */
-export function addDebugLog(message, data = null) {
-	const timestamp = new Date().toISOString();
-	debugLogs.push({ timestamp, message, data });
-	// Keep only last 100 logs
-	if (debugLogs.length > 100) {
-		debugLogs.shift();
-	}
-}
-
-/**
  * Feature flags for gradual rollout of new features
  */
 export const FEATURE_FLAGS = {

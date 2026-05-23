@@ -17,7 +17,6 @@ import {
 } from "../../core/persistence.js";
 import {
 	$thoughtsContainer,
-	addDebugLog,
 	extensionSettings,
 	FALLBACK_AVATAR_DATA_URI,
 } from "../../core/state.js";
@@ -45,12 +44,11 @@ function getLockIconHtml(tracker, path) {
 }
 
 /**
- * Helper to log to both console and debug logs array
+ * Helper to log debug messages when debug mode is enabled
  */
 function debugLog(message, data = null) {
-	// console.log(message, data || '');
 	if (extensionSettings.debugMode) {
-		addDebugLog(message, data);
+		console.debug('[RPG Companion]', message, data ?? '');
 	}
 }
 

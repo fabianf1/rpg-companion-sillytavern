@@ -3,17 +3,16 @@
  * Handles parsing of AI responses to extract tracker data
  * Supports both legacy text format and new v3 JSON format
  */
-import { addDebugLog, extensionSettings } from "../../core/state.js";
+import { extensionSettings } from "../../core/state.js";
 import { convertTimeFormat } from "../../utils/itemParser.js";
 import { repairJSON } from "../../utils/jsonRepair.js";
 
 /**
- * Helper to log to both console and debug logs array
+ * Helper to log debug messages when debug mode is enabled
  */
 function debugLog(message, data = null) {
-	// console.log(message, data || '');
 	if (extensionSettings.debugMode) {
-		addDebugLog(message, data);
+		console.debug('[RPG Companion]', message, data ?? '');
 	}
 }
 
@@ -362,14 +361,14 @@ function sanitizeInfoBox(infoBox) {
 			};
 			console.log("[RPG Parser] Migrated temperature to outdoor format");
 		}
-		
+
 		// Filter top-level temperature keys
 		result.temperature = filterObjectKeys(
 			result.temperature,
 			INFO_BOX_TEMPERATURE_KEYS,
 			"infoBox.temperature",
 		);
-		
+
 		// Sanitize outdoor temperature
 		if (result.temperature.outdoor && typeof result.temperature.outdoor === "object") {
 			result.temperature.outdoor = filterObjectKeys(
@@ -378,7 +377,7 @@ function sanitizeInfoBox(infoBox) {
 				"infoBox.temperature.outdoor",
 			);
 		}
-		
+
 		// Sanitize indoor temperature (optional)
 		if (result.temperature.indoor && typeof result.temperature.indoor === "object") {
 			result.temperature.indoor = filterObjectKeys(
