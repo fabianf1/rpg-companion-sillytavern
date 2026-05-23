@@ -16,6 +16,24 @@ import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { updateFabWidgets } from "../ui/mobile.js";
 
 /**
+ * Helper to convert temperature between Celsius and Fahrenheit
+ * @param {number} value - Temperature value
+ * @param {string} from - Source unit ("C" or "F")
+ * @param {string} to - Target unit ("C" or "F")
+ * @returns {number} Converted temperature value (rounded)
+ */
+function convertTemperature(value, from, to) {
+	if (from === to) return value;
+	if (from === "C" && to === "F") {
+		return Math.round((value * 9) / 5 + 32);
+	}
+	if (from === "F" && to === "C") {
+		return Math.round(((value - 32) * 5) / 9);
+	}
+	return value;
+}
+
+/**
  * Helper to generate lock icon HTML if setting is enabled
  * @param {string} tracker - Tracker name
  * @param {string} path - Item path
@@ -34,22 +52,8 @@ function getLockIconHtml(tracker, path) {
 // Constants
 const TRACKER_NAME = "infoBox";
 const MAX_RECENT_EVENTS = 3;
-const MAX_LOCATION_CHARS = 100;
 const EVENT_FIELDS = ["event1", "event2", "event3"];
 const DATE_FIELDS = ["weekday", "month", "year"];
-
-/**
- * Helper to convert temperature between Celsius and Fahrenheit
- * @param {number} value - Temperature value
- * @param {string} fromUnit - Source unit ('C' or 'F')
- * @param {string} toUnit - Target unit ('C' or 'F')
- * @returns {number} Converted temperature value
- */
-function convertTemperature(value, fromUnit, toUnit) {
-	if (fromUnit === toUnit) return value;
-	if (toUnit === "F") return Math.round((value * 9) / 5 + 32);
-	return Math.round(((value - 32) * 5) / 9);
-}
 
 /**
  * Renders the info box as a visual dashboard with calendar, weather, temperature, clock, and map widgets.
@@ -90,22 +94,33 @@ export function renderInfoBox() {
 		weekday: "",
 		month: "",
 		year: "",
-		weatherEmoji: "",
-		weatherForecast: "",
-		temperature: "",
-		tempValue: 0,
+		weatherIcon: "",
+		weatherCondition: "",
+		tempOutdoor: "",
+		tempOutdoorValue: 0,
+		tempOutdoorUnit: "C",
+		tempIndoor: "",
+		tempIndoorValue: 0,
+		tempIndoorUnit: "C",
+		tempIndoorClimate: "",
+		hasIndoorTemp: false,
 		timeStart: "",
 		timeEnd: "",
 		location: "",
 	};
 
-	// Extract from v3 JSON structure
-	data.weatherEmoji = infoBoxData.weather?.emoji || "";
-	data.weatherForecast = infoBoxData.weather?.forecast || "";
-	data.temperature = infoBoxData.temperature
-		? `${infoBoxData.temperature.value}°${infoBoxData.temperature.unit}`
-		: "";
-	data.tempValue = infoBoxData.temperature?.value || 0;
+	// Extract from v3 JSON structure (new format: icon/condition)
+	data.weatherIcon = infoBoxData.weather?.icon || "";
+	data.weatherCondition = infoBoxData.weather?.condition || "";
+	// Temperature: new nested structure with outdoor/indoor
+	data.tempOutdoorValue = infoBoxData.temperature?.outdoor?.value || 0;
+	data.tempOutdoorUnit = infoBoxData.temperature?.outdoor?.unit || "C";
+	data.tempOutdoor = data.tempOutdoorValue ? `${data.tempOutdoorValue}°${data.tempOutdoorUnit}` : "";
+	data.tempIndoorValue = infoBoxData.temperature?.indoor?.value || 0;
+	data.tempIndoorUnit = infoBoxData.temperature?.indoor?.unit || "C";
+	data.tempIndoor = data.tempIndoorValue ? `${data.tempIndoorValue}°${data.tempIndoorUnit}` : "";
+	data.tempIndoorClimate = infoBoxData.temperature?.indoor?.climate || "";
+	data.hasIndoorTemp = !!infoBoxData.temperature?.indoor;
 	data.timeStart = infoBoxData.time?.start || "";
 	data.timeEnd = infoBoxData.time?.end || "";
 	data.location = infoBoxData.location?.value || "";
@@ -164,78 +179,164 @@ export function renderInfoBox() {
         `);
 	}
 
-	// Weather widget - show if enabled
+	// Weather widget - combined with outdoor temperature if enabled
 	if (config?.widgets?.weather?.enabled) {
-		const weatherEmoji = data.weatherEmoji || "🌤️";
-		const weatherForecast =
-			data.weatherForecast || i18n.getTranslation("infoBox.weatherFallback");
+		const weatherIcon = data.weatherIcon || "🌤️";
+		const weatherCondition =
+			data.weatherCondition || i18n.getTranslation("infoBox.weatherFallback");
 		const weatherLockIconHtml = getLockIconHtml(TRACKER_NAME, "weather");
 
+		// Check if temperature is also enabled - show outdoor temp beside weather
+		let outdoorTempHtml = "";
+		if (config?.widgets?.temperature?.enabled) {
+			const preferredUnit = config.widgets.temperature.unit || "C";
+
+			// Process outdoor temperature
+			let outdoorValue = data.tempOutdoorValue || (preferredUnit === "F" ? 68 : 20);
+			let outdoorUnit = data.tempOutdoorUnit || preferredUnit;
+
+			// Apply unit conversion if needed
+			if (data.tempOutdoorValue) {
+				if (preferredUnit === "F" && outdoorUnit === "C") {
+					outdoorValue = convertTemperature(outdoorValue, "C", "F");
+					outdoorUnit = "F";
+				} else if (preferredUnit === "C" && outdoorUnit === "F") {
+					outdoorValue = convertTemperature(outdoorValue, "F", "C");
+					outdoorUnit = "C";
+				}
+			}
+
+			const outdoorLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature.outdoor");
+			const display = `${outdoorValue}°${outdoorUnit}`;
+
+			outdoorTempHtml = `
+                <div class="rpg-weather-temp">
+                    <div class="rpg-thermometer-mini">
+                        <div class="rpg-thermometer-mini-tube">
+                            <div class="rpg-thermometer-mini-fill"></div>
+                        </div>
+                    </div>
+                    <div class="rpg-temp-value rpg-editable" contenteditable="true" data-field="temperatureOutdoor" title="${i18n.getTranslation("infoBox.clickToEdit")}">${display}</div>
+                    ${outdoorLockIconHtml}
+                </div>
+            `;
+		}
+
 		row1Widgets.push(`
-            <div class="rpg-dashboard-widget rpg-weather-widget">
+            <div class="rpg-dashboard-widget rpg-weather-widget rpg-weather-with-temp">
                 ${weatherLockIconHtml}
-                <div class="rpg-weather-icon rpg-editable" contenteditable="true" data-field="weatherEmoji" title="${i18n.getTranslation("userStats.clickToEditEmoji")}">${weatherEmoji}</div>
-                <div class="rpg-weather-forecast rpg-editable" contenteditable="true" data-field="weatherForecast" title="${i18n.getTranslation("infoBox.clickToEdit")}">${weatherForecast}</div>
+                <div class="rpg-weather-content">
+                    <div class="rpg-weather-icon rpg-editable" contenteditable="true" data-field="weatherIcon" title="${i18n.getTranslation("userStats.clickToEditEmoji")}">${weatherIcon}</div>
+                    <div class="rpg-weather-condition rpg-editable" contenteditable="true" data-field="weatherCondition" title="${i18n.getTranslation("infoBox.clickToEdit")}">${weatherCondition}</div>
+                </div>
+                ${outdoorTempHtml}
+            </div>
+        `);
+	} else if (config?.widgets?.temperature?.enabled) {
+		// Temperature widget standalone if weather is disabled
+		const preferredUnit = config.widgets.temperature.unit || "C";
+
+		// Helper to build a thermometer gauge
+		const buildThermometerGauge = (value, unit, label, lockIcon, editableField, climate = "") => {
+			const inCelsius = unit === "F" ? convertTemperature(value, "F", "C") : value;
+			const percent = Math.min(100, Math.max(0, ((inCelsius + 20) / 60) * 100));
+			const color = inCelsius < 10 ? "#4a90e2" : inCelsius < 25 ? "#67c23a" : "#e94560";
+			const display = `${value}°${unit}`;
+			const climateHtml = climate ? `<div class="rpg-temp-climate">${climate}</div>` : "";
+
+			return `
+                <div class="rpg-temp-gauge">
+                    <div class="rpg-temp-gauge-header">${lockIcon} <span class="rpg-temp-gauge-label">${label}</span></div>
+                    <div class="rpg-thermometer">
+                        <div class="rpg-thermometer-bulb"></div>
+                        <div class="rpg-thermometer-tube">
+                            <div class="rpg-thermometer-fill" style="height: ${percent}%; background: ${color}"></div>
+                        </div>
+                    </div>
+                    <div class="rpg-temp-value rpg-editable" contenteditable="true" data-field="${editableField}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${display}</div>
+                    ${climateHtml}
+                </div>
+            `;
+		};
+
+		// --- Outdoor temperature ---
+		let outdoorValue = data.tempOutdoorValue || (preferredUnit === "F" ? 68 : 20);
+		let outdoorUnit = data.tempOutdoorUnit || preferredUnit;
+
+		// Apply unit conversion if needed
+		if (data.tempOutdoorValue) {
+			if (preferredUnit === "F" && outdoorUnit === "C") {
+				outdoorValue = convertTemperature(outdoorValue, "C", "F");
+				outdoorUnit = "F";
+			} else if (preferredUnit === "C" && outdoorUnit === "F") {
+				outdoorValue = convertTemperature(outdoorValue, "F", "C");
+				outdoorUnit = "C";
+			}
+		}
+
+		const outdoorLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature.outdoor");
+		const outdoorGauge = buildThermometerGauge(outdoorValue, outdoorUnit, "🌤️", outdoorLockIconHtml, "temperatureOutdoor");
+
+		// --- Indoor temperature (optional) ---
+		let indoorGauge = "";
+		if (data.hasIndoorTemp) {
+			let indoorValue = data.tempIndoorValue || 20;
+			let indoorUnit = data.tempIndoorUnit || preferredUnit;
+
+			// Apply unit conversion if needed
+			if (data.tempIndoorValue) {
+				if (preferredUnit === "F" && indoorUnit === "C") {
+					indoorValue = convertTemperature(indoorValue, "C", "F");
+					indoorUnit = "F";
+				} else if (preferredUnit === "C" && indoorUnit === "F") {
+					indoorValue = convertTemperature(indoorValue, "F", "C");
+					indoorUnit = "C";
+				}
+			}
+
+			const indoorLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature.indoor");
+			indoorGauge = buildThermometerGauge(indoorValue, indoorUnit, "🏠", indoorLockIconHtml, "temperatureIndoor", data.tempIndoorClimate);
+		}
+
+		row1Widgets.push(`
+            <div class="rpg-dashboard-widget rpg-temp-widget${data.hasIndoorTemp ? " rpg-temp-has-indoor" : ""}">
+                <div class="rpg-temp-gauges">
+                    ${outdoorGauge}
+                    ${indoorGauge}
+                </div>
             </div>
         `);
 	}
 
-	// Temperature widget - show if enabled
-	if (config?.widgets?.temperature?.enabled) {
-		let tempDisplay = data.temperature || "20°C";
-		let tempValue = data.tempValue || 20;
-
-		// Apply temperature unit conversion
+	// Indoor temperature widget - separate block (only if enabled, weather is enabled, and indoor temp exists)
+	if (config?.widgets?.temperature?.enabled && config?.widgets?.weather?.enabled && data.hasIndoorTemp) {
 		const preferredUnit = config.widgets.temperature.unit || "C";
-		if (data.temperature) {
-			// Detect current unit in the data
-			const isCelsius = tempDisplay.includes("°C");
-			const isFahrenheit = tempDisplay.includes("°F");
 
-			if (preferredUnit === "F" && isCelsius) {
-				// Convert C to F
-				const fahrenheit = Math.round((tempValue * 9) / 5 + 32);
-				tempDisplay = `${fahrenheit}°F`;
-				tempValue = fahrenheit;
-			} else if (preferredUnit === "C" && isFahrenheit) {
-				// Convert F to C
-				const celsius = Math.round(((tempValue - 32) * 5) / 9);
-				tempDisplay = `${celsius}°C`;
-				tempValue = celsius;
+		// Process indoor temperature
+		let indoorValue = data.tempIndoorValue || 20;
+		let indoorUnit = data.tempIndoorUnit || preferredUnit;
+
+		// Apply unit conversion if needed
+		if (data.tempIndoorValue) {
+			if (preferredUnit === "F" && indoorUnit === "C") {
+				indoorValue = convertTemperature(indoorValue, "C", "F");
+				indoorUnit = "F";
+			} else if (preferredUnit === "C" && indoorUnit === "F") {
+				indoorValue = convertTemperature(indoorValue, "F", "C");
+				indoorUnit = "C";
 			}
-		} else {
-			// No data yet, use default for preferred unit
-			tempDisplay = preferredUnit === "F" ? "68°F" : "20°C";
-			tempValue = preferredUnit === "F" ? 68 : 20;
 		}
 
-		// Calculate thermometer display (convert to Celsius for consistent thresholds)
-		const tempInCelsius =
-			preferredUnit === "F"
-				? Math.round(((tempValue - 32) * 5) / 9)
-				: tempValue;
-		const tempPercent = Math.min(
-			100,
-			Math.max(0, ((tempInCelsius + 20) / 60) * 100),
-		);
-		const tempColor =
-			tempInCelsius < 10
-				? "#4a90e2"
-				: tempInCelsius < 25
-					? "#67c23a"
-					: "#e94560";
-		const tempLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature");
+		const indoorLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature.indoor");
+		const display = `${indoorValue}°${indoorUnit}`;
+		const climateHtml = data.tempIndoorClimate ? `<div class="rpg-indoor-climate">${data.tempIndoorClimate}</div>` : "";
 
 		row1Widgets.push(`
-            <div class="rpg-dashboard-widget rpg-temp-widget">
-                ${tempLockIconHtml}
-                <div class="rpg-thermometer">
-                    <div class="rpg-thermometer-bulb"></div>
-                    <div class="rpg-thermometer-tube">
-                        <div class="rpg-thermometer-fill" style="height: ${tempPercent}%; background: ${tempColor}"></div>
-                    </div>
-                </div>
-                <div class="rpg-temp-value rpg-editable" contenteditable="true" data-field="temperature" title="${i18n.getTranslation("infoBox.clickToEdit")}">${tempDisplay}</div>
+            <div class="rpg-dashboard-widget rpg-indoor-temp-widget">
+                ${indoorLockIconHtml}
+                <div class="rpg-indoor-temp-header">🏠</div>
+                <div class="rpg-temp-value rpg-editable" contenteditable="true" data-field="temperatureIndoor" title="${i18n.getTranslation("infoBox.clickToEdit")}">${display}</div>
+                ${climateHtml}
             </div>
         `);
 	}
@@ -491,19 +592,29 @@ function updateInfoBoxField(field, value) {
 	}
 
 	// Update the appropriate field based on v3 structure
-	if (field === "weatherEmoji") {
+	if (field === "weatherIcon") {
 		if (!infoBoxData.weather) infoBoxData.weather = {};
-		infoBoxData.weather.emoji = value;
-	} else if (field === "weatherForecast") {
+		infoBoxData.weather.icon = value;
+	} else if (field === "weatherCondition") {
 		if (!infoBoxData.weather) infoBoxData.weather = {};
-		infoBoxData.weather.forecast = value;
-	} else if (field === "temperature") {
-		// Parse temperature value and unit
+		infoBoxData.weather.condition = value;
+	} else if (field === "temperatureOutdoor") {
+		// Parse temperature value and unit for outdoor
 		const tempMatch = value.match(/(-?\d+)\s*°?\s*([CF]?)/i);
 		if (tempMatch) {
 			if (!infoBoxData.temperature) infoBoxData.temperature = {};
-			infoBoxData.temperature.value = parseInt(tempMatch[1]);
-			infoBoxData.temperature.unit = (tempMatch[2] || "C").toUpperCase();
+			if (!infoBoxData.temperature.outdoor) infoBoxData.temperature.outdoor = {};
+			infoBoxData.temperature.outdoor.value = parseInt(tempMatch[1]);
+			infoBoxData.temperature.outdoor.unit = (tempMatch[2] || "C").toUpperCase();
+		}
+	} else if (field === "temperatureIndoor") {
+		// Parse temperature value and unit for indoor
+		const tempMatch = value.match(/(-?\d+)\s*°?\s*([CF]?)/i);
+		if (tempMatch) {
+			if (!infoBoxData.temperature) infoBoxData.temperature = {};
+			if (!infoBoxData.temperature.indoor) infoBoxData.temperature.indoor = {};
+			infoBoxData.temperature.indoor.value = parseInt(tempMatch[1]);
+			infoBoxData.temperature.indoor.unit = (tempMatch[2] || "C").toUpperCase();
 		}
 	} else if (field === "timeStart") {
 		if (!infoBoxData.time) infoBoxData.time = {};

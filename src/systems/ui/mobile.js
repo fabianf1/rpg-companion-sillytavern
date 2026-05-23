@@ -1405,22 +1405,22 @@ export function updateFabWidgets() {
 	// Small widgets spread around other positions
 
 	// Weather Icon (small)
-	if (widgetSettings.weatherIcon?.enabled && infoData?.weather?.emoji) {
+	if (widgetSettings.weatherIcon?.enabled && infoData?.weather?.icon) {
 		widgets.push({
 			type: "small",
-			html: `<div class="rpg-fab-widget rpg-fab-widget-weather-icon" title="Weather">${infoData.weather.emoji}</div>`,
+			html: `<div class="rpg-fab-widget rpg-fab-widget-weather-icon" title="Weather">${infoData.weather.icon}</div>`,
 		});
 	}
 
 	// Weather Description (small)
-	if (widgetSettings.weatherDesc?.enabled && infoData?.weather?.forecast) {
+	if (widgetSettings.weatherDesc?.enabled && infoData?.weather?.condition) {
 		const desc =
-			infoData.weather.forecast.length > 15
-				? infoData.weather.forecast.substring(0, 13) + "…"
-				: infoData.weather.forecast;
+			infoData.weather.condition.length > 15
+				? infoData.weather.condition.substring(0, 13) + "…"
+				: infoData.weather.condition;
 		widgets.push({
 			type: "small",
-			html: `<div class="rpg-fab-widget rpg-fab-widget-weather-desc" title="${infoData.weather.forecast}">${desc}</div>`,
+			html: `<div class="rpg-fab-widget rpg-fab-widget-weather-desc" title="${infoData.weather.condition}">${desc}</div>`,
 		});
 	}
 

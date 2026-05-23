@@ -76,10 +76,10 @@ export function buildUserStatsJSONInstruction() {
 				const fieldKey = toFieldKey(fieldName);
 				const comma =
 					i === customFields.length - 1 &&
-					!userStatsConfig.statusSection.showMoodEmoji
+						!userStatsConfig.statusSection.showMoodEmoji
 						? ""
 						: userStatsConfig.statusSection.showMoodEmoji ||
-								i < customFields.length - 1
+							i < customFields.length - 1
 							? ",\n"
 							: "\n";
 				if (i === 0 && userStatsConfig.statusSection.showMoodEmoji) {
@@ -207,15 +207,17 @@ export function buildInfoBoxJSONInstruction() {
 		const weatherHint = getWeatherKeywordsAsPromptString(currentLang);
 		instruction +=
 			(hasFields ? ",\n" : "") +
-			`  "weather": {"emoji": "Weather Emoji", "forecast": "Forecast"}  // ${weatherHint}`;
+			`  "weather": {"icon": "Weather Emoji", "condition": "Outdoor weather condition"}  // OUTSIDE weather only - ${weatherHint}`;
 		hasFields = true;
 	}
 
 	if (widgets.temperature?.enabled) {
 		const unit = widgets.temperature.unit === "F" ? "F" : "C";
+		// Show BOTH examples so LLM knows the full structure
 		instruction +=
 			(hasFields ? ",\n" : "") +
-			`  "temperature": {"value": X, "unit": "${unit}"}`;
+			`  "temperature": {"outdoor": {"value": X, "unit": "${unit}"}}  // outdoor always required\n` +
+			`  // If indoors: add "indoor": {"value": Y, "unit": "${unit}", "climate": "warm/cozy/etc"}`;
 		hasFields = true;
 	}
 

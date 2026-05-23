@@ -246,8 +246,8 @@ function getCurrentWeather() {
 		const parsed =
 			typeof infoBoxData === "object" ? infoBoxData : JSON.parse(infoBoxData);
 		if (parsed?.weather) {
-			// Return the forecast text from the weather object
-			return parsed.weather.forecast || parsed.weather.emoji || null;
+			// Return the condition text from the weather object (new: icon/condition)
+			return parsed.weather.condition || parsed.weather.icon || null;
 		}
 	} catch (_e) {
 		// Not JSON, try old text format

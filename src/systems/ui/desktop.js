@@ -61,14 +61,14 @@ export function updateStripWidgets() {
 
 	// Weather Icon Widget (with description)
 	const $weatherWidget = $container.find(".rpg-strip-widget-weather");
-	if (widgetSettings.weatherIcon?.enabled && infoData?.weather?.emoji) {
-		$weatherWidget.find(".rpg-strip-widget-icon").text(infoData.weather.emoji);
+	if (widgetSettings.weatherIcon?.enabled && infoData?.weather?.icon) {
+		$weatherWidget.find(".rpg-strip-widget-icon").text(infoData.weather.icon);
 		// Show weather description truncated
-		const forecast = infoData.weather.forecast || "";
-		const displayForecast =
-			forecast.length > 12 ? forecast.substring(0, 10) + "…" : forecast;
-		$weatherWidget.find(".rpg-strip-widget-desc").text(displayForecast);
-		$weatherWidget.attr("title", forecast || "Weather");
+		const condition = infoData.weather.condition || "";
+		const displayCondition =
+			condition.length > 12 ? condition.substring(0, 10) + "…" : condition;
+		$weatherWidget.find(".rpg-strip-widget-desc").text(displayCondition);
+		$weatherWidget.attr("title", condition || "Weather");
 		$weatherWidget.addClass("rpg-strip-widget-visible");
 	} else {
 		$weatherWidget.removeClass("rpg-strip-widget-visible");

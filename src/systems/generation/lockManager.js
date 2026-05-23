@@ -237,8 +237,17 @@ function applyInfoBoxLocks(data, lockedItems) {
 		data.weather = { ...data.weather, locked: true };
 	}
 
-	if (lockedItems.temperature && data.temperature) {
-		data.temperature = { ...data.temperature, locked: true };
+	// Temperature locking - handle nested outdoor/indoor structure
+	// For backward compatibility, also check "temperature" for old-format locks
+	if (lockedItems.temperature?.outdoor && data.temperature?.outdoor) {
+		data.temperature.outdoor = { ...data.temperature.outdoor, locked: true };
+	}
+	if (lockedItems.temperature?.indoor && data.temperature?.indoor) {
+		data.temperature.indoor = { ...data.temperature.indoor, locked: true };
+	}
+	// Legacy: if temperature is locked as a whole, lock outdoor
+	if (lockedItems.temperature === true && data.temperature?.outdoor) {
+		data.temperature.outdoor = { ...data.temperature.outdoor, locked: true };
 	}
 
 	if (lockedItems.time && data.time) {
@@ -866,6 +875,18 @@ function restoreInfoBox(newData, prevData, lockedItems) {
 			console.log("[RPG Lock Manager] Restoring info box field:", field);
 			result[field] = { ...prevData[field] };
 		}
+	}
+
+	// Handle nested temperature locking (outdoor/indoor)
+	if (lockedItems.temperature?.outdoor && prevData.temperature?.outdoor) {
+		console.log("[RPG Lock Manager] Restoring temperature.outdoor");
+		result.temperature = result.temperature || {};
+		result.temperature.outdoor = { ...prevData.temperature.outdoor };
+	}
+	if (lockedItems.temperature?.indoor && prevData.temperature?.indoor) {
+		console.log("[RPG Lock Manager] Restoring temperature.indoor");
+		result.temperature = result.temperature || {};
+		result.temperature.indoor = { ...prevData.temperature.indoor };
 	}
 
 	// console.log('[RPG Lock Manager] === restoreInfoBox END ===');

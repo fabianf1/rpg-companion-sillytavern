@@ -77,9 +77,24 @@ export function getValue(field) {
 			return `${getValue(field.start)} - ${getValue(field.end)}`;
 		}
 
-		// Weather object: {emoji, forecast}
-		if ("emoji" in field && "forecast" in field) {
-			return `${getValue(field.emoji)} ${getValue(field.forecast)}`;
+		// Weather object: {icon, condition} (new format)
+		if ("icon" in field && "condition" in field) {
+			return `${getValue(field.icon)} ${getValue(field.condition)}`;
+		}
+
+		// Temperature object: {outdoor, indoor?} (new format)
+		if ("outdoor" in field) {
+			const outdoor = field.outdoor;
+			const indoor = field.indoor;
+			const outdoorStr = outdoor
+				? `${getValue(outdoor.value)}°${getValue(outdoor.unit)}`
+				: "";
+			if (indoor) {
+				const indoorStr = `${getValue(indoor.value)}°${getValue(indoor.unit)}`;
+				const climateStr = indoor.climate ? ` (${indoor.climate})` : "";
+				return `${outdoorStr} (outdoor), ${indoorStr}${climateStr} (indoor)`;
+			}
+			return outdoorStr;
 		}
 
 		// Generic object fallback: create key-value pairs for small objects

@@ -75,8 +75,10 @@ const INFO_BOX_KEYS = [
 
 /** Keys allowed in infoBox sub-objects */
 const INFO_BOX_DATE_KEYS = ["value"];
-const INFO_BOX_WEATHER_KEYS = ["emoji", "forecast"];
-const INFO_BOX_TEMPERATURE_KEYS = ["value", "unit"];
+const INFO_BOX_WEATHER_KEYS = ["icon", "condition"];
+const INFO_BOX_TEMPERATURE_KEYS = ["outdoor", "indoor"];
+const INFO_BOX_TEMPERATURE_OUTDOOR_KEYS = ["value", "unit"];
+const INFO_BOX_TEMPERATURE_INDOOR_KEYS = ["value", "unit", "climate"];
 const INFO_BOX_TIME_KEYS = ["start", "end"];
 const INFO_BOX_LOCATION_KEYS = ["value"];
 
@@ -329,8 +331,19 @@ function sanitizeInfoBox(infoBox) {
 		);
 	}
 
-	// Sanitize weather
+	// Sanitize weather (with migration from old format)
 	if (result.weather && typeof result.weather === "object") {
+		// Migrate old format: {emoji, forecast} -> {icon, condition}
+		if ("emoji" in result.weather && !("icon" in result.weather)) {
+			result.weather.icon = result.weather.emoji;
+			delete result.weather.emoji;
+			console.log("[RPG Parser] Migrated weather.emoji -> weather.icon");
+		}
+		if ("forecast" in result.weather && !("condition" in result.weather)) {
+			result.weather.condition = result.weather.forecast;
+			delete result.weather.forecast;
+			console.log("[RPG Parser] Migrated weather.forecast -> weather.condition");
+		}
 		result.weather = filterObjectKeys(
 			result.weather,
 			INFO_BOX_WEATHER_KEYS,
@@ -338,13 +351,42 @@ function sanitizeInfoBox(infoBox) {
 		);
 	}
 
-	// Sanitize temperature
+	// Sanitize temperature (with migration from old format)
 	if (result.temperature && typeof result.temperature === "object") {
+		// Migrate old format: {value, unit} -> {outdoor: {value, unit}}
+		if ("value" in result.temperature && !("outdoor" in result.temperature)) {
+			const oldValue = result.temperature.value;
+			const oldUnit = result.temperature.unit || "C";
+			result.temperature = {
+				outdoor: { value: oldValue, unit: oldUnit }
+			};
+			console.log("[RPG Parser] Migrated temperature to outdoor format");
+		}
+		
+		// Filter top-level temperature keys
 		result.temperature = filterObjectKeys(
 			result.temperature,
 			INFO_BOX_TEMPERATURE_KEYS,
 			"infoBox.temperature",
 		);
+		
+		// Sanitize outdoor temperature
+		if (result.temperature.outdoor && typeof result.temperature.outdoor === "object") {
+			result.temperature.outdoor = filterObjectKeys(
+				result.temperature.outdoor,
+				INFO_BOX_TEMPERATURE_OUTDOOR_KEYS,
+				"infoBox.temperature.outdoor",
+			);
+		}
+		
+		// Sanitize indoor temperature (optional)
+		if (result.temperature.indoor && typeof result.temperature.indoor === "object") {
+			result.temperature.indoor = filterObjectKeys(
+				result.temperature.indoor,
+				INFO_BOX_TEMPERATURE_INDOOR_KEYS,
+				"infoBox.temperature.indoor",
+			);
+		}
 	}
 
 	// Sanitize time
