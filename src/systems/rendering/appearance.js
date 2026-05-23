@@ -4,42 +4,16 @@
  * TODO: Handle quantity for accessories (e.g. "2 rings")
  */
 
+import { getLockIconHtml } from "../../utils/lockIcon.js";
+import { escapeHtml } from "../../utils/html.js";
 import { i18n } from "../../core/i18n.js";
 import {
 	saveSettings,
 	updateMessageSwipeData,
 } from "../../core/persistence.js";
 import { $appearanceContainer, extensionSettings } from "../../core/state.js";
-import { isItemLocked, setItemLock } from "../generation/lockManager.js";
+import { setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
-
-/**
- * Helper to generate lock icon HTML if setting is enabled
- * @param {string} tracker - Tracker name
- * @param {string} path - Item path
- * @returns {string} Lock icon HTML or empty string
- */
-function getLockIconHtml(tracker, path) {
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (!showLockIcons) return "";
-
-	const isLocked = isItemLocked(tracker, path);
-	const lockIcon = isLocked ? "🔒" : "🔓";
-	const lockTitle = isLocked ? "Locked" : "Unlocked";
-	const lockedClass = isLocked ? " locked" : "";
-	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
-}
-
-/**
- * HTML escape helper
- * @param {string} text - Text to escape
- * @returns {string} Escaped HTML
- */
-function escapeHtml(text) {
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
 
 /**
  * Helper to render item cards for array-based appearance fields

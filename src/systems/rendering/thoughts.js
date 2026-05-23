@@ -21,27 +21,9 @@ import {
 	FALLBACK_AVATAR_DATA_URI,
 } from "../../core/state.js";
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
+import { getLockIconHtml } from "../../utils/lockIcon.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
-
-/**
- * Helper to generate lock icon HTML if setting is enabled
- * @param {string} tracker - Tracker name
- * @param {string} path - Item path
- * @returns {string} Lock icon HTML or empty string
- */
-function getLockIconHtml(tracker, path) {
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (!showLockIcons) return "";
-
-	const isLocked = isItemLocked(tracker, path);
-	const lockIcon = isLocked ? "🔒" : "🔓";
-	const lockTitle = isLocked
-		? i18n.getTranslation("thoughts.locked")
-		: i18n.getTranslation("thoughts.unlocked");
-	const lockedClass = isLocked ? " locked" : "";
-	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
-}
 
 /**
  * Helper to log debug messages when debug mode is enabled

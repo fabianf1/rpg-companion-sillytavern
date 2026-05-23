@@ -11,44 +11,13 @@ import {
 } from "../../core/persistence.js";
 import { $infoBoxContainer, extensionSettings } from "../../core/state.js";
 import { convertTimeFormat } from "../../utils/itemParser.js";
-import { isItemLocked } from "../generation/lockManager.js";
+import { setItemLock, isItemLocked } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { updateFabWidgets } from "../ui/mobile.js";
+import { escapeHtml } from "../../utils/html.js";
+import { getLockIconHtml } from "../../utils/lockIcon.js";
+import { convertTemperature } from "../../utils/format.js";
 
-/**
- * Helper to convert temperature between Celsius and Fahrenheit
- * @param {number} value - Temperature value
- * @param {string} from - Source unit ("C" or "F")
- * @param {string} to - Target unit ("C" or "F")
- * @returns {number} Converted temperature value (rounded)
- */
-function convertTemperature(value, from, to) {
-	if (from === to) return value;
-	if (from === "C" && to === "F") {
-		return Math.round((value * 9) / 5 + 32);
-	}
-	if (from === "F" && to === "C") {
-		return Math.round(((value - 32) * 5) / 9);
-	}
-	return value;
-}
-
-/**
- * Helper to generate lock icon HTML if setting is enabled
- * @param {string} tracker - Tracker name
- * @param {string} path - Item path
- * @returns {string} Lock icon HTML or empty string
- */
-function getLockIconHtml(tracker, path) {
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (!showLockIcons) return "";
-
-	const isLocked = isItemLocked(tracker, path);
-	const lockIcon = isLocked ? "🔒" : "🔓";
-	const lockTitle = isLocked ? "Locked" : "Unlocked";
-	const lockedClass = isLocked ? " locked" : "";
-	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
-}
 // Constants
 const TRACKER_NAME = "infoBox";
 const MAX_RECENT_EVENTS = 3;
@@ -172,9 +141,9 @@ export function renderInfoBox() {
 		row1Widgets.push(`
             <div class="rpg-dashboard-widget rpg-calendar-widget">
                 ${dateLockIconHtml}
-                <div class="rpg-calendar-top rpg-editable" contenteditable="true" data-field="month" data-full-value="${data.month || ""}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${monthDisplay}</div>
-                <div class="rpg-calendar-day" title="${i18n.getTranslation("infoBox.clickToEdit")}"><span class="rpg-calendar-day-text rpg-editable" contenteditable="true" data-field="weekday" data-full-value="${data.weekday || ""}">${weekdayDisplay}</span></div>
-                <div class="rpg-calendar-year rpg-editable" contenteditable="true" data-field="year" data-full-value="${data.year || ""}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${yearDisplay}</div>
+                <div class="rpg-calendar-top rpg-editable" contenteditable="true" data-field="month" data-full-value="${escapeHtml(data.month || "")}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${monthDisplay}</div>
+                <div class="rpg-calendar-day" title="${i18n.getTranslation("infoBox.clickToEdit")}"><span class="rpg-calendar-day-text rpg-editable" contenteditable="true" data-field="weekday" data-full-value="${escapeHtml(data.weekday || "")}">${weekdayDisplay}</span></div>
+                <div class="rpg-calendar-year rpg-editable" contenteditable="true" data-field="year" data-full-value="${escapeHtml(data.year || "")}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${yearDisplay}</div>
             </div>
         `);
 	}
@@ -227,7 +196,7 @@ export function renderInfoBox() {
                 ${weatherLockIconHtml}
                 <div class="rpg-weather-content">
                     <div class="rpg-weather-icon rpg-editable" contenteditable="true" data-field="weatherIcon" title="${i18n.getTranslation("userStats.clickToEditEmoji")}">${weatherIcon}</div>
-                    <div class="rpg-weather-condition rpg-editable" contenteditable="true" data-field="weatherCondition" title="${i18n.getTranslation("infoBox.clickToEdit")}">${weatherCondition}</div>
+                    <div class="rpg-weather-condition rpg-editable" contenteditable="true" data-field="weatherCondition" title="${i18n.getTranslation("infoBox.clickToEdit")}">${escapeHtml(weatherCondition)}</div>
                 </div>
                 ${outdoorTempHtml}
             </div>
@@ -242,7 +211,7 @@ export function renderInfoBox() {
 			const percent = Math.min(100, Math.max(0, ((inCelsius + 20) / 60) * 100));
 			const color = inCelsius < 10 ? "#4a90e2" : inCelsius < 25 ? "#67c23a" : "#e94560";
 			const display = `${value}°${unit}`;
-			const climateHtml = climate ? `<div class="rpg-temp-climate">${climate}</div>` : "";
+			const climateHtml = climate ? `<div class="rpg-temp-climate">${escapeHtml(climate)}</div>` : "";
 
 			return `
                 <div class="rpg-temp-gauge">
@@ -329,7 +298,7 @@ export function renderInfoBox() {
 
 		const indoorLockIconHtml = getLockIconHtml(TRACKER_NAME, "temperature.indoor");
 		const display = `${indoorValue}°${indoorUnit}`;
-		const climateHtml = data.tempIndoorClimate ? `<div class="rpg-indoor-climate">${data.tempIndoorClimate}</div>` : "";
+		const climateHtml = data.tempIndoorClimate ? `<div class="rpg-indoor-climate">${escapeHtml(data.tempIndoorClimate)}</div>` : "";
 
 		row1Widgets.push(`
             <div class="rpg-dashboard-widget rpg-indoor-temp-widget">
@@ -399,7 +368,7 @@ export function renderInfoBox() {
                     <div class="rpg-map-bg">
                         <div class="rpg-map-marker">📍</div>
                     </div>
-                    <div class="rpg-location-text rpg-editable" contenteditable="true" data-field="location" title="${i18n.getTranslation("infoBox.clickToEdit")}">${locationDisplay}</div>
+                    <div class="rpg-location-text rpg-editable" contenteditable="true" data-field="location" title="${i18n.getTranslation("infoBox.clickToEdit")}">${escapeHtml(locationDisplay)}</div>
                 </div>
             </div>
         `;
@@ -443,7 +412,7 @@ export function renderInfoBox() {
 			html += `
                         <div class="rpg-notebook-line">
                             <span class="rpg-bullet">•</span>
-                            <span class="rpg-event-text rpg-editable" contenteditable="true" data-field="${EVENT_FIELDS[i]}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${validEvents[i]}</span>
+                            <span class="rpg-event-text rpg-editable" contenteditable="true" data-field="${EVENT_FIELDS[i]}" title="${i18n.getTranslation("infoBox.clickToEdit")}">${escapeHtml(validEvents[i])}</span>
                         </div>
             `;
 		}
@@ -541,27 +510,22 @@ export function renderInfoBox() {
 			const tracker = $lockIcon.data("tracker");
 			const path = $lockIcon.data("path");
 
-			// Import lockManager dynamically to avoid circular dependencies
-			import("../generation/lockManager.js").then(
-				({ setItemLock, isItemLocked }) => {
-					const isLocked = isItemLocked(tracker, path);
-					const newLockState = !isLocked;
-					setItemLock(tracker, path, newLockState);
+			const isLocked = isItemLocked(tracker, path);
+			const newLockState = !isLocked;
+			setItemLock(tracker, path, newLockState);
 
-					// Update icon
-					$lockIcon.text(newLockState ? "🔒" : "🔓");
-					$lockIcon.attr(
-						"title",
-						newLockState
-							? i18n.getTranslation("infoBox.locked")
-							: i18n.getTranslation("infoBox.unlocked"),
-					);
-					$lockIcon.toggleClass("locked", newLockState);
-
-					// Save settings to persist lock state
-					saveSettings();
-				},
+			// Update icon
+			$lockIcon.text(newLockState ? "🔒" : "🔓");
+			$lockIcon.attr(
+				"title",
+				newLockState
+					? i18n.getTranslation("infoBox.locked")
+					: i18n.getTranslation("infoBox.unlocked"),
 			);
+			$lockIcon.toggleClass("locked", newLockState);
+
+			// Save settings to persist lock state
+			saveSettings();
 		});
 
 	// Remove updating class after animation
@@ -576,6 +540,17 @@ export function renderInfoBox() {
 	if (window.RPGCompanion?.updateWeatherEffect) {
 		window.RPGCompanion.updateWeatherEffect();
 	}
+}
+
+/**
+ * Persist infoBox data changes and re-render.
+ * Centralizes the save + render pattern used by update functions.
+ * @param {object} infoBoxData - Modified infoBox data to persist
+ */
+function persistInfoBoxChanges(infoBoxData) {
+	updateMessageSwipeData(TRACKER_NAME, infoBoxData);
+	saveChatData();
+	renderInfoBox();
 }
 
 /**
@@ -648,10 +623,8 @@ function updateInfoBoxField(field, value) {
 		infoBoxData.date.value = dateParts.filter((p) => p).join(", ");
 	}
 
-	// Persist changes directly to swipe store
-	updateMessageSwipeData(TRACKER_NAME, infoBoxData);
-	saveChatData();
-	renderInfoBox();
+	// Persist changes
+	persistInfoBoxChanges(infoBoxData);
 }
 
 /**
@@ -679,8 +652,6 @@ function updateRecentEvent(field, value) {
 	}
 	infoBoxData.recentEvents[eventIndex] = value;
 
-	// Persist changes directly to swipe store
-	updateMessageSwipeData(TRACKER_NAME, infoBoxData);
-	saveChatData();
-	renderInfoBox();
+	// Persist changes
+	persistInfoBoxChanges(infoBoxData);
 }

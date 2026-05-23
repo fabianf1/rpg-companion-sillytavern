@@ -2,6 +2,7 @@
  * Tracker Editor Module
  * Provides UI for customizing tracker configurations
  */
+import { escapeHtml } from "../../utils/html.js";
 import { i18n } from "../../core/i18n.js";
 import {
 	associatePresetWithCurrentEntity,
@@ -611,7 +612,7 @@ function exportTrackerPreset() {
 		console.error("[RPG Companion] Error exporting tracker preset:", error);
 		toastr.error(
 			i18n.getTranslation("template.trackerEditorModal.messages.exportError") ||
-				"Failed to export tracker preset. Check console for details.",
+			"Failed to export tracker preset. Check console for details.",
 		);
 	}
 }
@@ -2220,18 +2221,4 @@ function setupRawJsonListeners() {
 				);
 		}
 	});
-}
-
-/**
- * Escape HTML entities for safe insertion into textarea.
- * @param {string} str - The string to escape
- * @returns {string} Escaped string
- */
-function escapeHtml(str) {
-	return str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
 }

@@ -13,23 +13,8 @@ import {
 	restoreFormStates,
 } from "../interaction/inventoryActions.js";
 import { updateInventoryItem } from "../interaction/inventoryEdit.js";
-
-/**
- * Helper to generate lock icon HTML if setting is enabled
- * @param {string} tracker - Tracker name
- * @param {string} path - Item path
- * @returns {string} Lock icon HTML or empty string
- */
-function getLockIconHtml(tracker, path) {
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (!showLockIcons) return "";
-
-	const isLocked = isItemLocked(tracker, path);
-	const lockIcon = isLocked ? "🔒" : "🔓";
-	const lockTitle = isLocked ? "Locked" : "Unlocked";
-	const lockedClass = isLocked ? " locked" : "";
-	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
-}
+import { getLockIconHtml } from "../../utils/lockIcon.js";
+import { escapeHtml } from "../../utils/html.js";
 
 /**
  * Converts a location name to a safe ID for use in HTML element IDs.
@@ -225,8 +210,8 @@ export function renderStoredView(
 			// Convert array to display strings for UI
 			const displayItems = Array.isArray(locationItems)
 				? locationItems.map((item) =>
-						typeof item === "object" ? item.name : item,
-					)
+					typeof item === "object" ? item.name : item,
+				)
 				: [];
 			const isCollapsed = collapsedLocations.includes(location);
 			const locationId = getLocationId(location);
@@ -656,14 +641,4 @@ export function renderInventory() {
 		});
 }
 
-/**
- * Escapes HTML special characters to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-function escapeHtml(text) {
-	if (!text) return "";
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
+

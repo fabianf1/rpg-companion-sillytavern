@@ -1,4 +1,6 @@
 {
+	"common.locked": "Locked - AI cannot change this",
+	"common.unlocked": "Unlocked - AI can change this",
 	"settings.language.label": "Language",
 	"settings.language.option.en": "English",
 	"settings.language.option.zh-tw": "繁體中文",

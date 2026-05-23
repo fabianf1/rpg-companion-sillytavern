@@ -3,6 +3,7 @@
  * Handles UI rendering for quests system (main and optional quests)
  */
 
+import { escapeHtml } from "../../utils/html.js";
 import {
 	saveChatData,
 	saveSettings,
@@ -11,34 +12,6 @@ import {
 import { $questsContainer, extensionSettings } from "../../core/state.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
-
-/**
- * Helper to generate lock icon HTML if setting is enabled
- * @param {string} tracker - Tracker name
- * @param {string} path - Item path
- * @returns {string} Lock icon HTML or empty string
- */
-function getLockIconHtml(tracker, path) {
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (!showLockIcons) return "";
-
-	const isLocked = isItemLocked(tracker, path);
-	const lockIcon = isLocked ? "🔒" : "🔓";
-	const lockTitle = isLocked ? "Locked" : "Unlocked";
-	const lockedClass = isLocked ? " locked" : "";
-	return `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="${tracker}" data-path="${path}" title="${lockTitle}">${lockIcon}</span>`;
-}
-
-/**
- * HTML escape helper
- * @param {string} text - Text to escape
- * @returns {string} Escaped HTML
- */
-function escapeHtml(text) {
-	const div = document.createElement("div");
-	div.textContent = text;
-	return div.innerHTML;
-}
 
 /**
  * Extract quest data from object or string
@@ -96,10 +69,9 @@ function renderQuestItem(field, quest, index) {
 	// Completed checkbox and lock icon (only when unlocked) in hover area
 	const hoverActions = `
         <div class="rpg-quest-actions-hover">
-            ${
-							isLocked
-								? ""
-								: `
+            ${isLocked
+			? ""
+			: `
                 <button class="rpg-quest-edit" data-action="edit-quest" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ""} title="Edit quest">
                     <i class="fa-solid fa-edit"></i>
                 </button>
@@ -107,7 +79,7 @@ function renderQuestItem(field, quest, index) {
                     <i class="fa-solid fa-trash"></i>
                 </button>
             `
-						}
+		}
             <label class="rpg-quest-completed-label">
                 <input type="checkbox" class="rpg-quest-completed-checkbox" data-field="${field}" ${index !== undefined ? `data-index="${index}"` : ""} ${isCompleted ? "checked" : ""} />
                 <span class="rpg-quest-completed-text">Completed</span>
@@ -184,15 +156,14 @@ function renderQuestForm(field, action, quest) {
                 </label>
             </div>
             <div class="rpg-inline-buttons">
-                ${
-									field === "main" && isEdit
-										? `
+                ${field === "main" && isEdit
+			? `
                     <button class="rpg-inline-btn rpg-inline-clear" data-action="clear-quest" data-field="${field}">
                         <i class="fa-solid fa-ban"></i> Clear
                     </button>
                 `
-										: ""
-								}
+			: ""
+		}
                 <button class="rpg-inline-btn rpg-inline-cancel" data-action="${cancelName}" data-field="${field}">
                     <i class="fa-solid ${cancelIcon}"></i> Cancel
                 </button>
@@ -218,26 +189,24 @@ export function renderMainQuestView(mainQuest) {
         <div class="rpg-quest-section">
             <div class="rpg-quest-header">
                 <h3 class="rpg-quest-section-title">Main Quest</h3>
-                ${
-									!hasQuest
-										? `<button class="rpg-add-quest-btn" data-action="add-quest" data-field="main" title="Add main quest">
+                ${!hasQuest
+			? `<button class="rpg-add-quest-btn" data-action="add-quest" data-field="main" title="Add main quest">
                     <i class="fa-solid fa-plus"></i> Add Quest
                 </button>`
-										: ""
-								}
+			: ""
+		}
             </div>
             <div class="rpg-quest-content">
-                ${
-									hasQuest
-										? `
+                ${hasQuest
+			? `
                     ${renderQuestForm("main", "edit", mainQuest)}
                     ${renderQuestItem("main", mainQuest)}
                 `
-										: `
+			: `
                     ${renderQuestForm("main", "add")}
                     <div class="rpg-quest-empty">No active main quests</div>
                 `
-								}
+		}
             </div>
             <div class="rpg-quest-hint">
                 <i class="fa-solid fa-lightbulb"></i>

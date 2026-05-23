@@ -17,11 +17,40 @@ import {
 	FALLBACK_AVATAR_DATA_URI,
 } from "../../core/state.js";
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
+import { escapeHtml } from "../../utils/html.js";
+import { getLockIconHtml } from "../../utils/lockIcon.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { buildInventorySummary } from "../generation/inventoryFormatter.js";
 import { updateFabWidgets } from "../ui/mobile.js";
 import { getStatBarColors } from "../ui/theme.js";
+
+/**
+ * Default user stats configuration (shared between renderUserStats and buildUserStatsText)
+ */
+const DEFAULT_USER_STATS_CONFIG = {
+	customStats: [
+		{ id: "health", name: "Health", enabled: true },
+		{ id: "satiety", name: "Satiety", enabled: true },
+		{ id: "energy", name: "Energy", enabled: true },
+		{ id: "hygiene", name: "Hygiene", enabled: true },
+		{ id: "arousal", name: "Arousal", enabled: true },
+	],
+	rpgAttributes: [
+		{ id: "str", name: "STR", enabled: true },
+		{ id: "dex", name: "DEX", enabled: true },
+		{ id: "con", name: "CON", enabled: true },
+		{ id: "int", name: "INT", enabled: true },
+		{ id: "wis", name: "WIS", enabled: true },
+		{ id: "cha", name: "CHA", enabled: true },
+	],
+	statusSection: {
+		enabled: true,
+		showMoodEmoji: true,
+		customFields: ["Conditions"],
+	},
+	skillsSection: { enabled: false, label: "Skills" },
+};
 
 /**
  * Extracts the base name (before parentheses) and converts to snake_case for use as JSON key.
@@ -105,19 +134,9 @@ function getStatusField(trackerData, fieldKey, defaultValue = "") {
 export function buildUserStatsText() {
 	const trackerData = getTrackerDataForContext("userStats");
 	const config = extensionSettings.trackerConfig?.userStats || {
-		customStats: [
-			{ id: "health", name: "Health", enabled: true },
-			{ id: "satiety", name: "Satiety", enabled: true },
-			{ id: "energy", name: "Energy", enabled: true },
-			{ id: "hygiene", name: "Hygiene", enabled: true },
-			{ id: "arousal", name: "Arousal", enabled: true },
-		],
-		statusSection: {
-			enabled: true,
-			showMoodEmoji: true,
-			customFields: ["Conditions"],
-		},
-		skillsSection: { enabled: false, label: "Skills" },
+		customStats: DEFAULT_USER_STATS_CONFIG.customStats,
+		statusSection: DEFAULT_USER_STATS_CONFIG.statusSection,
+		skillsSection: DEFAULT_USER_STATS_CONFIG.skillsSection,
 	};
 
 	let text = "";
@@ -190,30 +209,7 @@ export function renderUserStats() {
 	}
 
 	const stats = trackerData;
-	// });
-	const config = extensionSettings.trackerConfig?.userStats || {
-		customStats: [
-			{ id: "health", name: "Health", enabled: true },
-			{ id: "satiety", name: "Satiety", enabled: true },
-			{ id: "energy", name: "Energy", enabled: true },
-			{ id: "hygiene", name: "Hygiene", enabled: true },
-			{ id: "arousal", name: "Arousal", enabled: true },
-		],
-		rpgAttributes: [
-			{ id: "str", name: "STR", enabled: true },
-			{ id: "dex", name: "DEX", enabled: true },
-			{ id: "con", name: "CON", enabled: true },
-			{ id: "int", name: "INT", enabled: true },
-			{ id: "wis", name: "WIS", enabled: true },
-			{ id: "cha", name: "CHA", enabled: true },
-		],
-		statusSection: {
-			enabled: true,
-			showMoodEmoji: true,
-			customFields: ["Conditions"],
-		},
-		skillsSection: { enabled: false, label: "Skills" },
-	};
+	const config = extensionSettings.trackerConfig?.userStats || DEFAULT_USER_STATS_CONFIG;
 	const userName = getContext().name1;
 
 	// Get user portrait
@@ -229,14 +225,6 @@ export function renderUserStats() {
 	const colors = getStatBarColors();
 	const gradient = `linear-gradient(to right, ${colors.low}, ${colors.high})`;
 
-	// Check if stats bars section is locked
-	const isStatsLocked = isItemLocked("userStats", "stats");
-	const lockIcon = isStatsLocked ? "🔒" : "🔓";
-	const lockTitle = isStatsLocked
-		? i18n.getTranslation("userStats.statsLocked")
-		: i18n.getTranslation("userStats.statsUnlocked");
-	const lockedClass = isStatsLocked ? " locked" : "";
-
 	let html = '<div class="rpg-stats-content">';
 	html += '<div class="rpg-stats-left">';
 
@@ -245,23 +233,19 @@ export function renderUserStats() {
 		extensionSettings.trackerConfig?.userStats?.showLevel !== false;
 	html += `
         <div class="rpg-user-info-row">
-            <img src="${userPortrait}" alt="${userName}" class="rpg-user-portrait" onerror="this.style.opacity='0.5';this.onerror=null;" />
-            <span class="rpg-user-name">${userName}</span>
-            ${
-							showLevel
-								? `<span style="opacity: 0.5;">|</span>
+            <img src="${escapeHtml(userPortrait)}" alt="${escapeHtml(userName)}" class="rpg-user-portrait" onerror="this.style.opacity='0.5';this.onerror=null;" />
+            <span class="rpg-user-name">${escapeHtml(userName)}</span>
+            ${showLevel
+			? `<span style="opacity: 0.5;">|</span>
             <span class="rpg-level-label">${i18n.getTranslation("userStats.level")}</span>
             <span class="rpg-level-value rpg-editable" contenteditable="true" data-field="level" title="${i18n.getTranslation("userStats.clickToEditLevel")}">${extensionSettings.level}</span>`
-								: ""
-						}
+			: ""
+		}
         </div>
     `;
 
 	// Dynamic stats grid - only show enabled stats
-	const showLockIcons = extensionSettings.showLockIcons ?? true;
-	if (showLockIcons) {
-		html += `<span class="rpg-section-lock-icon${lockedClass}" data-tracker="userStats" data-path="stats" title="${lockTitle}">${lockIcon}</span>`;
-	}
+	html += getLockIconHtml("userStats", "stats");
 	html += '<div class="rpg-stats-grid">';
 	const enabledStats = config.customStats.filter(
 		(stat) => stat && stat.enabled && stat.name && stat.id,
@@ -300,16 +284,8 @@ export function renderUserStats() {
 
 	// Status section (conditionally rendered)
 	if (config.statusSection.enabled) {
-		const isMoodLocked = isItemLocked("userStats", "status");
-		const moodLockIcon = isMoodLocked ? "🔒" : "🔓";
-		const moodLockTitle = isMoodLocked
-			? i18n.getTranslation("userStats.moodLocked")
-			: i18n.getTranslation("userStats.moodUnlocked");
-		const moodLockedClass = isMoodLocked ? " locked" : "";
 		html += '<div class="rpg-mood">';
-		if (showLockIcons) {
-			html += `<span class="rpg-section-lock-icon${moodLockedClass}" data-tracker="userStats" data-path="status" title="${moodLockTitle}">${moodLockIcon}</span>`;
-		}
+		html += getLockIconHtml("userStats", "status");
 
 		if (config.statusSection.showMoodEmoji) {
 			html += `<div class="rpg-mood-emoji rpg-editable" contenteditable="true" data-field="mood" title="${i18n.getTranslation("userStats.clickToEditEmoji")}">${getStatusField(stats, "mood", "")}</div>`;
@@ -339,12 +315,6 @@ export function renderUserStats() {
 
 	// Skills section (conditionally rendered)
 	if (config.skillsSection.enabled) {
-		const isSkillsLocked = isItemLocked("userStats", "skills");
-		const skillsLockIcon = isSkillsLocked ? "🔒" : "🔓";
-		const skillsLockTitle = isSkillsLocked
-			? i18n.getTranslation("userStats.skillsLocked")
-			: i18n.getTranslation("userStats.skillsUnlocked");
-		const skillsLockedClass = isSkillsLocked ? " locked" : "";
 		let skillsValue = "None";
 		// Handle JSON array format: [{name: "Art"}, {name: "Coding"}]
 		const skillsData = getStatusField(stats, "skills", null);
@@ -357,10 +327,7 @@ export function renderUserStats() {
 		}
 		html += `
             <div class="rpg-skills-section">`;
-		if (showLockIcons) {
-			html += `
-                <span class="rpg-section-lock-icon${skillsLockedClass}" data-tracker="userStats" data-path="skills" title="${skillsLockTitle}">${skillsLockIcon}</span>`;
-		}
+		html += getLockIconHtml("userStats", "skills");
 		html += `
                 <span class="rpg-skills-label">${config.skillsSection.label}:</span>
                 <div class="rpg-skills-value rpg-editable" contenteditable="true" data-field="skills" title="${i18n.getTranslation("userStats.clickToEditSkills")}">${skillsValue}</div>
@@ -381,13 +348,13 @@ export function renderUserStats() {
 			config.rpgAttributes && config.rpgAttributes.length > 0
 				? config.rpgAttributes
 				: [
-						{ id: "str", name: "STR", enabled: true },
-						{ id: "dex", name: "DEX", enabled: true },
-						{ id: "con", name: "CON", enabled: true },
-						{ id: "int", name: "INT", enabled: true },
-						{ id: "wis", name: "WIS", enabled: true },
-						{ id: "cha", name: "CHA", enabled: true },
-					];
+					{ id: "str", name: "STR", enabled: true },
+					{ id: "dex", name: "DEX", enabled: true },
+					{ id: "con", name: "CON", enabled: true },
+					{ id: "int", name: "INT", enabled: true },
+					{ id: "wis", name: "WIS", enabled: true },
+					{ id: "cha", name: "CHA", enabled: true },
+				];
 		const enabledAttributes = rpgAttributes.filter(
 			(attr) => attr && attr.enabled && attr.name && attr.id,
 		);
@@ -401,7 +368,6 @@ export function renderUserStats() {
 
 			enabledAttributes.forEach((attr) => {
 				// Use tracker data first, then classicStats from settings, then default to 10
-				const trackerData = getTrackerDataForContext("userStats");
 				const trackerValue = trackerData?.classicStats?.[attr.id];
 				const value =
 					trackerValue !== undefined
@@ -439,142 +405,153 @@ export function renderUserStats() {
 	$userStatsContainer.html(html);
 	// console.log('[RPG UserStats Render] ✓ HTML rendered to #rpg-user-stats container');
 
-	// Add event listeners for editable stat values
-	$(".rpg-editable-stat").on("blur", function () {
-		const field = $(this).data("field");
-		const mode = $(this).data("mode");
-		const maxValue = parseInt($(this).data("max")) || 100;
-		const textValue = $(this).text().trim();
-		let value;
+	// Add delegated event listeners for editable fields (more efficient than per-element handlers)
+	$userStatsContainer
+		.off("blur", ".rpg-editable-stat")
+		.on("blur", ".rpg-editable-stat", function () {
+			const field = $(this).data("field");
+			const mode = $(this).data("mode");
+			const maxValue = parseInt($(this).data("max")) || 100;
+			const textValue = $(this).text().trim();
+			let value;
 
-		if (mode === "number") {
-			// In number mode, parse "X/MAX" or just "X"
-			const parts = textValue.split("/");
-			value = parseInt(parts[0]);
+			if (mode === "number") {
+				// In number mode, parse "X/MAX" or just "X"
+				const parts = textValue.split("/");
+				value = parseInt(parts[0]);
 
-			// Validate and clamp value between 0 and maxValue
-			if (isNaN(value)) {
-				value = 0;
+				// Validate and clamp value between 0 and maxValue
+				if (isNaN(value)) {
+					value = 0;
+				}
+				value = Math.max(0, Math.min(maxValue, value));
+			} else {
+				// In percentage mode, parse "X%" or just "X"
+				value = parseInt(textValue.replace("%", ""));
+
+				// Validate and clamp value between 0 and 100
+				if (isNaN(value)) {
+					value = 0;
+				}
+				value = Math.max(0, Math.min(100, value));
 			}
-			value = Math.max(0, Math.min(maxValue, value));
-		} else {
-			// In percentage mode, parse "X%" or just "X"
-			value = parseInt(textValue.replace("%", ""));
 
-			// Validate and clamp value between 0 and 100
-			if (isNaN(value)) {
-				value = 0;
+			// Update tracker data
+			trackerData[field] = value;
+			updateMessageSwipeData(trackerData);
+
+			// Update and persist data
+			saveSettings();
+			saveChatData();
+
+			// Re-render to update the bar and FAB widgets
+			renderUserStats();
+			updateFabWidgets();
+		});
+
+	// Mood emoji editing
+	$userStatsContainer
+		.off("blur", ".rpg-mood-emoji.rpg-editable")
+		.on("blur", ".rpg-mood-emoji.rpg-editable", function () {
+			const value = $(this).text().trim();
+			// Update tracker data
+			trackerData.mood = value || "😐";
+			updateMessageSwipeData(trackerData);
+
+			// Update and persist data
+			saveSettings();
+			saveChatData();
+		});
+
+	// Mood conditions editing
+	$userStatsContainer
+		.off("blur", ".rpg-mood-conditions.rpg-editable")
+		.on("blur", ".rpg-mood-conditions.rpg-editable", function () {
+			const value = $(this).text().trim();
+			const fieldKey = $(this).data("field");
+			// Update tracker data
+			trackerData[fieldKey] = value || "None";
+			updateMessageSwipeData(trackerData);
+
+			// Update and persist data
+			saveSettings();
+			saveChatData();
+		});
+
+	// Skills editing
+	$userStatsContainer
+		.off("blur", ".rpg-skills-value.rpg-editable")
+		.on("blur", ".rpg-skills-value.rpg-editable", function () {
+			const value = $(this).text().trim();
+			// Update tracker data
+			trackerData.skills = value || "None";
+			updateMessageSwipeData(trackerData);
+
+			// Update and persist data
+			saveSettings();
+			saveChatData();
+		});
+
+	// Stat name editing
+	$userStatsContainer
+		.off("blur", ".rpg-editable-stat-name")
+		.on("blur", ".rpg-editable-stat-name", function () {
+			const field = $(this).data("field");
+			const value = $(this).text().trim().replace(":", "");
+
+			if (!extensionSettings.statNames) {
+				extensionSettings.statNames = {
+					health: "Health",
+					satiety: "Satiety",
+					energy: "Energy",
+					hygiene: "Hygiene",
+					arousal: "Arousal",
+				};
 			}
-			value = Math.max(0, Math.min(100, value));
-		}
 
-		// Update tracker data
-		const trackerData = getTrackerDataForContext("userStats");
-		trackerData[field] = value;
-		updateMessageSwipeData(trackerData);
+			extensionSettings.statNames[field] =
+				value || extensionSettings.statNames[field];
 
-		// Update and persist data
-		saveSettings();
-		saveChatData();
+			// Update and persist data
+			updateMessageSwipeData();
+			saveSettings();
+			saveChatData();
 
-		// Re-render to update the bar and FAB widgets
-		renderUserStats();
-		updateFabWidgets();
-	});
+			// Re-render to update the display
+			renderUserStats();
+		});
 
-	// Add event listeners for mood/conditions editing
-	$(".rpg-mood-emoji.rpg-editable").on("blur", function () {
-		const value = $(this).text().trim();
-		// Update tracker data
-		const trackerData = getTrackerDataForContext("userStats");
-		trackerData.mood = value || "😐";
-		updateMessageSwipeData(trackerData);
+	// Level editing
+	$userStatsContainer
+		.off("blur", ".rpg-level-value.rpg-editable")
+		.on("blur", ".rpg-level-value.rpg-editable", function () {
+			let value = parseInt($(this).text().trim());
+			if (isNaN(value) || value < 1) {
+				value = 1;
+			}
+			// Set reasonable max level
+			value = Math.min(100, value);
 
-		// Update and persist data
-		saveSettings();
-		saveChatData();
-	});
+			extensionSettings.level = value;
 
-	$(".rpg-mood-conditions.rpg-editable").on("blur", function () {
-		const value = $(this).text().trim();
-		const fieldKey = $(this).data("field");
-		// Update tracker data
-		const trackerData = getTrackerDataForContext("userStats");
-		trackerData[fieldKey] = value || "None";
-		updateMessageSwipeData(trackerData);
+			// Update and persist data
+			updateMessageSwipeData();
+			saveSettings();
+			saveChatData();
 
-		// Update and persist data
-		saveSettings();
-		saveChatData();
-	});
-
-	// Add event listener for skills editing
-	$(".rpg-skills-value.rpg-editable").on("blur", function () {
-		const value = $(this).text().trim();
-		// Update tracker data
-		const trackerData = getTrackerDataForContext("userStats");
-		trackerData.skills = value || "None";
-		updateMessageSwipeData(trackerData);
-
-		// Update and persist data
-		saveSettings();
-		saveChatData();
-	});
-
-	// Add event listeners for stat name editing
-	$(".rpg-editable-stat-name").on("blur", function () {
-		const field = $(this).data("field");
-		const value = $(this).text().trim().replace(":", "");
-
-		if (!extensionSettings.statNames) {
-			extensionSettings.statNames = {
-				health: "Health",
-				satiety: "Satiety",
-				energy: "Energy",
-				hygiene: "Hygiene",
-				arousal: "Arousal",
-			};
-		}
-
-		extensionSettings.statNames[field] =
-			value || extensionSettings.statNames[field];
-
-		// Update and persist data
-		updateMessageSwipeData();
-		saveSettings();
-		saveChatData();
-
-		// Re-render to update the display
-		renderUserStats();
-	});
-
-	// Add event listener for level editing
-	$(".rpg-level-value.rpg-editable").on("blur", function () {
-		let value = parseInt($(this).text().trim());
-		if (isNaN(value) || value < 1) {
-			value = 1;
-		}
-		// Set reasonable max level
-		value = Math.min(100, value);
-
-		extensionSettings.level = value;
-
-		// Update and persist data
-		updateMessageSwipeData();
-		saveSettings();
-		saveChatData();
-
-		// Re-render to update the display
-		renderUserStats();
-	});
+			// Re-render to update the display
+			renderUserStats();
+		});
 
 	// Prevent line breaks in level field
-	$(".rpg-level-value.rpg-editable").on("keydown", function (e) {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			$(this).blur();
-		}
-	});
+	$userStatsContainer
+		.off("keydown", ".rpg-level-value.rpg-editable")
+		.on("keydown", ".rpg-level-value.rpg-editable", function (e) {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				$(this).blur();
+			}
+		});
 
 	// Add event listener for section lock icon clicks (support both click and touch)
 	$userStatsContainer
