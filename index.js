@@ -64,6 +64,11 @@ import { renderInventory } from "./src/systems/rendering/inventory.js";
 import { renderQuests } from "./src/systems/rendering/quests.js";
 import { renderRelationships } from "./src/systems/rendering/relationships.js";
 import {
+	renderCharacterCards,
+	setupCharacterCardsPopup,
+} from "./src/systems/rendering/characterCards.js";
+import { populateLorebookDropdown } from "./src/systems/generation/characterCardLorebookManager.js";
+import {
 	renderThoughts,
 	updateChatThoughts,
 } from "./src/systems/rendering/thoughts.js";
@@ -234,6 +239,88 @@ function populateConnectionProfileDropdown() {
 }
 
 /**
+ * Renders the character card fields UI in settings.
+ * Populates the default fields checkboxes and custom fields list.
+ */
+function _renderCharacterCardFieldsUI() {
+	const config = extensionSettings.characterCards || {};
+
+	// Render default fields checkboxes
+	const $fieldsList = $("#rpg-character-cards-fields-list");
+	if ($fieldsList.length) {
+		$fieldsList.empty();
+		for (const field of config.fields || []) {
+			const checked = field.enabled ? "checked" : "";
+			$fieldsList.append(`
+				<label class="checkbox_label" style="display: flex; align-items: center; gap: 0.5em;">
+					<input type="checkbox" data-field-id="${field.id}" ${checked} />
+					<span>${field.name}</span>
+					<small style="color: #888; font-size: 11px;">— ${field.description}</small>
+				</label>
+			`);
+		}
+
+		// Bind change handlers for default fields
+		$fieldsList.find("input[type='checkbox']").on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const enabled = $(this).prop("checked");
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.enabled = enabled;
+				saveSettings();
+			}
+		});
+	}
+
+	// Render custom fields
+	_renderCustomFieldsList(config);
+
+	// Bind add custom field button
+	$("#rpg-add-character-card-custom-field").on("click", () => {
+		const name = prompt("Enter custom field name:");
+		if (!name?.trim()) return;
+
+		const id = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
+		const description = prompt("Enter field description (optional):") || name.trim();
+
+		if (!config.customFields) config.customFields = [];
+		config.customFields.push({ id, name: name.trim(), description });
+		saveSettings();
+		_renderCustomFieldsList(config);
+	});
+}
+
+/**
+ * Renders the custom fields list in settings.
+ * @param {Object} config - The characterCards config object
+ */
+function _renderCustomFieldsList(config) {
+	const $customList = $("#rpg-character-cards-custom-fields-list");
+	if (!$customList.length) return;
+
+	$customList.empty();
+	for (const field of config.customFields || []) {
+		$customList.append(`
+			<div class="rpg-custom-field-row" style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.25em;">
+				<span style="font-weight: 600;">${field.name}</span>
+				<small style="color: #888; font-size: 11px;">— ${field.description || ""}</small>
+				<button class="rpg-remove-custom-field rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="Remove field">
+					<i class="fa-solid fa-times"></i>
+				</button>
+			</div>
+		`);
+	}
+
+	// Bind remove buttons
+	$customList.find(".rpg-remove-custom-field").on("click", function () {
+		const fieldId = $(this).data("field-id");
+		config.customFields = (config.customFields || []).filter((f) => f.id !== fieldId);
+		saveSettings();
+		_renderCustomFieldsList(config);
+	});
+}
+
+/**
  * Initializes the UI for the extension.
  */
 async function initUI() {
@@ -396,6 +483,7 @@ async function initUI() {
 	renderAppearance();
 	renderQuests();
 	renderRelationships();
+	renderCharacterCards();
 	updateDiceDisplay();
 	updateFabWidgets();
 	updateStripWidgets();
@@ -404,6 +492,9 @@ async function initUI() {
 	setupSettingsPopup();
 	setupPartialRefreshPopup();
 	setupRelationshipsPopup();
+	setupCharacterCardsPopup();
+	populateLorebookDropdown(document.getElementById("rpg-character-cards-lorebook"));
+	_renderCharacterCardFieldsUI();
 	initTrackerEditor();
 	initPromptsEditor();
 	addDiceQuickReply();

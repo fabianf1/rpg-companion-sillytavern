@@ -487,6 +487,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
                             <div class="rpg-character-header">
                                 <span class="rpg-character-emoji rpg-editable" contenteditable="true" data-character="${char.name}" data-field="emoji" title="${i18n.getTranslation("thoughts.clickToEdit")}">${char.emoji}</span>
                                 <span class="rpg-character-name rpg-editable" contenteditable="true" data-character="${char.name}" data-field="name" title="${i18n.getTranslation("thoughts.clickToEdit")}">${char.name}</span>
+                                <button class="rpg-character-card-btn" data-character="${char.name}" title="${i18n.getTranslation("template.mainPanel.characterCardsButton") || "Character Card"}"><i class="fa-solid fa-id-card"></i></button>
                                 <button class="rpg-character-remove" data-character="${char.name}" title="${i18n.getTranslation("thoughts.removeCharacter")}">×</button>
                             </div>
                         </div>
@@ -641,6 +642,19 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 
 		const characterName = $(this).data("character");
 		removeCharacter(characterName);
+	});
+
+	// Add event listener for character card button
+	$thoughtsContainer.find(".rpg-character-card-btn").on("click", function (e) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const characterName = $(this).data("character");
+		// Dispatch a custom event so the modal module can handle it
+		const event = new CustomEvent("rpg-open-character-card", {
+			detail: { characterName },
+		});
+		document.dispatchEvent(event);
 	});
 
 	// Add event listener for avatar upload clicks

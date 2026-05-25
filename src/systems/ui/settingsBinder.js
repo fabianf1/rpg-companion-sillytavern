@@ -116,6 +116,12 @@ export const SETTING_BINDINGS = [
 		key: "relationshipsProtagonistOnly",
 		type: "boolean",
 	},
+	{
+		selector: "#rpg-toggle-character-cards",
+		key: "showCharacterCards",
+		type: "boolean",
+		onUpdate: updateSectionVisibility,
+	},
 
 	// ── Feature Toggles ──
 	{
@@ -211,6 +217,17 @@ export const SETTING_BINDINGS = [
 	},
 	{ selector: "#rpg-update-depth", key: "updateDepth", type: "int" },
 	{ selector: "#rpg-relation-update-depth", key: "relationUpdateDepth", type: "int" },
+	{
+		selector: "#rpg-character-cards-lorebook",
+		key: "characterCards.lorebookName",
+		type: "string",
+	},
+	{
+		selector: "#rpg-character-cards-update-interval",
+		key: "characterCards.updateInterval",
+		type: "int",
+		defaultValue: 10,
+	},
 	{
 		selector: "#rpg-generation-mode",
 		key: "generationMode",

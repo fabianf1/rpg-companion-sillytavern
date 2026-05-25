@@ -28,6 +28,7 @@ export let extensionSettings = {
 	showInventory: true, // Show inventory section (v2 system)
 	showQuests: true, // Show quests section
 	showRelationships: true, // Show relationships tracking and button
+	showCharacterCards: true, // Show character card tracking (lorebook-based NPC profiles)
 	showThoughtsInChat: true, // Show thoughts overlay in chat
 	narratorMode: false, // Use character card as narrator instead of fixed character references
 	customNarratorPrompt: "", // Custom narrator mode prompt text (empty = use default)
@@ -276,6 +277,25 @@ export let extensionSettings = {
 					{ id: "arousal", name: "Arousal", enabled: true },
 				],
 			},
+		},
+		// Character Cards configuration (lorebook-based NPC profiles)
+		characterCards: {
+			enabled: true,
+			lorebookName: "", // User-selected lorebook name (empty = use default world info)
+			updateInterval: 10, // Messages between automatic character card updates
+			messageCounter: 0, // Tracks messages since last update (runtime only, not persisted)
+			// Default fields for character cards
+			fields: [
+				{ id: "name", name: "Name", enabled: true, description: "Character's full name" },
+				{ id: "age", name: "Age", enabled: true, description: "Character's approximate age" },
+				{ id: "appearance", name: "Appearance", enabled: true, description: "General physical appearance (hair, build, distinguishing features)" },
+				{ id: "demeanor", name: "Demeanor", enabled: true, description: "General demeanor and typical behavior" },
+				{ id: "role", name: "Role", enabled: true, description: "Character's role or occupation in the story" },
+				{ id: "personality", name: "Personality", enabled: true, description: "Core personality traits and temperament" },
+				{ id: "background", name: "Background", enabled: true, description: "Brief history or backstory" },
+			],
+			// Custom fields added by the user
+			customFields: [],
 		},
 	},
 	quests: {

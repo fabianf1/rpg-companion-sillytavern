@@ -340,6 +340,13 @@ export function updateSectionVisibility() {
 		$("#rpg-open-relationships").hide();
 	}
 
+	// Show/hide character cards button based on showCharacterCards setting
+	if (extensionSettings.showCharacterCards) {
+		$("#rpg-open-character-cards").show();
+	} else {
+		$("#rpg-open-character-cards").hide();
+	}
+
 	// Show/hide dividers intelligently
 	// Divider after User Stats: shown if User Stats is visible AND at least one section after it is visible
 	const showDividerAfterStats =

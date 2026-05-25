@@ -33,6 +33,11 @@ import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 // Generation & Parsing
 import { updateRPGData } from "../generation/apiClient.js";
 import { updateRelationships } from "../generation/relationshipApiClient.js";
+import {
+	incrementCharacterCardCounter,
+	updateCharacterCards,
+	resetCharacterCardCounter,
+} from "../generation/characterCardApiClient.js";
 import { initHistoryInjectionListeners } from "../generation/injector.js";
 import { getLockedItemsFromSwipeStore } from "../generation/lockManager.js";
 import { renderAppearance } from "../rendering/appearance.js";
@@ -41,6 +46,7 @@ import { renderInventory } from "../rendering/inventory.js";
 import { renderQuests } from "../rendering/quests.js";
 import { renderRelationships } from "../rendering/relationships.js";
 import { renderThoughts, updateChatThoughts } from "../rendering/thoughts.js";
+import { refreshLorebookDropdowns } from "../rendering/characterCards.js";
 // Rendering
 import { renderUserStats } from "../rendering/userStats.js";
 import { updateStripWidgets } from "../ui/desktop.js";
@@ -149,6 +155,28 @@ export async function onMessageReceived(_data) {
 	// so the next user message will be treated as a new message (not a swipe)
 	setLastActionWasSwipe(false);
 
+	// Increment character card message counter and check for auto-update
+	if (extensionSettings.showCharacterCards) {
+		const shouldUpdateCards = incrementCharacterCardCounter();
+		if (shouldUpdateCards) {
+			const context = getContext();
+			const chat = context.chat;
+			const targetMessage =
+				chat && chat.length > 0 ? chat[chat.length - 1] : null;
+			const targetSwipeId = targetMessage
+				? targetMessage.swipe_id || 0
+				: 0;
+			// Run character card update asynchronously (don't block the main flow)
+			setTimeout(async () => {
+				try {
+					await updateCharacterCards(targetMessage, targetSwipeId);
+				} catch (e) {
+					console.error("[RPG Companion] Character card auto-update failed:", e);
+				}
+			}, 2000);
+		}
+	}
+
 	// Clear plot progression flag if this was a plot progression generation
 	// Note: No need to clear extension prompt since we used quiet_prompt option
 	if (isPlotProgression) {
@@ -204,6 +232,16 @@ export async function runTrackerAndRelationshipUpdate(
 			return;
 		}
 
+		// If only "Character Cards" is selected, run the character card update flow
+		if (
+			selectedSections &&
+			selectedSections.length === 1 &&
+			selectedSections[0] === "characterCards"
+		) {
+			await updateCharacterCards(targetMessage, targetSwipeId, signal);
+			return;
+		}
+
 		const updateRPG = updateRPGData(
 			isAutoUpdate,
 			selectedSections,
@@ -212,25 +250,42 @@ export async function runTrackerAndRelationshipUpdate(
 			signal,
 		);
 
-		if (
-			!extensionSettings.showRelationships ||
-			(selectedSections && !selectedSections.includes("relationships"))
-		) {
+		// Collect secondary update tasks (relationships, character cards)
+		const secondaryTasks = [];
+
+		const shouldRunRelationships =
+			extensionSettings.showRelationships &&
+			(!selectedSections || selectedSections.includes("relationships"));
+
+		const shouldRunCharacterCards =
+			extensionSettings.showCharacterCards &&
+			(!selectedSections || selectedSections.includes("characterCards"));
+
+		if (shouldRunRelationships) {
+			secondaryTasks.push(
+				updateRelationships(targetMessage, targetSwipeId, signal),
+			);
+		}
+
+		if (shouldRunCharacterCards) {
+			resetCharacterCardCounter();
+			secondaryTasks.push(
+				updateCharacterCards(targetMessage, targetSwipeId, signal),
+			);
+		}
+
+		if (secondaryTasks.length === 0) {
 			await updateRPG;
 			return;
 		}
 
-		const updateRelationshipsTask = updateRelationships(
-			targetMessage,
-			targetSwipeId,
-			signal,
-		);
-
 		if (extensionSettings.parallelTrackerGeneration) {
-			await Promise.all([updateRPG, updateRelationshipsTask]);
+			await Promise.all([updateRPG, ...secondaryTasks]);
 		} else {
 			await updateRPG;
-			await updateRelationshipsTask;
+			for (const task of secondaryTasks) {
+				await task;
+			}
 		}
 	} finally {
 		// Clear the shared abort controller
@@ -296,6 +351,9 @@ export function onCharacterChanged() {
 
 	// Update chat thought overlays
 	updateChatThoughts();
+
+	// Refresh lorebook dropdowns in character cards modal (if open)
+	refreshLorebookDropdowns();
 }
 
 /**
