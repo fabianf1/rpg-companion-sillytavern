@@ -189,28 +189,6 @@ export async function updateRPGData(
 		return;
 	}
 
-	// Check minimum reply length for auto-update only
-	if (isAutoUpdate && extensionSettings.minReplyLength > 0) {
-		const lastMessage = chat && chat.length > 0 ? chat[chat.length - 1] : null;
-		if (lastMessage && !lastMessage.is_user) {
-			const messageText = lastMessage.mes || "";
-			const messageLength = messageText.length;
-
-			if (messageLength < extensionSettings.minReplyLength) {
-				console.log(
-					`[RPG Companion] Auto-update skipped: latest message length (${messageLength}) is below minimum (${extensionSettings.minReplyLength})`,
-				);
-				// Show toast notification if enabled
-				if (extensionSettings.minReplyLength > 0) {
-					const notificationText = `Auto-update skipped: latest message too short (${messageLength}/${extensionSettings.minReplyLength} chars)`;
-					console.log(`[RPG Companion] ${notificationText}`);
-					toastr.info(notificationText, "", { timeOut: 3000 });
-				}
-				return;
-			}
-		}
-	}
-
 	try {
 		setIsGenerating(true);
 		setFabLoadingState(true); // Show spinning FAB on mobile

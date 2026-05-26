@@ -155,28 +155,6 @@ export async function onMessageReceived(_data) {
 	// so the next user message will be treated as a new message (not a swipe)
 	setLastActionWasSwipe(false);
 
-	// Increment character card message counter and check for auto-update
-	if (extensionSettings.showCharacterCards) {
-		const shouldUpdateCards = incrementCharacterCardCounter();
-		if (shouldUpdateCards) {
-			const context = getContext();
-			const chat = context.chat;
-			const targetMessage =
-				chat && chat.length > 0 ? chat[chat.length - 1] : null;
-			const targetSwipeId = targetMessage
-				? targetMessage.swipe_id || 0
-				: 0;
-			// Run character card update asynchronously (don't block the main flow)
-			setTimeout(async () => {
-				try {
-					await updateCharacterCards(targetMessage, targetSwipeId);
-				} catch (e) {
-					console.error("[RPG Companion] Character card auto-update failed:", e);
-				}
-			}, 2000);
-		}
-	}
-
 	// Clear plot progression flag if this was a plot progression generation
 	// Note: No need to clear extension prompt since we used quiet_prompt option
 	if (isPlotProgression) {
@@ -195,119 +173,99 @@ export async function runTrackerAndRelationshipUpdate(
 	targetMessage = null,
 	targetSwipeId = null,
 ) {
+	// Check minimum reply length for auto-update only
+	if (isAutoUpdate && extensionSettings.minReplyLength > 0) {
+		const lastMessage = chat?.[chat.length - 1];
+		if (lastMessage && !lastMessage.is_user) {
+			const messageLength = (lastMessage.mes || "").length;
+			if (messageLength < extensionSettings.minReplyLength) {
+				console.log(
+					`[RPG Companion] Auto-update skipped: message length (${messageLength}) below minimum (${extensionSettings.minReplyLength})`,
+				);
+				toastr.info(
+					`Auto-update skipped: message too short (${messageLength}/${extensionSettings.minReplyLength} chars)`,
+					"",
+					{ timeOut: 3000 },
+				);
+				return;
+			}
+		}
+	}
+
+	const controller = new AbortController();
+	setGenerationAbortController(controller);
+
 	try {
-		// Create shared abort controller so cancel aborts both RPG data and relationship updates
-		const controller = new AbortController();
-		setGenerationAbortController(controller);
-		const signal = controller.signal;
+		// Show updating UI state
+		setUpdatingUI(true);
 
-		// Show button state
-		const $splitBtn = $("#rpg-refresh-split-btn");
-		const $updateBtn = $("#rpg-full-refresh");
-		const $stripRefreshBtn = $("#rpg-strip-refresh");
-		const updatingText =
-			i18n.getTranslation("template.mainPanel.updating") || "Updating...";
-
-		// Add updating class to split container (shows cancel button, hides both halves)
-		$splitBtn.addClass("is-updating");
-		$updateBtn
-			.find(".rpg-btn-refresh-content")
-			.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
-
-		// Strip button: show spinner and disable
-		$stripRefreshBtn
-			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
-			.prop("disabled", true);
-
-		// Small delay before starting generation.
+		// Small delay before starting generation
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 
-		// If only "Relationships" is selected, run the relationship update flow which uses a specialized prompt and API call
-		if (
-			selectedSections &&
-			selectedSections.length === 1 &&
-			selectedSections[0] === "relationships"
-		) {
-			await updateRelationships(targetMessage, targetSwipeId, signal);
-			return;
+		// Handle single-section updates
+		if (selectedSections?.length === 1) {
+			if (selectedSections[0] === "relationships") {
+				return await updateRelationships(targetMessage, targetSwipeId, controller.signal);
+			}
+			if (selectedSections[0] === "characterCards") {
+				return await updateCharacterCards(targetMessage, targetSwipeId, controller.signal);
+			}
 		}
 
-		// If only "Character Cards" is selected, run the character card update flow
-		if (
-			selectedSections &&
-			selectedSections.length === 1 &&
-			selectedSections[0] === "characterCards"
-		) {
-			await updateCharacterCards(targetMessage, targetSwipeId, signal);
-			return;
+		// Build update tasks
+		const tasks = [
+			updateRPGData(isAutoUpdate, selectedSections, targetMessage, targetSwipeId, controller.signal),
+		];
+
+		if (extensionSettings.showRelationships && (!selectedSections || selectedSections.includes("relationships"))) {
+			tasks.push(updateRelationships(targetMessage, targetSwipeId, controller.signal));
 		}
 
-		const updateRPG = updateRPGData(
-			isAutoUpdate,
-			selectedSections,
-			targetMessage,
-			targetSwipeId,
-			signal,
-		);
-
-		// Collect secondary update tasks (relationships, character cards)
-		const secondaryTasks = [];
-
-		const shouldRunRelationships =
-			extensionSettings.showRelationships &&
-			(!selectedSections || selectedSections.includes("relationships"));
-
-		const shouldRunCharacterCards =
-			extensionSettings.showCharacterCards &&
-			(!selectedSections || selectedSections.includes("characterCards"));
-
-		if (shouldRunRelationships) {
-			secondaryTasks.push(
-				updateRelationships(targetMessage, targetSwipeId, signal),
-			);
+		if (extensionSettings.showCharacterCards) {
+			const shouldRunCards = isAutoUpdate
+				? incrementCharacterCardCounter()
+				: !selectedSections || selectedSections.includes("characterCards");
+			if (shouldRunCards) {
+				resetCharacterCardCounter();
+				tasks.push(updateCharacterCards(targetMessage, targetSwipeId, controller.signal));
+			}
 		}
 
-		if (shouldRunCharacterCards) {
-			resetCharacterCardCounter();
-			secondaryTasks.push(
-				updateCharacterCards(targetMessage, targetSwipeId, signal),
-			);
-		}
-
-		if (secondaryTasks.length === 0) {
-			await updateRPG;
-			return;
-		}
-
+		// Execute tasks
 		if (extensionSettings.parallelTrackerGeneration) {
-			await Promise.all([updateRPG, ...secondaryTasks]);
+			await Promise.all(tasks);
 		} else {
-			await updateRPG;
-			for (const task of secondaryTasks) {
+			for (const task of tasks) {
 				await task;
 			}
 		}
 	} finally {
-		// Clear the shared abort controller
 		setGenerationAbortController(null);
+		setUpdatingUI(false);
+	}
+}
 
-		// Restore button state
-		const $splitBtn = $("#rpg-refresh-split-btn");
-		const $updateBtn = $("#rpg-full-refresh");
-		const $stripRefreshBtn = $("#rpg-strip-refresh");
-		const refreshText =
-			i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
+/**
+ * Updates the refresh button UI state during generation.
+ * @param {boolean} isUpdating - Whether generation is in progress
+ */
+function setUpdatingUI(isUpdating) {
+	const $splitBtn = $("#rpg-refresh-split-btn");
+	const $updateBtn = $("#rpg-full-refresh");
+	const $stripRefreshBtn = $("#rpg-strip-refresh");
 
-		// Remove updating class from split container (hides cancel, shows both halves)
+	if (isUpdating) {
+		const updatingText = i18n.getTranslation("template.mainPanel.updating") || "Updating...";
+		$splitBtn.addClass("is-updating");
+		$updateBtn.find(".rpg-btn-refresh-content")
+			.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
+		$stripRefreshBtn.html('<i class="fa-solid fa-spinner fa-spin"></i>').prop("disabled", true);
+	} else {
+		const refreshText = i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
 		$splitBtn.removeClass("is-updating");
-		$updateBtn
-			.find(".rpg-btn-refresh-content")
+		$updateBtn.find(".rpg-btn-refresh-content")
 			.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
-
-		// Strip button restore
-		$stripRefreshBtn
-			.html('<i class="fa-solid fa-sync"></i>')
-			.prop("disabled", false);
+		$stripRefreshBtn.html('<i class="fa-solid fa-sync"></i>').prop("disabled", false);
 	}
 }
 

@@ -12,11 +12,7 @@ import { getCurrentProfile } from "./apiClient.js";
 import { generateCharacterCardPrompt } from "./characterCardPromptBuilder.js";
 import {
     saveCharacterCard,
-    getCharacterCardLorebookName,
     getCharacterCardLorebookForChat,
-    getCharacterLorebookName,
-    getChatLorebookName,
-    getCharacterCardCounter,
     incrementCharacterCardCounter as incrementCounterInMetadata,
     resetCharacterCardCounter as resetCounterInMetadata,
 } from "./characterCardLorebookManager.js";
