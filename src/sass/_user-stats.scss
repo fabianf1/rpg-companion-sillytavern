@@ -1,0 +1,653 @@
+
+/* ============================================
+   USER STATS SECTION
+   ============================================ */
+#rpg-user-stats {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.rpg-stats-section {
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	position: relative; /* For absolute positioning of lock icon on mobile */
+}
+
+/* Hide the stats header - we'll integrate portrait/inventory into stats content */
+.rpg-stats-header {
+	display: none;
+}
+
+.rpg-stats-header-left {
+	display: none;
+}
+
+.rpg-user-portrait {
+	width: clamp(24px, 4vh, 32px);
+	height: clamp(24px, 4vh, 32px);
+	border-radius: 50%;
+	border: 2px solid var(--rpg-highlight);
+	box-shadow: 0 0 8px var(--rpg-highlight);
+	object-fit: cover;
+	transition: transform 0.3s ease;
+	flex-shrink: 0;
+}
+
+.rpg-user-portrait:hover {
+	transform: scale(1.1) rotate(5deg);
+}
+
+.rpg-stats-title {
+	display: none;
+}
+
+/* Inventory Box - Styled like a treasure chest */
+.rpg-inventory-box {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	background: linear-gradient(135deg, var(--rpg-accent) 0%, var(--rpg-bg) 100%);
+	border: 2px solid var(--rpg-highlight);
+	border-radius: clamp(4px, 0.8vh, 6px);
+	padding: clamp(3px, 0.6vh, 5px);
+	max-height: clamp(35px, 5vh, 45px);
+	min-height: clamp(28px, 4vh, 35px);
+	box-shadow:
+		inset 0 2px 4px rgba(255, 255, 255, 0.1),
+		inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+		0 2px 8px rgba(0, 0, 0, 0.3);
+	overflow: hidden;
+}
+
+/* Add decorative chest details with pseudo-elements */
+.rpg-inventory-box::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 60%;
+	height: 0.125rem;
+	background: var(--rpg-highlight);
+	opacity: 0.5;
+}
+
+.rpg-inventory-box::after {
+	content: "";
+	position: absolute;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 80%;
+	height: 0.062rem;
+	background: var(--rpg-highlight);
+	opacity: 0.3;
+}
+
+.rpg-inventory-items {
+	font-size: clamp(0.625rem, 0.6vw, 0.75rem);
+	color: var(--rpg-text);
+	line-height: 1.3;
+	overflow-y: auto;
+	flex: 1;
+	padding: clamp(1px, 0.3vh, 3px);
+	text-align: left;
+}
+
+.rpg-inventory-items::-webkit-scrollbar {
+	width: 0.188rem;
+}
+
+.rpg-inventory-items::-webkit-scrollbar-track {
+	background: var(--rpg-bg);
+	border-radius: 2px;
+}
+
+.rpg-inventory-items::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight);
+	border-radius: 2px;
+}
+
+.rpg-inventory-items::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-text);
+}
+
+/* Stats Content - Two-column layout */
+.rpg-stats-content {
+	display: flex;
+	gap: clamp(4px, 0.8vh, 8px);
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	position: relative; /* For absolute positioning of lock icon */
+}
+
+/* Stats Left - Portrait, Bars and mood */
+.rpg-stats-left {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: clamp(3px, 0.6vh, 6px);
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.rpg-stats-left::-webkit-scrollbar {
+	width: 0.188rem;
+}
+
+.rpg-stats-left::-webkit-scrollbar-track {
+	background: var(--rpg-bg);
+	border-radius: 2px;
+}
+
+.rpg-stats-left::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight);
+	border-radius: 2px;
+}
+
+.rpg-stats-left::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-text);
+}
+
+/* User info row (portrait, name, separator, level) */
+.rpg-user-info-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375em;
+	font-size: clamp(0.5rem, 0.5vw, 0.625rem);
+	flex-shrink: 0;
+}
+
+/* User portrait */
+.rpg-user-portrait {
+	width: clamp(12px, 1.8vw, 16px);
+	height: clamp(12px, 1.8vw, 16px);
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
+/* User name and level - inline with portrait */
+.rpg-user-name {
+	font-weight: 600;
+	font-size: 1em;
+	color: var(--rpg-text-color);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.rpg-level-label {
+	font-size: 1em;
+	font-weight: 600;
+	color: var(--rpg-text-color);
+	opacity: 0.7;
+}
+
+.rpg-level-value {
+	font-size: 1em;
+	font-weight: 700;
+	color: var(--rpg-highlight-color);
+	padding: clamp(1px, 0.2vh, 2px) 0.375em;
+	background: var(--rpg-accent-color);
+	border-radius: clamp(2px, 0.3vh, 3px);
+	border: 1px solid var(--rpg-highlight-color);
+	min-width: 1.5em;
+	text-align: center;
+	cursor: text;
+	transition: all 0.2s ease;
+}
+
+.rpg-level-value:hover {
+	background: var(--rpg-highlight-color);
+	color: var(--rpg-bg-color);
+}
+
+.rpg-level-value:focus {
+	outline: 2px solid var(--rpg-highlight-color);
+	outline-offset: 1px;
+	background: var(--rpg-bg-color);
+}
+
+/* Portrait and Inventory row at top of stats-left */
+.rpg-stats-left > .rpg-user-portrait,
+.rpg-stats-left > .rpg-inventory-box {
+	flex-shrink: 0;
+}
+
+.rpg-stats-left > .rpg-user-portrait {
+	align-self: flex-start;
+}
+
+.rpg-stats-left > .rpg-inventory-box {
+	width: 100%;
+}
+
+/* Stats Right - Attributes */
+.rpg-stats-right {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.rpg-stats-grid {
+	display: flex;
+	flex-direction: column;
+	gap: clamp(3px, 0.5vh, 6px);
+	flex: 1 1 auto;
+	position: relative; /* For lock icon positioning */
+	overflow: visible;
+}
+
+.rpg-stats-grid::-webkit-scrollbar {
+	width: 0.188rem;
+}
+
+.rpg-stats-grid::-webkit-scrollbar-track {
+	background: var(--rpg-bg);
+	border-radius: 2px;
+}
+
+.rpg-stats-grid::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight);
+	border-radius: 2px;
+}
+
+.rpg-stats-grid::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-text);
+}
+
+.rpg-classic-stats-grid::-webkit-scrollbar {
+	width: 0.188rem;
+}
+
+.rpg-classic-stats-grid::-webkit-scrollbar-track {
+	background: var(--rpg-bg);
+	border-radius: 2px;
+}
+
+.rpg-classic-stats-grid::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight);
+	border-radius: 2px;
+}
+
+.rpg-classic-stats-grid::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-text);
+}
+
+/* Section-level lock icon styling - appears on hover in top-right corner */
+.rpg-section-lock-icon {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	font-size: 1rem;
+	cursor: pointer;
+	opacity: 0;
+	transition:
+		opacity 0.2s ease,
+		transform 0.1s ease;
+	user-select: none;
+	z-index: 10;
+	pointer-events: none;
+}
+
+/* Show lock icon on hover or when section is locked */
+.rpg-stats-content:hover .rpg-section-lock-icon,
+.rpg-dashboard-widget:hover .rpg-section-lock-icon,
+.rpg-character-card:hover .rpg-section-lock-icon,
+.rpg-item-card:hover .rpg-section-lock-icon,
+.rpg-item-row:hover .rpg-section-lock-icon,
+.rpg-quest-item:hover .rpg-section-lock-icon,
+.rpg-section-lock-icon.locked {
+	opacity: 0.7;
+	pointer-events: auto;
+}
+
+/* Lock icon always visible when locked */
+.rpg-section-lock-icon.locked {
+	display: inline-block !important;
+	opacity: 0.7 !important;
+}
+
+/* Lock icon hidden when unlocked (only show on hover) */
+.rpg-section-lock-icon:not(.locked) {
+	display: none;
+}
+
+.rpg-quest-item:hover .rpg-section-lock-icon:not(.locked),
+.rpg-quest-item.locked .rpg-section-lock-icon {
+	display: inline-block !important;
+}
+
+.rpg-section-lock-icon:hover {
+	opacity: 1;
+	transform: scale(1.15);
+}
+
+/* Mobile: always show lock icons since there's no hover */
+@media (max-width: 1000px) {
+	.rpg-section-lock-icon {
+		opacity: 0.6 !important;
+		pointer-events: auto !important;
+	}
+
+	.rpg-section-lock-icon.locked {
+		opacity: 0.9 !important;
+	}
+}
+
+/* Make containers relative for absolute positioning of lock icon */
+.rpg-stats-content,
+.rpg-dashboard-widget,
+.rpg-character-content,
+.rpg-item-card,
+.rpg-item-row,
+.rpg-quest-item {
+	position: relative;
+}
+
+.rpg-stat-row {
+	display: flex;
+	align-items: center;
+	gap: 0.25em;
+	flex: 1 1 0;
+	min-width: fit-content;
+	max-width: 100%;
+	width: 100%;
+	min-height: clamp(12px, 1.8vh, 16px);
+	transition: background-color 0.2s ease;
+	overflow: visible;
+	box-sizing: border-box;
+}
+
+/* Old per-field lock styling - remove */
+.rpg-lock-icon {
+	display: none;
+}
+
+.rpg-stat-row.rpg-locked {
+	background-color: transparent;
+	border-left: none;
+	padding-left: 0;
+}
+
+.rpg-stat-label {
+	flex: 0 0 auto;
+	min-width: 3rem;
+	max-width: 30%;
+	font-size: clamp(0.625rem, 0.6vw, 0.75rem);
+	font-weight: 600;
+	text-align: left;
+	color: var(--rpg-text);
+	text-transform: uppercase;
+	letter-spacing: 0.019em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.rpg-stat-bar {
+	flex: 1;
+	min-width: 3.75rem;
+	max-width: 100%;
+	width: 100%;
+	height: clamp(9px, 1.3vh, 11px);
+	min-height: 9px;
+	position: relative;
+	border-radius: 0.375em;
+	overflow: hidden;
+	box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-sizing: border-box;
+}
+
+.rpg-stat-fill {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	/* Transition moved to .rpg-animations-enabled */
+}
+
+.rpg-stat-value {
+	color: #fff;
+	font-size: clamp(0.625rem, 0.6vw, 0.75rem);
+	font-weight: bold;
+	min-width: 1.875rem;
+	text-align: right;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Compact layout for high zoom / small viewports */
+@media (max-height: 750px), (max-width: 1500px) {
+	.rpg-stat-row {
+		position: relative;
+		min-height: clamp(16px, 2.5vh, 20px);
+	}
+
+	.rpg-stat-label {
+		position: absolute;
+		left: 0.5em;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 2;
+		min-width: auto;
+		max-width: calc(100% - 3rem);
+		font-size: min(0.7vw, 0.875rem);
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	.rpg-stat-bar {
+		width: 100% !important;
+		max-width: 100% !important;
+		height: 100%;
+		min-height: clamp(16px, 2.5vh, 20px);
+		box-sizing: border-box;
+	}
+
+	.rpg-stat-value {
+		position: absolute;
+		right: 0.5em;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 2;
+		min-width: auto;
+		font-size: clamp(0.75rem, 0.7vw, 0.875rem);
+	}
+
+	.rpg-mood {
+		font-size: clamp(0.625rem, 1vw, 0.75rem);
+		flex-shrink: 1;
+		min-width: 0;
+	}
+
+	.rpg-mood-emoji {
+		font-size: clamp(0.875rem, 2vw, 1.125rem);
+	}
+
+	.rpg-mood-conditions {
+		font-size: clamp(0.625rem, 1vw, 0.75rem);
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+	}
+}
+
+.rpg-mood {
+	display: flex;
+	align-items: center;
+	gap: 0.375em;
+	font-size: clamp(0.5rem, 0.5vw, 0.625rem);
+	padding: clamp(4px, 0.6vh, 6px) 0.375em;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.25em;
+	border: 1px solid var(--rpg-border);
+	flex-shrink: 0;
+	position: relative; /* For lock icon positioning */
+}
+
+.rpg-mood-emoji {
+	font-size: clamp(12px, 1.8vw, 16px);
+	flex-shrink: 0;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.rpg-mood-conditions {
+	flex: 1;
+	min-width: 0;
+	line-height: 1.2;
+	color: var(--rpg-text);
+	font-weight: 600;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+
+/* Skills Section */
+.rpg-skills-section {
+	display: flex;
+	align-items: center;
+	gap: 0.375em;
+	font-size: clamp(0.5rem, 0.5vw, 0.625rem);
+	padding: clamp(4px, 0.6vh, 6px) 0.375em;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.25em;
+	border: 1px solid var(--rpg-border);
+	flex-shrink: 0;
+	margin-top: 0.375em;
+	position: relative; /* For lock icon positioning */
+}
+
+.rpg-skills-label {
+	font-weight: 700;
+	color: var(--rpg-highlight);
+	flex-shrink: 0;
+}
+
+.rpg-skills-value {
+	flex: 1;
+	min-width: 0;
+	line-height: 1.2;
+	color: var(--rpg-text);
+	font-weight: 600;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+
+/* Classic RPG Stats - Will match height of stats box automatically */
+.rpg-classic-stats {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+.rpg-classic-stats-title {
+	text-align: center;
+	font-size: clamp(0.75rem, 0.85vw, 0.875rem);
+	font-weight: bold;
+	text-transform: uppercase;
+	letter-spacing: 0.037em;
+	color: var(--rpg-highlight);
+	margin-bottom: 0.25em;
+	flex-shrink: 0;
+}
+
+.rpg-classic-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: clamp(2px, 0.4vh, 4px);
+	flex: 1;
+	grid-auto-rows: 1fr;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.rpg-classic-stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: clamp(1px, 0.15vh, 2px);
+	padding: clamp(3px, 0.5vh, 5px);
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.25em;
+	border: 1px solid var(--rpg-border);
+	box-sizing: border-box;
+}
+
+.rpg-classic-stat-label {
+	font-size: clamp(0.5rem, 0.5vw, 0.625rem);
+	font-weight: bold;
+	text-transform: uppercase;
+	letter-spacing: 0.006em;
+	color: var(--rpg-text);
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.rpg-classic-stat-value {
+	font-size: clamp(0.625rem, 0.6vw, 0.75rem);
+	font-weight: bold;
+	color: var(--rpg-highlight);
+	text-align: center;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.rpg-classic-stat-buttons {
+	display: flex;
+	gap: clamp(3px, 0.4vh, 5px);
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 100%;
+}
+
+.rpg-classic-stat-btn {
+	width: clamp(18px, 2.2vh, 24px);
+	height: clamp(16px, 2vh, 20px);
+	padding: 0;
+	background: var(--rpg-accent);
+	border: 1px solid var(--rpg-border);
+	border-radius: 2px;
+	color: var(--rpg-text);
+	font-size: clamp(9px, 1.1vw, 12px);
+	font-weight: bold;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	line-height: 1;
+	flex: 0 0 auto;
+}
+
+.rpg-classic-stat-btn:hover {
+	background: var(--rpg-highlight);
+	border-color: var(--rpg-highlight);
+	transform: scale(1.05);
+}
+
+.rpg-classic-stat-btn:active {
+	transform: scale(0.95);
+}

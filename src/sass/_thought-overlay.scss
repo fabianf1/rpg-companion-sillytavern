@@ -1,0 +1,358 @@
+
+/* ============================================
+   CHAT THOUGHT OVERLAYS
+   ============================================ */
+
+/* Container for thought overlay on chat messages */
+/* Floating thought panel - positioned next to character avatar */
+#rpg-thought-panel {
+	position: fixed;
+	z-index: 1000; /* Lower z-index to stay below dropdown menus */
+	pointer-events: auto;
+	max-width: 350px; /* Fixed max like panels, will be constrained by viewport */
+	width: auto;
+	transform: translateY(0); /* No vertical centering - align with avatar top */
+	animation: thoughtPanelFadeIn 0.4s ease-out;
+}
+
+/* Collapsed thought icon */
+#rpg-thought-icon {
+	position: fixed;
+	z-index: 1000; /* Lower z-index to stay below dropdown menus */
+	display: none; /* Hidden by default in desktop */
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: var(--rpg-bg, rgba(30, 30, 50, 0.95));
+	border: 2px solid var(--rpg-highlight, #e94560);
+	color: var(--rpg-text, #ecf0f1);
+	font-size: clamp(1.25rem, 1.85vw, 1.875rem);
+	cursor: move;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(10px);
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease,
+		opacity 0.2s ease;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* Show icon only in mobile view */
+@media (max-width: 1000px) {
+	#rpg-thought-icon {
+		display: flex;
+	}
+}
+
+/* Force hide class for desktop mode - overrides media query (unless collapsed) */
+#rpg-thought-icon.rpg-force-hide:not(.rpg-collapsed-desktop) {
+	display: none !important;
+}
+
+/* When collapsed in desktop, show icon */
+#rpg-thought-icon.rpg-collapsed-desktop {
+	display: flex !important;
+}
+
+/* Hidden state that allows transitions */
+#rpg-thought-icon.rpg-hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+#rpg-thought-icon.dragging {
+	transition: none !important;
+	cursor: grabbing;
+}
+
+#rpg-thought-icon:not(.dragging):hover {
+	transform: scale(1.1);
+	box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+/* Close button */
+.rpg-thought-close {
+	position: absolute;
+	top: -0.5rem;
+	right: -0.5rem;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: var(--rpg-highlight, #e94560);
+	color: white;
+	border: 2px solid var(--rpg-bg, rgba(30, 30, 50, 0.95));
+	font-size: clamp(0.9rem, 1rem, 1.1rem);
+	line-height: 1;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10001;
+	transition: all 0.2s ease;
+}
+
+.rpg-thought-close:hover {
+	transform: scale(1.1);
+	background: var(--rpg-text, #eaeaea);
+	color: var(--rpg-highlight, #e94560);
+}
+
+/* Show close button in desktop view for collapsing */
+@media (min-width: 1001px) {
+	.rpg-thought-close {
+		display: flex !important;
+	}
+}
+
+@keyframes thoughtIconPulse {
+	0%,
+	100% {
+		transform: scale(1);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	}
+	50% {
+		transform: scale(1.05);
+		box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
+	}
+}
+
+/* Thought circles floating from avatar */
+.rpg-thought-circles {
+	position: absolute;
+	display: flex;
+	flex-direction: row-reverse; /* Horizontal layout, flipped */
+	align-items: center; /* Center vertically */
+	gap: 0.5em;
+	inset: 0px -50px auto;
+	z-index: 1;
+}
+
+/* Flip thought circles to left side when panel is on left */
+.rpg-thought-panel-right .rpg-thought-circles {
+	inset: 0px auto auto -50px;
+	flex-direction: row; /* Normal order for left side */
+}
+
+.rpg-thought-circle {
+	background: var(--rpg-bg, rgba(30, 30, 50, 0.8));
+	border: 2px solid var(--rpg-highlight, #e94560);
+	border-radius: 50%;
+	animation: thoughtCirclePulse 1.5s ease-in-out infinite;
+}
+
+.rpg-circle-1 {
+	width: 0.5rem;
+	height: 0.5rem;
+	animation-delay: 0s;
+}
+
+.rpg-circle-2 {
+	width: 0.75rem;
+	height: 0.75rem;
+	animation-delay: 0.2s;
+}
+
+.rpg-circle-3 {
+	width: 1rem;
+	height: 1rem;
+	animation-delay: 0.4s;
+}
+
+/* Thought bubble main container */
+.rpg-thought-bubble {
+	background: var(--rpg-bg, rgba(30, 30, 50, 0.95));
+	border: 2px solid var(--rpg-highlight, #e94560);
+	border-radius: clamp(10px, 1.5vh, 14px);
+	padding: clamp(10px, 1.5vh, 14px);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+	position: relative;
+	backdrop-filter: blur(15px);
+	max-height: calc(100vh - 120px); /* Scale with viewport height */
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+/* Custom scrollbar for thought bubble */
+.rpg-thought-bubble::-webkit-scrollbar {
+	width: 0.375rem;
+}
+
+.rpg-thought-bubble::-webkit-scrollbar-track {
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 3px;
+}
+
+.rpg-thought-bubble::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight, #e94560);
+	border-radius: 3px;
+	opacity: 0.5;
+}
+
+.rpg-thought-bubble::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-highlight, #e94560);
+	opacity: 0.8;
+}
+
+/* Individual thought item (for multiple characters) */
+.rpg-thought-item {
+	display: flex;
+	gap: clamp(10px, 1.5vh, 12px);
+	align-items: flex-start;
+}
+
+/* Emoji box on the left */
+.rpg-thought-emoji-box {
+	flex-shrink: 0;
+	width: clamp(32px, 4vh, 40px);
+	height: clamp(32px, 4vh, 40px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--rpg-accent, rgba(50, 50, 70, 0.8));
+	border: 1px solid var(--rpg-highlight, #e94560);
+	border-radius: clamp(6px, 1vh, 8px);
+	font-size: clamp(16px, 2vw, 20px);
+}
+
+/* Thought content on the right */
+.rpg-thought-content {
+	flex: 1;
+	font-size: clamp(0.85rem, 0.9rem, 0.95rem);
+	line-height: 1.5;
+	color: var(--rpg-text, #eaeaea);
+	font-style: italic;
+	opacity: 0.95;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+
+/* Divider between multiple thoughts */
+.rpg-thought-divider {
+	height: 0.062rem;
+	background: linear-gradient(
+		to right,
+		transparent,
+		var(--rpg-highlight, #e94560),
+		transparent
+	);
+	margin: clamp(8px, 1vh, 10px) 0;
+	opacity: 0.5;
+}
+
+/* Arrow pointing right (when panel is on left) */
+#rpg-thought-panel.rpg-thought-panel-left .rpg-thought-bubble::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	right: -0.75rem;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 10px 0 10px 12px;
+	border-color: transparent transparent transparent
+		var(--rpg-highlight, #e94560);
+}
+
+#rpg-thought-panel.rpg-thought-panel-left .rpg-thought-bubble::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	right: -0.562rem;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 0.5rem 0 0.5rem 0.625rem;
+	border-color: transparent transparent transparent
+		var(--rpg-bg, rgba(30, 30, 50, 0.95));
+	z-index: 1;
+}
+
+/* Arrow pointing left (when panel is on right) */
+#rpg-thought-panel.rpg-thought-panel-right .rpg-thought-bubble::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: -0.75rem;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 10px 12px 10px 0;
+	border-color: transparent var(--rpg-highlight, #e94560) transparent
+		transparent;
+}
+
+#rpg-thought-panel.rpg-thought-panel-right .rpg-thought-bubble::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: -0.562rem;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 0.5rem 0.625rem 0.5rem 0;
+	border-color: transparent var(--rpg-bg, rgba(30, 30, 50, 0.95)) transparent
+		transparent;
+	z-index: 1;
+}
+
+/* Animations */
+@keyframes thoughtPanelFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-50%) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(-50%) scale(1);
+	}
+}
+
+@keyframes thoughtCirclePulse {
+	0%,
+	100% {
+		opacity: 0.3;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.1);
+	}
+}
+
+/* Responsive positioning for mobile/narrow screens */
+@media (max-width: 1000px) {
+	#rpg-thought-panel {
+		position: fixed !important;
+		max-width: 90vw !important;
+		width: 90vw !important;
+		left: 50% !important;
+		transform: translateX(-50%) !important;
+		max-height: calc(100dvh - 80px) !important;
+	}
+
+	#rpg-thought-panel .rpg-thought-bubble {
+		max-height: calc(100dvh - 100px) !important;
+		overflow-y: auto !important;
+	}
+
+	.rpg-thought-circles {
+		display: none !important;
+	}
+
+	#rpg-thought-panel .rpg-thought-bubble::after,
+	#rpg-thought-panel .rpg-thought-bubble::before {
+		display: none !important;
+	}
+
+	.rpg-thought-content {
+		font-size: clamp(12px, 3.5vw, 16px);
+	}
+}

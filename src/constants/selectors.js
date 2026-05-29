@@ -9,9 +9,8 @@ export const PANEL = "#rpg-companion-panel";
 export const MOBILE_TOGGLE = "#rpg-mobile-toggle";
 export const COLLAPSE_TOGGLE = "#rpg-collapse-toggle";
 export const PLOT_BUTTONS = "#rpg-plot-buttons";
-export const HOLIDAY_PROMO = "#rpg-holiday-promo";
 
-// ── Section Containers ──────────────────────────────────────────
+// ── Section Containers ──────────────────────────────────────────────────
 export const USER_STATS = "#rpg-user-stats";
 export const INFO_BOX = "#rpg-info-box";
 export const THOUGHTS = "#rpg-thoughts";
@@ -25,7 +24,6 @@ export const PARTIAL_REFRESH = "#rpg-partial-refresh";
 export const REFRESH_CANCEL = "#rpg-refresh-cancel";
 export const STRIP_REFRESH = "#rpg-strip-refresh";
 export const STRIP_CANCEL = "#rpg-strip-cancel";
-export const DISMISS_PROMO = "#rpg-dismiss-promo";
 
 export const REFRESH_CONTENT = ".rpg-btn-refresh-content";
 export const PARTIAL_CONTENT = ".rpg-btn-partial-content";

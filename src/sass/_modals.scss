@@ -1,0 +1,437 @@
+
+/* ============================================
+   SETTINGS MODAL - MOBILE FIRST
+   ============================================ */
+
+/* CSS Custom Properties for Responsive Scaling */
+.rpg-settings-popup {
+	/* Fluid spacing */
+	--modal-padding: clamp(0.5rem, 2vw, 0.75rem);
+	--modal-gap: clamp(0.375rem, 1.5vw, 0.5rem);
+	--modal-border-width: 2px;
+
+	/* Fluid typography */
+	--modal-font-base: clamp(0.8rem, 3vw, 0.9rem);
+	--modal-font-small: clamp(0.7rem, 2.5vw, 0.8rem);
+	--modal-font-heading: clamp(0.9rem, 3.5vw, 1rem);
+
+	/* Content constraints - more height than dice roller */
+	--modal-max-width: min(90vw, 500px);
+	--modal-max-height: 75vh;
+}
+
+/* Modal Container - Hidden by default */
+.rpg-settings-popup {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+}
+
+/* Open state */
+.rpg-settings-popup.is-open {
+	display: flex;
+	animation: fadeIn 0.2s ease-out;
+}
+
+/* Closing state */
+.rpg-settings-popup.is-closing {
+	display: flex;
+	animation: fadeOut 0.2s ease-in;
+}
+
+/* Backdrop overlay - using ::before pseudo-element */
+.rpg-settings-popup::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.85);
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+}
+
+/* Modal Content Box */
+.rpg-settings-popup-content {
+	position: relative;
+	width: 100%;
+	max-width: var(--modal-max-width);
+	height: auto;
+	max-height: var(--modal-max-height);
+	min-height: 0;
+	background: rgba(30, 30, 30, 0.8);
+	border: var(--modal-border-width) solid var(--rpg-border);
+	border-radius: 0.5rem;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+	color: var(--rpg-text);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	margin: auto 0;
+}
+
+/* Header */
+.rpg-settings-popup-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--modal-padding);
+	background: var(--rpg-accent);
+	border-bottom: var(--modal-border-width) solid var(--rpg-border);
+	flex-shrink: 0;
+}
+
+.rpg-settings-popup-header h3 {
+	margin: 0;
+	font-size: var(--modal-font-heading);
+	color: var(--rpg-highlight);
+	display: flex;
+	align-items: center;
+	gap: var(--modal-gap);
+	border-left: none !important;
+	padding-left: 0 !important;
+}
+
+.rpg-settings-popup-header h3 i {
+	border-left: none !important;
+	padding-left: 0 !important;
+	color: var(--rpg-highlight);
+}
+
+/* Close button - touch-friendly */
+.rpg-popup-close {
+	background: transparent;
+	border: none;
+	color: var(--rpg-text);
+	font-size: clamp(1.5rem, 2.2vw, 2.2rem);
+	cursor: pointer;
+	padding: 0.5rem;
+	min-width: 44px;
+	min-height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.25rem;
+	transition: all 0.2s ease;
+}
+
+.rpg-popup-close:active {
+	background: rgba(255, 255, 255, 0.1);
+	color: var(--rpg-highlight);
+}
+
+/* Scrollable Body */
+.rpg-settings-popup-body {
+	padding: var(--modal-padding);
+	overflow-y: auto;
+	overflow-x: hidden;
+	-webkit-overflow-scrolling: touch;
+	flex: 1 1 auto;
+	min-height: 0;
+	background: transparent;
+	color: inherit;
+}
+
+/* Settings Groups */
+.rpg-settings-group {
+	margin-bottom: var(--modal-padding);
+	padding-bottom: var(--modal-padding);
+	border-bottom: 1px solid var(--rpg-border);
+}
+
+.rpg-settings-group:last-child {
+	border-bottom: none;
+}
+
+.rpg-settings-group h4 {
+	margin: 0 0 var(--modal-gap) 0;
+	font-size: var(--modal-font-base);
+	color: var(--rpg-highlight);
+	display: flex;
+	align-items: center;
+	gap: var(--modal-gap);
+	font-weight: 600;
+}
+
+/* Theme Support - Default Theme (no data-theme attribute) */
+.rpg-settings-popup-content {
+	--rpg-bg: var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9));
+	--rpg-accent: var(--black30a, rgba(22, 33, 62, 0.9));
+	--rpg-text: var(--SmartThemeBodyColor, #eaeaea);
+	--rpg-highlight: var(--SmartThemeQuoteColor, #e94560);
+	--rpg-border: #6b9fd4;
+}
+
+/* Desktop Enhancement (1001px+) */
+@media (min-width: 1001px) {
+	.rpg-settings-popup {
+		--modal-padding: 1rem;
+		--modal-gap: 0.75rem;
+		--modal-font-base: 0.9rem;
+		--modal-font-small: 0.8rem;
+		--modal-font-heading: 1.125rem;
+		--modal-max-width: 600px;
+	}
+
+	/* Hover effects on desktop */
+	.rpg-popup-close:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--rpg-highlight);
+	}
+}
+
+/* ============================================
+   PARTIAL REFRESH MODAL
+   ============================================ */
+
+/* Modal Container - Hidden by default */
+.rpg-partial-refresh-popup {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+}
+
+/* Open state */
+.rpg-partial-refresh-popup.is-open {
+	display: flex;
+	animation: fadeIn 0.2s ease-out;
+}
+
+/* Closing state */
+.rpg-partial-refresh-popup.is-closing {
+	display: flex;
+	animation: fadeOut 0.2s ease-in;
+}
+
+/* Backdrop overlay */
+.rpg-partial-refresh-popup::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.85);
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+}
+
+/* Modal Content Box */
+.rpg-partial-refresh-popup-content {
+	position: relative;
+	width: 100%;
+	max-width: min(90vw, 400px);
+	height: auto;
+	max-height: 70vh;
+	min-height: 0;
+	background: rgba(30, 30, 30, 0.8);
+	border: 2px solid var(--rpg-border);
+	border-radius: 0.5rem;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+	color: var(--rpg-text);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	margin: auto 0;
+}
+
+/* Header */
+.rpg-partial-refresh-popup-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: clamp(0.5rem, 2vw, 0.75rem);
+	background: var(--rpg-accent);
+	border-bottom: 2px solid var(--rpg-border);
+	flex-shrink: 0;
+}
+
+.rpg-partial-refresh-popup-header h3 {
+	margin: 0;
+	font-size: clamp(0.9rem, 3.5vw, 1rem);
+	color: var(--rpg-highlight);
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.rpg-partial-refresh-popup-header h3 i {
+	color: var(--rpg-highlight);
+}
+
+/* Body */
+.rpg-partial-refresh-popup-body {
+	padding: clamp(0.5rem, 2vw, 0.75rem);
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+/* Description text */
+.rpg-partial-refresh-description {
+	margin: 0 0 0.75em 0;
+	font-size: clamp(0.8rem, 3vw, 0.9rem);
+	opacity: 0.85;
+}
+
+/* Sections list */
+.rpg-partial-refresh-sections {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+
+/* Individual section checkbox label */
+.rpg-partial-refresh-section {
+	display: flex;
+	align-items: center;
+	gap: 0.625em;
+	padding: 0.625em 0.75em;
+	background: var(--rpg-accent);
+	border: 1px solid var(--rpg-border);
+	border-radius: 0.375em;
+	cursor: pointer;
+	font-size: clamp(0.8rem, 3vw, 0.9rem);
+	transition: all 0.2s ease;
+	user-select: none;
+}
+
+.rpg-partial-refresh-section:hover {
+	background: var(--rpg-bg);
+	border-color: var(--rpg-highlight);
+}
+
+.rpg-partial-refresh-section input[type="checkbox"] {
+	width: 1.125em;
+	height: 1.125em;
+	cursor: pointer;
+	accent-color: var(--rpg-highlight);
+	flex-shrink: 0;
+}
+
+/* Footer */
+.rpg-partial-refresh-popup-footer {
+	display: flex;
+	gap: 0.5em;
+	padding: clamp(0.5rem, 2vw, 0.75rem);
+	border-top: 1px solid var(--rpg-border);
+	flex-shrink: 0;
+}
+
+.rpg-partial-refresh-popup-footer .rpg-btn-half {
+	flex: 1;
+	min-width: 0;
+}
+
+.rpg-partial-refresh-popup-footer .rpg-btn-half:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+	filter: grayscale(0.6);
+}
+
+
+/* ============================================
+   IMPORT MODE DIALOG STYLES
+   ============================================ */
+
+/* Import Mode Dialog Overlay */
+.rpg-import-dialog-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100000;
+}
+
+.rpg-import-dialog {
+	background: var(--SmartThemeBlurTintColor, #2a2a3e);
+	border: 1px solid var(--SmartThemeBorderColor, #4a4a4a);
+	border-radius: 8px;
+	padding: 20px;
+	min-width: 300px;
+	max-width: 400px;
+	text-align: center;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.rpg-import-dialog h4 {
+	margin: 0 0 15px 0;
+	color: var(--SmartThemeBodyColor, #eee);
+}
+
+.rpg-import-dialog h4 i {
+	margin-right: 8px;
+	color: var(--SmartThemeQuoteColor, #e94560);
+}
+
+.rpg-import-dialog p {
+	margin: 0 0 20px 0;
+	color: var(--SmartThemeBodyColor, #ccc);
+	font-size: 0.95em;
+}
+
+.rpg-import-dialog-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+.rpg-import-dialog-buttons button {
+	padding: 10px 15px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 0.95em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	transition: all 0.2s ease;
+}
+
+.rpg-import-dialog .rpg-btn-secondary {
+	background: var(--black30a, rgba(0, 0, 0, 0.3));
+	border: 1px solid var(--SmartThemeBorderColor, #4a4a4a);
+	color: var(--SmartThemeBodyColor, #ccc);
+}
+
+.rpg-import-dialog .rpg-btn-secondary:hover {
+	background: var(--SmartThemeBorderColor, #4a4a4a);
+	color: white;
+}
+
+.rpg-import-dialog .rpg-btn-primary {
+	background: var(--SmartThemeQuoteColor, #e94560);
+	border: 1px solid var(--SmartThemeQuoteColor, #e94560);
+	color: white;
+}
+
+.rpg-import-dialog .rpg-btn-primary:hover {
+	background: var(--SmartThemeQuoteColor, #ff5a75);
+	border-color: var(--SmartThemeQuoteColor, #ff5a75);
+}
+
+.rpg-import-dialog .rpg-btn-cancel {
+	background: transparent;
+	border: none;
+	color: var(--SmartThemeBodyColor, #888);
+	cursor: pointer;
+	font-size: 0.85em;
+	padding: 5px;
+}
+
+.rpg-import-dialog .rpg-btn-cancel:hover {
+	color: var(--SmartThemeBodyColor, #ccc);
+	text-decoration: underline;
+}

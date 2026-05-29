@@ -1,0 +1,372 @@
+
+/* ============================================
+   DICE ROLL MODAL - MOBILE FIRST
+   ============================================ */
+
+/* CSS Custom Properties for Responsive Scaling */
+.rpg-dice-popup {
+	/* Fluid spacing that scales with viewport */
+	--modal-padding: clamp(0.5rem, 2vw, 0.75rem);
+	--modal-gap: clamp(0.375rem, 1.5vw, 0.5rem);
+	--modal-border-width: 2px;
+
+	/* Fluid typography */
+	--modal-font-base: clamp(0.8rem, 3vw, 0.9rem);
+	--modal-font-small: clamp(0.7rem, 2.5vw, 0.8rem);
+	--modal-font-large: clamp(1.25rem, 6vw, 1.75rem);
+	--modal-font-huge: clamp(1.5rem, 8vw, 2.5rem);
+
+	/* Touch-friendly sizing */
+	--modal-button-height: 44px;
+	--modal-input-height: 44px;
+
+	/* Content constraints - MUCH more conservative */
+	--modal-max-width: min(90vw, 360px);
+	--modal-max-height: 70vh;
+}
+
+/* Modal Container - Hidden by default */
+.rpg-dice-popup {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+}
+
+/* Open state - managed by JavaScript classList */
+.rpg-dice-popup.is-open {
+	display: flex;
+	animation: fadeIn 0.2s ease-out;
+}
+
+/* Closing state - allows exit animation */
+.rpg-dice-popup.is-closing {
+	display: flex;
+	animation: fadeOut 0.2s ease-in;
+}
+
+/* Backdrop overlay - using ::before pseudo-element */
+.rpg-dice-popup::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.85);
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+}
+
+/* Modal Content Box */
+.rpg-dice-popup-content {
+	position: relative;
+	width: 100%;
+	max-width: var(--modal-max-width);
+	height: auto;
+	max-height: var(--modal-max-height);
+	min-height: 0;
+	background: rgba(30, 30, 30, 0.8);
+	border: var(--modal-border-width) solid var(--rpg-border);
+	border-radius: 0.5rem;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+	color: var(--rpg-text);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	margin: auto 0;
+}
+
+/* Header */
+.rpg-dice-popup-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--modal-padding);
+	background: var(--rpg-accent);
+	border-bottom: var(--modal-border-width) solid var(--rpg-border);
+	flex-shrink: 0;
+}
+
+.rpg-dice-popup-header h3 {
+	margin: 0;
+	font-size: var(--modal-font-base);
+	color: var(--rpg-highlight);
+	display: flex;
+	align-items: center;
+	gap: var(--modal-gap);
+}
+
+/* Close button - touch-friendly */
+#rpg-dice-popup-close {
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Scrollable Body */
+.rpg-dice-popup-body {
+	padding: var(--modal-padding);
+	overflow-y: auto;
+	overflow-x: hidden;
+	-webkit-overflow-scrolling: touch;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+/* Input Container */
+.rpg-dice-selector-container {
+	padding: var(--modal-padding);
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.5rem;
+	border: var(--modal-border-width) solid var(--rpg-border);
+	margin-bottom: var(--modal-gap);
+}
+
+/* Input Grid - Stacked on mobile */
+.rpg-dice-selector {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--modal-gap);
+	margin-bottom: var(--modal-gap);
+}
+
+.rpg-dice-input-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.rpg-dice-input-group label {
+	font-size: var(--modal-font-small);
+	font-weight: 600;
+	color: var(--rpg-text);
+}
+
+.rpg-dice-input-group input,
+.rpg-dice-input-group select {
+	width: 100%;
+	min-height: var(--modal-input-height);
+	padding: 0.5rem;
+	border: var(--modal-border-width) solid var(--rpg-border);
+	border-radius: 0.375rem;
+	background: var(--rpg-accent);
+	color: var(--rpg-text);
+	font-size: var(--modal-font-base);
+	font-weight: 600;
+	text-align: center;
+	transition: all 0.2s ease;
+}
+
+.rpg-dice-input-group input:focus,
+.rpg-dice-input-group select:focus {
+	outline: none;
+	border-color: var(--rpg-highlight);
+	box-shadow: 0 0 0 3px rgba(var(--rpg-highlight-rgb, 255, 0, 100), 0.2);
+	background: rgba(0, 0, 0, 0.5);
+}
+
+/* Roll Button - touch-friendly */
+#rpg-dice-roll-btn {
+	width: 100%;
+	min-height: var(--modal-button-height);
+	padding: 0.75rem 1rem;
+	background: linear-gradient(135deg, var(--rpg-highlight), var(--rpg-accent));
+	border: var(--modal-border-width) solid var(--rpg-highlight);
+	border-radius: 0.5rem;
+	color: var(--rpg-text);
+	font-size: var(--modal-font-base);
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+}
+
+#rpg-dice-roll-btn:active {
+	transform: scale(0.98);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Animation Section */
+.rpg-dice-animation {
+	text-align: center;
+	padding: var(--modal-padding);
+}
+
+.rpg-dice-rolling i {
+	font-size: var(--modal-font-large);
+	color: var(--rpg-highlight);
+	animation: diceRoll 0.8s ease-in-out infinite;
+}
+
+.rpg-dice-rolling-text {
+	margin-top: var(--modal-gap);
+	font-size: var(--modal-font-base);
+	font-weight: 600;
+	color: var(--rpg-highlight);
+	animation: pulseGlow 1s ease-in-out infinite;
+}
+
+/* Result Section */
+.rpg-dice-result {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	padding: var(--modal-padding);
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.5rem;
+	border: var(--modal-border-width) solid var(--rpg-border);
+}
+
+.rpg-dice-result-label {
+	font-size: var(--modal-font-small);
+	color: var(--rpg-text);
+	margin-bottom: 0.5rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	opacity: 0.8;
+}
+
+.rpg-dice-result-value {
+	font-size: var(--modal-font-huge);
+	font-weight: 700;
+	color: var(--rpg-highlight);
+	text-shadow: 0 0 20px var(--rpg-highlight);
+	line-height: 1;
+}
+
+.rpg-dice-result-value.is-animating {
+	animation: resultPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rpg-dice-result-details {
+	margin-top: var(--modal-gap);
+	font-size: var(--modal-font-small);
+	color: var(--rpg-text);
+	opacity: 0.7;
+}
+
+/* Save Button */
+.rpg-dice-save-btn {
+	margin-top: var(--modal-gap);
+	width: 100%;
+	min-height: var(--modal-button-height);
+	padding: 0.75rem 1rem;
+	background: linear-gradient(135deg, #28a745, #20c997);
+	border: var(--modal-border-width) solid #28a745;
+	border-radius: 0.5rem;
+	color: white;
+	font-size: var(--modal-font-base);
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+}
+
+.rpg-dice-save-btn:active {
+	transform: scale(0.98);
+	box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+}
+
+/* Animations */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes slideInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes diceRoll {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	25% {
+		transform: rotate(90deg) scale(1.1);
+	}
+	50% {
+		transform: rotate(180deg);
+	}
+	75% {
+		transform: rotate(270deg) scale(1.1);
+	}
+}
+
+@keyframes resultPop {
+	0% {
+		transform: scale(0);
+		opacity: 0;
+	}
+	50% {
+		transform: scale(1.1);
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+/* Desktop Enhancement (1001px+) */
+@media (min-width: 1001px) {
+	.rpg-dice-popup {
+		--modal-padding: 1.5rem;
+		--modal-gap: 1rem;
+		--modal-font-base: 1rem;
+		--modal-font-small: 0.875rem;
+		--modal-font-large: 3rem;
+		--modal-font-huge: 3.75rem;
+		--modal-max-width: 500px;
+	}
+
+	/* Side-by-side inputs on desktop */
+	.rpg-dice-selector {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	/* Hover effects on desktop */
+	#rpg-dice-roll-btn:hover,
+	.rpg-dice-save-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px currentColor;
+	}
+
+	.rpg-dice-save-btn {
+		max-width: 200px;
+		margin-left: auto;
+		margin-right: auto;
+	}
+}

@@ -1,0 +1,36 @@
+// =================================
+// RPG COMPANION - MAIN STYLESHEET
+// ============================================
+// This is the main entry point for SASS compilation.
+// Use @use for modern SASS module system.
+// ============================================
+
+// === Core UI Components ===
+@use 'animations';
+@use 'buttons';
+@use 'panel-layout';
+@use 'tabs';
+
+// === Feature Modules ===
+@use 'character-thoughts';
+@use 'character-cards';
+@use 'dashboard';
+@use 'dice-modal';
+@use 'editor';
+@use 'inventory';
+@use 'quests';
+@use 'relationships';
+@use 'user-stats';
+@use 'weather-effects';
+
+// === Overlays & Widgets ===
+@use 'fab-widget';
+@use 'modals';
+@use 'plot-buttons';
+@use 'settings';
+@use 'strip-widget';
+@use 'thought-overlay';
+
+// === Responsive & Utilities ===
+@use 'mobile';
+@use 'utilities';

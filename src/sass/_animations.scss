@@ -1,0 +1,239 @@
+// ============================================
+// RPG COMPANION - ANIMATIONS
+// ============================================
+// Keyframes
+@keyframes slideInFromLeft {
+	from {
+		opacity: 0;
+		transform: translateX(-1.25rem);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes fadeInScale {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes contentPulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.6;
+	}
+}
+
+@keyframes fabSpin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes rpg-snowfall {
+	0% {
+		transform: translateY(0) rotate(0deg);
+		opacity: 0.8;
+	}
+	100% {
+		transform: translateY(100dvh) rotate(360deg);
+		opacity: 0.2;
+	}
+}
+
+@keyframes pulseGlow {
+	0%, 100% {
+		opacity: 1;
+		box-shadow: 0 0 10px var(--rpg-highlight);
+	}
+	50% {
+		opacity: 0.7;
+		box-shadow: 0 0 20px var(--rpg-highlight);
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(0.625rem);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes slideInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes diceRoll {
+	0%, 100% {
+		transform: rotate(0deg);
+	}
+	25% {
+		transform: rotate(90deg) scale(1.1);
+	}
+	50% {
+		transform: rotate(180deg);
+	}
+	75% {
+		transform: rotate(270deg) scale(1.1);
+	}
+}
+
+@keyframes resultPop {
+	0% {
+		transform: scale(0);
+		opacity: 0;
+	}
+	50% {
+		transform: scale(1.1);
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes thoughtPanelFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-50%) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(-50%) scale(1);
+	}
+}
+
+@keyframes thoughtCirclePulse {
+	0%, 100% {
+		opacity: 0.3;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.1);
+	}
+}
+
+@keyframes thoughtIconPulse {
+	0%, 100% {
+		transform: scale(1);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	}
+	50% {
+		transform: scale(1.05);
+		box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
+	}
+}
+
+// Animation-enabled state
+.rpg-panel.rpg-animations-enabled {
+	.rpg-stat-fill {
+		transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.rpg-stat-bar {
+		transition: all 0.3s ease;
+	}
+
+	.rpg-info-content,
+	.rpg-thoughts-content {
+		transition: opacity 0.4s ease, transform 0.4s ease;
+	}
+
+	.rpg-info-line {
+		animation: slideInFromLeft 0.5s ease-out backwards;
+
+		&:nth-child(1) { animation-delay: 0.1s; }
+		&:nth-child(2) { animation-delay: 0.2s; }
+		&:nth-child(3) { animation-delay: 0.3s; }
+		&:nth-child(4) { animation-delay: 0.4s; }
+		&:nth-child(5) { animation-delay: 0.5s; }
+	}
+
+	.rpg-thoughts-overlay {
+		animation: fadeInScale 0.6s ease-out;
+	}
+
+	.rpg-mood-value {
+		transition: all 0.3s ease;
+	}
+
+	.rpg-dice-animation {
+		animation: none; // Controlled separately
+	}
+}
+
+// Disable animations when not enabled
+.rpg-panel:not(.rpg-animations-enabled) {
+	.rpg-dice-rolling i {
+		animation: none !important;
+	}
+
+	.rpg-dice-result-value {
+		animation: none !important;
+	}
+}
+
+// Content updating animation
+.rpg-panel.rpg-animations-enabled .rpg-content-updating {
+	animation: contentPulse 0.5s ease;
+}
+
+// FAB loading state
+#rpg-mobile-toggle.rpg-fab-loading {
+	animation: fabSpin 1s linear infinite;
+
+	i {
+		opacity: 0.7;
+	}
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+	.rpg-panel,
+	.rpg-panel.rpg-animations-enabled {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+
+	.rpg-snowflake {
+		animation: none !important;
+	}
+}

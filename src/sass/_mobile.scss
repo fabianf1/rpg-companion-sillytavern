@@ -1,0 +1,1204 @@
+
+/* ============================================
+   MOBILE TOGGLE BUTTON (FAB)
+   ============================================ */
+
+/* Hide mobile toggle on desktop, show on mobile */
+.rpg-mobile-toggle {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	/* Position set by JavaScript based on saved settings */
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: var(--rpg-bg, rgba(30, 30, 50, 0.95));
+	border: 2px solid var(--rpg-highlight, #e94560);
+	color: var(--rpg-text, #ecf0f1);
+	font-size: clamp(1.25rem, 1.85vw, 1.875rem);
+	cursor: move;
+	z-index: 10002;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(10px);
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease,
+		top 0.3s ease,
+		left 0.3s ease,
+		right 0.3s ease,
+		bottom 0.3s ease;
+	user-select: none; /* Prevent text selection while dragging */
+	-webkit-user-select: none;
+	will-change: top, left; /* Optimize for position changes */
+}
+
+/* Center the icon inside */
+.rpg-mobile-toggle i {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+}
+
+/* Disable transitions while actively dragging */
+.rpg-mobile-toggle.dragging {
+	transition: none !important;
+	cursor: grabbing;
+	animation: none;
+}
+
+.rpg-mobile-toggle:not(.dragging):hover {
+	transform: scale(1.1);
+	box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.rpg-mobile-toggle:active {
+	transform: scale(0.95);
+}
+
+.rpg-mobile-toggle.active {
+	background: var(--rpg-highlight, #e74c3c);
+	transform: rotate(180deg);
+}
+
+/* FAB Spinning animation during API requests */
+.rpg-mobile-toggle.rpg-fab-loading i {
+	animation: fa-spin 1s infinite linear;
+}
+
+.rpg-mobile-toggle.rpg-fab-loading {
+	box-shadow:
+		0 0 12px rgba(233, 69, 96, 0.6),
+		0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide FAB widgets when panel is open */
+body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Mobile overlay backdrop */
+.rpg-mobile-overlay {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 998;
+	backdrop-filter: blur(2px);
+}
+
+/* Mobile-specific panel behavior - matches SillyTavern's 1000px breakpoint */
+/* CACHE BUST v2025-01-16 */
+@media (max-width: 1000px) {
+	/* ========================================
+       MOBILE PANEL FOUNDATION
+       ======================================== */
+
+	/* Show the mobile FAB toggle button */
+	.rpg-mobile-toggle {
+		display: flex;
+	}
+
+	/* Hide FAB when panel is open */
+	body:has(.rpg-panel.rpg-mobile-open) .rpg-mobile-toggle {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	/* Hide internal collapse toggle when panel is closed on mobile */
+	.rpg-collapse-toggle {
+		display: none !important;
+	}
+
+	/* Show internal collapse toggle when panel is open on mobile */
+	.rpg-panel.rpg-mobile-open .rpg-collapse-toggle {
+		display: flex !important;
+	}
+
+	/* Show overlay when needed */
+	body:has(.rpg-panel.rpg-mobile-open) .rpg-mobile-overlay {
+		display: block;
+	}
+
+	/* Remove margin adjustments on mobile - content takes full width */
+	body:has(.rpg-panel) #sheld {
+		margin-right: 0 !important;
+		margin-left: 0 !important;
+	}
+
+	/* Mobile panel - slide from right like desktop */
+	.rpg-panel {
+		position: fixed !important;
+		top: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		left: auto !important;
+
+		/* Mobile panel sizing */
+		width: 85vw !important;
+		height: 100dvh !important;
+
+		/* Hidden by default - completely removed from layout */
+		display: none !important;
+
+		overflow: visible !important;
+		-webkit-overflow-scrolling: touch;
+
+		/* Styling */
+		border-radius: 20px 0 0 0;
+		border-left: 1px solid var(--SmartThemeBorderColor);
+		border-top: 1px solid var(--SmartThemeBorderColor);
+		backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+		box-shadow: -5px 0 20px var(--rpg-shadow);
+	}
+
+	/* Allow collapse button to show outside panel */
+	.rpg-game-container {
+		overflow: visible !important;
+	}
+
+	/* But keep content scrollable */
+	#rpg-panel-content {
+		overflow-y: auto !important;
+		overflow-x: hidden !important;
+	}
+
+	/* Show panel when opened with slide-in animation */
+	.rpg-panel.rpg-mobile-open {
+		display: block !important;
+		z-index: 9999;
+		animation: rpgSlideInFromRight 0.3s ease-in-out;
+	}
+
+	/* Closing animation - slide out to right */
+	.rpg-panel.rpg-mobile-closing {
+		display: block !important;
+		z-index: 9999;
+		animation: rpgSlideOutToRight 0.3s ease-in-out;
+	}
+
+	/* Slide-in animation from right */
+	@keyframes rpgSlideInFromRight {
+		from {
+			transform: translateX(100%);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+
+	/* Slide-out animation to right */
+	@keyframes rpgSlideOutToRight {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(100%);
+		}
+	}
+
+	/* Slide-in animation from left */
+	@keyframes rpgSlideInFromLeft {
+		from {
+			transform: translateX(-100%);
+		}
+		to {
+			transform: translateX(0);
+		}
+	}
+
+	/* Slide-out animation to left */
+	@keyframes rpgSlideOutToLeft {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(-100%);
+		}
+	}
+
+	/* Left-side mobile panel positioning */
+	.rpg-panel.rpg-position-left {
+		right: auto !important;
+		left: 0 !important;
+		border-radius: 0 20px 0 0;
+		border-left: none;
+		border-right: 1px solid var(--SmartThemeBorderColor);
+		box-shadow: 5px 0 20px var(--rpg-shadow);
+	}
+
+	/* Left-side panel animations */
+	.rpg-panel.rpg-position-left.rpg-mobile-open {
+		animation: rpgSlideInFromLeft 0.3s ease-in-out;
+	}
+
+	.rpg-panel.rpg-position-left.rpg-mobile-closing {
+		animation: rpgSlideOutToLeft 0.3s ease-in-out;
+	}
+
+	/* ========================================
+       MOBILE KEYBOARD HANDLING
+       ======================================== */
+
+	/* When mobile keyboard is visible, adjust panel layout to prevent squashing */
+	.rpg-panel.rpg-keyboard-visible {
+		/* Prevent content from being pushed too far up */
+		padding-bottom: 20px;
+	}
+
+	/* Make sections more compact when keyboard visible */
+	.rpg-panel.rpg-keyboard-visible .rpg-stats-section,
+	.rpg-panel.rpg-keyboard-visible .rpg-info-section,
+	.rpg-panel.rpg-keyboard-visible .rpg-thoughts-section {
+		padding: 8px 12px;
+	}
+
+	/* Reduce spacing in stat bars when keyboard visible */
+	.rpg-panel.rpg-keyboard-visible .rpg-stats-grid {
+		gap: 4px;
+	}
+
+	/* Disable collapsed state on mobile */
+	.rpg-panel.rpg-collapsed {
+		max-width: 100dvw !important;
+		min-width: unset !important;
+		width: 100dvw !important;
+	}
+
+	.rpg-panel.rpg-collapsed .rpg-game-container {
+		opacity: 1 !important;
+		pointer-events: auto !important;
+	}
+
+	/* Collapse toggle on mobile - positioned on panel edge and vertically centered */
+	.rpg-collapse-toggle {
+		display: flex !important;
+		align-items: center;
+		justify-content: center;
+		position: absolute !important;
+		top: 50% !important;
+		transform: translateY(-50%) !important;
+		width: 44px;
+		height: 44px;
+		min-width: 44px;
+		min-height: 44px;
+		border-radius: 50%;
+		background: var(--SmartThemeBlurTintColor);
+		border: 2px solid var(--SmartThemeBorderColor);
+		z-index: 10000 !important;
+		transition: all 0.2s ease;
+		pointer-events: auto !important;
+		cursor: pointer !important;
+	}
+
+	/* Position on right edge when panel is on left */
+	body.rpg-panel-position-left .rpg-collapse-toggle,
+	.rpg-panel.rpg-position-left .rpg-collapse-toggle {
+		left: auto !important;
+		right: -22px !important;
+	}
+
+	/* Position on left edge when panel is on right */
+	body.rpg-panel-position-right .rpg-collapse-toggle,
+	.rpg-panel.rpg-position-right .rpg-collapse-toggle {
+		left: -22px !important;
+		right: auto !important;
+	}
+
+	.rpg-collapse-toggle:hover {
+		background: rgba(255, 255, 255, 0.1);
+		transform: translateY(-50%) scale(1.05) !important;
+	}
+
+	.rpg-collapse-toggle:active {
+		transform: translateY(-50%) scale(0.95) !important;
+	}
+
+	/* Mobile icon styling - use chevrons for drawer UX */
+	.rpg-collapse-toggle i {
+		transform: none !important;
+		font-size: clamp(20px, 5.1vw, 24px);
+	}
+
+	/* ========================================
+       MOBILE TAB NAVIGATION
+       ======================================== */
+
+	/* Mobile tab container wrapper */
+	.rpg-mobile-container {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+		margin: -12px -12px 16px -12px;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	/* Tab container at top of panel */
+	.rpg-mobile-tabs {
+		display: flex;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: var(--SmartThemeBlurTintColor);
+		backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 1.5));
+		border-bottom: 2px solid var(--SmartThemeBorderColor);
+		margin: 0;
+		padding: 0;
+		overflow-x: auto;
+	}
+
+	.rpg-mobile-tab {
+		flex: 1;
+		height: 44px;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		font-size: clamp(14px, 3.6vw, 18px);
+		font-weight: 500;
+		color: var(--SmartThemeBodyColor);
+		background: transparent;
+		border: none;
+		border-bottom: 3px solid transparent;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		padding: 0 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.rpg-mobile-tab:active {
+		transform: scale(0.97);
+	}
+
+	.rpg-mobile-tab.active {
+		color: var(--rpg-highlight);
+		border-bottom-color: var(--rpg-highlight);
+		background: rgba(var(--rpg-highlight-rgb, 233, 69, 96), 0.1);
+	}
+
+	.rpg-mobile-tab i {
+		font-size: clamp(16px, 4.1vw, 20px);
+	}
+
+	/* Tab content sections */
+	.rpg-mobile-tab-content {
+		display: none;
+		animation: fadeIn 0.2s ease;
+	}
+
+	.rpg-mobile-tab-content.active {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		padding: 12px;
+	}
+
+	/* Center empty state messages in mobile tabs - only when empty */
+	.rpg-mobile-tab-content #rpg-user-stats:has(> .rpg-inventory-empty) {
+		display: flex !important;
+		flex: 1;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* When empty state is shown, center it in the full panel */
+	.rpg-mobile-tab-content #rpg-user-stats > .rpg-inventory-empty {
+		margin: auto;
+	}
+
+	.rpg-mobile-tab-content .rpg-inventory-empty {
+		text-align: center;
+		width: auto !important;
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* Info tab contains Info Box and Characters with 50/50 split */
+	.rpg-mobile-tab-content[data-tab-content="info"].active {
+		display: grid;
+		grid-template-rows: minmax(min-content, auto) minmax(min-content, 1fr);
+		gap: 0;
+		height: 100%;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
+	/* Info Box takes 50% of vertical space */
+	.rpg-mobile-tab-content[data-tab-content="info"] > #rpg-info-box,
+	.rpg-mobile-tab-content[data-tab-content="info"] > .rpg-info-section {
+		min-height: 0;
+		overflow-y: auto;
+		padding-bottom: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+	}
+
+	/* Characters section takes 50% of vertical space */
+	.rpg-mobile-tab-content[data-tab-content="info"] > #rpg-thoughts,
+	.rpg-mobile-tab-content[data-tab-content="info"] > .rpg-thoughts-section {
+		min-height: 0;
+		overflow-y: auto;
+		padding-bottom: 16px;
+	}
+
+	/* Add divider between Info and Characters */
+	.rpg-mobile-tab-content[data-tab-content="info"]
+	> .rpg-section:not(:last-child) {
+		border-bottom: 1px solid var(--SmartThemeBorderColor);
+		margin-bottom: 16px;
+	}
+
+	/* Hide dividers on mobile (tabs handle separation) */
+	.rpg-divider {
+		display: none;
+	}
+
+	/* ========================================
+       MOBILE INFO BOX IMPROVEMENTS
+       ======================================== */
+
+	/* Rows scale proportionally to fill Info Box */
+	.rpg-dashboard-row-1 {
+		height: auto !important; /* Remove desktop height constraint */
+		display: flex !important;
+		gap: 0.25em;
+	}
+
+	.rpg-dashboard-row-2 {
+		display: flex !important;
+	}
+
+	/* Widgets fill their row height */
+	.rpg-dashboard-row-1 .rpg-dashboard-widget,
+	.rpg-dashboard-row-2 .rpg-dashboard-widget {
+		height: 100% !important;
+		flex: 1 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		justify-content: center;
+	}
+
+	/* Info screen text readability - convert vw to readable pixel sizes */
+	.rpg-calendar-top {
+		font-size: clamp(8px, 2.1vw, 10px) !important;
+	}
+
+	.rpg-calendar-day {
+		font-size: min(2.5vw, 14px) !important;
+	}
+
+	.rpg-calendar-year {
+		font-size: clamp(7px, 1.8vw, 10px) !important;
+	}
+
+	.rpg-weather-forecast {
+		font-size: min(2.2vw, 0.6875rem) !important;
+	}
+
+	.rpg-temp-value {
+		font-size: min(2.5vw, 0.8125rem) !important;
+	}
+
+	.rpg-time-value {
+		font-size: min(2.5vw, 0.8125rem) !important;
+	}
+
+	.rpg-time-range {
+		gap: 0.15em;
+		overflow-x: auto;
+		overflow-y: hidden;
+		max-width: 100%;
+		white-space: nowrap;
+	}
+
+	.rpg-time-separator {
+		font-size: min(2vw, 0.625rem) !important;
+	}
+
+	.rpg-location-text {
+		font-size: min(2.8vw, 0.875rem) !important;
+	}
+
+	.rpg-map-marker {
+		font-size: clamp(16px, 4.1vw, 20px) !important;
+	}
+
+	/* Recent Events widget - mobile text sizing */
+	.rpg-notebook-header {
+		gap: clamp(26px, 6vw, 30px);
+		padding: clamp(5px, 1.5vw, 7px) 0;
+	}
+
+	.rpg-notebook-ring {
+		width: clamp(8px, 1.25vw, 10px);
+		height: clamp(8px, 1.25vw, 10px);
+	}
+
+	.rpg-notebook-title {
+		font-size: clamp(9px, 2.2vw, 11px) !important;
+	}
+
+	.rpg-bullet {
+		font-size: clamp(9px, 2.2vw, 11px) !important;
+	}
+
+	.rpg-event-text {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+	}
+
+	/* ========================================
+       MOBILE STATS TAB LAYOUT IMPROVEMENTS
+       ======================================== */
+
+	/* Make the entire stats section a single column grid */
+	.rpg-stats-section {
+		display: grid !important;
+		grid-template-columns: 1fr !important; /* Single column */
+		grid-template-rows: auto !important; /* Auto rows - everything stacked */
+		gap: 12px;
+		padding: 16px 12px;
+		overflow-y: auto !important; /* Enable scrolling on the grid container */
+		min-height: 0;
+	}
+
+	/* Use display: contents so children participate in grid */
+	.rpg-stats-header,
+	.rpg-stats-content {
+		display: contents !important;
+	}
+
+	/* Portrait row - centered at top, row 1 */
+	.rpg-stats-header-left,
+	.rpg-user-info-row {
+		display: flex !important;
+		grid-column: 1 !important;
+		grid-row: 1 !important;
+		justify-content: center;
+		align-items: center;
+		gap: 8px;
+	}
+
+	/* Make user portrait visible and sized for mobile */
+	.rpg-user-portrait {
+		width: clamp(32px, 8vw, 48px) !important;
+		height: clamp(32px, 8vw, 48px) !important;
+	}
+
+	/* Make user name and level readable */
+	.rpg-user-name {
+		font-size: clamp(13px, 3.2vw, 16px) !important;
+	}
+
+	.rpg-level-label,
+	.rpg-level-value {
+		font-size: clamp(12px, 3vw, 14px) !important;
+	}
+
+	/* Hide stats title on mobile */
+	.rpg-stats-title {
+		display: none;
+	}
+
+	/* Stats left container must use contents to unwrap its children */
+	.rpg-stats-left {
+		display: contents !important;
+	}
+
+	/* Stat bars - full width, row 2 */
+	.rpg-stats-grid {
+		grid-column: 1 !important;
+		grid-row: 2 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		gap: clamp(6px, 1.5vw, 8px);
+	}
+
+	/* Increase stat bar text sizes for mobile readability */
+	.rpg-stat-label {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+	}
+
+	.rpg-stat-value {
+		font-size: clamp(12px, 3.1vw, 16px) !important;
+	}
+
+	/* Everything else stacked below - full width, auto rows */
+	.rpg-mood,
+	.rpg-inventory-box,
+	.rpg-skills-section,
+	.rpg-custom-field {
+		grid-column: 1 !important;
+		grid-row: auto !important;
+	}
+
+	/* Attributes container - use contents to unwrap */
+	.rpg-stats-right {
+		display: contents !important;
+	}
+
+	/* Compact 2x3 or 3x2 grid for mobile */
+	.rpg-classic-stats-grid {
+		display: grid !important;
+		grid-template-columns: repeat(3, 1fr) !important;
+		grid-template-rows: repeat(2, 1fr) !important;
+		gap: 6px;
+		margin: 0;
+		padding: 0;
+		width: 100%;
+	}
+
+	/* Everything else below - full width stacked */
+	.rpg-inventory-box {
+		flex: 1 !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		width: 100% !important;
+		grid-row: auto !important;
+	}
+
+	/* Inventory box */
+	.rpg-inventory-box {
+		flex: 1 !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		width: auto !important;
+		min-height: 60px;
+		max-height: none;
+	}
+
+	/* Increase inventory text size for readability on mobile */
+	.rpg-inventory-items {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+		line-height: 1.4;
+		width: 100% !important;
+		white-space: normal !important;
+	}
+
+	/* Mood */
+	.rpg-mood {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	/* Make mood text readable on mobile */
+	.rpg-mood-conditions {
+		font-size: clamp(11px, 2.8vw, 14px);
+		line-height: 1.3;
+	}
+
+	/* Each attribute - ULTRA COMPACT with vertical stack layout */
+	.rpg-classic-stat {
+		display: grid !important;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: auto auto;
+		gap: 2px 4px;
+		padding: 4px 6px;
+		min-height: auto;
+		height: auto;
+		background: var(--SmartThemeBlurTintColor);
+		border: 1px solid var(--SmartThemeBorderColor);
+		border-radius: 4px;
+	}
+
+	/* Make buttons container children participate in parent grid */
+	.rpg-classic-stat-buttons {
+		display: contents;
+	}
+
+	/* Label - top left */
+	.rpg-classic-stat-label {
+		grid-column: 1;
+		grid-row: 1;
+		font-size: clamp(9px, 2.3vw, 12px);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.3px;
+		align-self: center;
+		justify-self: center;
+	}
+
+	/* Value - top right */
+	.rpg-classic-stat-value {
+		grid-column: 2;
+		grid-row: 1;
+		font-size: clamp(14px, 3.6vw, 18px);
+		font-weight: 700;
+		color: var(--SmartThemeQuoteColor);
+		text-align: center;
+		align-self: center;
+		justify-self: center;
+	}
+
+	/* Minus button - bottom left */
+	.rpg-stat-decrease {
+		grid-column: 1;
+		grid-row: 2;
+		justify-self: center;
+	}
+
+	/* Plus button - bottom right */
+	.rpg-stat-increase {
+		grid-column: 2;
+		grid-row: 2;
+		justify-self: center;
+	}
+
+	.rpg-classic-stat-btn {
+		min-width: 24px !important;
+		min-height: 24px !important;
+		width: 24px;
+		height: 24px;
+		font-size: clamp(14px, 3.6vw, 18px);
+		font-weight: 700;
+		border-radius: 4px;
+		display: flex !important;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		cursor: pointer;
+		user-select: none;
+		background: var(--rpg-accent);
+		border: 1px solid var(--rpg-border);
+		color: var(--rpg-text);
+	}
+
+	.rpg-classic-stat-btn:hover {
+		background: var(--rpg-highlight);
+		border-color: var(--rpg-highlight);
+		transform: scale(1.05);
+	}
+
+	.rpg-classic-stat-btn:active {
+		transform: scale(0.95);
+	}
+
+	.rpg-skills-section {
+		font-size: clamp(11px, 2.8vw, 14px);
+		line-height: 1.3;
+	}
+
+	/* ========================================
+       MOBILE THOUGHT ICON POSITIONING
+       ======================================== */
+
+	/* Position thought icon above avatar on mobile to prevent off-screen clipping */
+	/* JavaScript will calculate position, but add transform to move it above and right */
+	#rpg-thought-icon {
+		/* Match mobile toggle size */
+		width: 44px !important;
+		height: 44px !important;
+		font-size: clamp(1.25rem, 1.85vw, 1.875rem) !important;
+		/* Smooth animation for position changes during scroll */
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease !important;
+		will-change: top, left;
+	}
+
+	/* ========================================
+       MOBILE CHARACTER RELATIONSHIP BADGE
+       ======================================== */
+
+	/* Keep relationship badge small on mobile to prevent it from covering avatar */
+	.rpg-relationship-badge {
+		width: 18px !important;
+		height: 18px !important;
+		font-size: clamp(10px, 2.6vw, 13px) !important;
+		padding: 0 !important;
+		min-height: unset !important;
+		line-height: 18px !important;
+	}
+
+	/* ========================================
+       MOBILE CHARACTER INFO TEXT SIZES
+       ======================================== */
+
+	/* Larger character emoji for mobile readability */
+	.rpg-character-emoji {
+		font-size: clamp(16px, 4.1vw, 20px) !important;
+	}
+
+	/* Readable character names on mobile */
+	.rpg-character-name {
+		font-size: clamp(12px, 3.1vw, 16px) !important;
+	}
+
+	/* Readable character traits and custom fields on mobile */
+	.rpg-character-traits,
+	.rpg-character-field {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+	}
+
+	/* ========================================
+       MOBILE DICE DISPLAY
+       ======================================== */
+
+	/* Make dice display larger and more visible on mobile */
+	.rpg-dice-display {
+		font-size: clamp(12px, 3.1vw, 16px) !important;
+		padding: clamp(8px, 2vw, 12px) !important;
+		min-height: 44px; /* Touch-friendly height */
+		gap: clamp(6px, 1.5vw, 10px) !important;
+	}
+
+	/* Larger dice icon for mobile */
+	.rpg-dice-display i {
+		font-size: clamp(18px, 4.6vw, 24px) !important;
+	}
+
+	/* Larger clear button for mobile touch */
+	.rpg-clear-dice-btn {
+		font-size: clamp(18px, 4.6vw, 24px) !important;
+		width: clamp(28px, 7.2vw, 36px) !important;
+		height: clamp(28px, 7.2vw, 36px) !important;
+	}
+
+	/* ========================================
+       MOBILE UI BUTTONS
+       ======================================== */
+
+	/* Readable settings button on mobile */
+	.rpg-btn-settings {
+		font-size: clamp(14px, 3.6vw, 18px) !important;
+	}
+
+	/* Larger mobile toggle dice icon (button size is fine) */
+	.rpg-mobile-toggle {
+		font-size: clamp(20px, 5.1vw, 26px) !important;
+	}
+
+	/* ========================================
+       MOBILE CHARACTER STATUS CARDS (DASHBOARD)
+       ======================================== */
+
+	/* Larger, more readable character names in dashboard */
+	.rpg-char-name {
+		font-size: clamp(12px, 3.1vw, 16px) !important;
+	}
+
+	/* Larger, more readable character traits in dashboard */
+	.rpg-char-traits {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+	}
+
+	/* Larger character emoji in dashboard */
+	.rpg-char-emoji {
+		font-size: clamp(18px, 4.6vw, 24px) !important;
+	}
+
+	/* ========================================
+       MOBILE RECENT EVENTS - REDUCE HEIGHT
+       ======================================== */
+
+	/* Make Recent Events section take less vertical space on mobile */
+	.rpg-dashboard-row-3 {
+		max-height: 100px !important; /* Limit height on mobile */
+	}
+
+	/* Make the events widget scrollable if content exceeds height */
+	.rpg-events-widget {
+		max-height: 100px !important;
+	}
+
+	/* Compact the notebook lines container */
+	.rpg-notebook-lines {
+		padding: 0.25em 0.5em !important;
+		gap: 0.1em !important;
+		min-height: 0;
+	}
+
+	/* Reduce spacing in notebook lines */
+	.rpg-notebook-line {
+		gap: 0.25em !important;
+	}
+
+	/* ========================================
+       MOBILE SETTINGS POPUP
+       ======================================== */
+
+	/* Readable settings popup title */
+	.rpg-settings-popup-header h3 {
+		font-size: clamp(16px, 4.1vw, 20px) !important;
+	}
+
+	/* Readable settings group headers */
+	.rpg-settings-group h4 {
+		font-size: clamp(14px, 3.6vw, 18px) !important;
+	}
+
+	/* Readable setting labels */
+	.rpg-setting-row label {
+		font-size: clamp(12px, 3.1vw, 16px) !important;
+	}
+
+	/* Readable dropdowns and inputs */
+	.rpg-select,
+	.rpg-input {
+		font-size: clamp(13px, 3.3vw, 17px) !important;
+	}
+
+	/* Readable helper text */
+	.rpg-setting-row small {
+		font-size: clamp(10px, 2.6vw, 13px) !important;
+	}
+
+	/* Readable clear cache button */
+	.rpg-btn-clear-cache,
+	.rpg-btn-reset-fab,
+	.rpg-btn-customize-prompts {
+		font-size: clamp(13px, 3.3vw, 17px) !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR FOOTER
+       ======================================== */
+
+	/* Make footer wrap and stack buttons on mobile */
+	.rpg-settings-popup-footer {
+		flex-direction: column;
+		gap: 0.5em;
+		padding: 0.75em;
+	}
+
+	.rpg-footer-left,
+	.rpg-footer-right {
+		width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: thin;
+		flex-wrap: nowrap;
+	}
+
+	/* Prevent buttons from shrinking in scroll container */
+	.rpg-footer-left button,
+	.rpg-footer-right button {
+		flex-shrink: 0;
+		white-space: nowrap;
+		font-size: clamp(12px, 3.1vw, 15px) !important;
+		padding: 0.5em 0.75em !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR HEADER
+       ======================================== */
+
+	/* Make header text smaller and wrap properly */
+	.rpg-settings-popup-header h3 {
+		font-size: clamp(16px, 4.1vw, 20px) !important;
+		word-break: break-word;
+	}
+
+	.rpg-settings-popup-header h3 i {
+		font-size: clamp(14px, 3.6vw, 18px) !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR TABS
+       ======================================== */
+
+	/* Make tabs wrap and stack if needed */
+	.rpg-editor-tabs {
+		flex-wrap: wrap;
+		gap: 0;
+	}
+
+	.rpg-editor-tab {
+		flex: 1 1 auto;
+		min-width: 0;
+		padding: 0.5em 0.5em;
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+		gap: 0.25em;
+	}
+
+	.rpg-editor-tab i {
+		font-size: clamp(12px, 3.1vw, 15px) !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR CONTENT
+       ======================================== */
+
+	/* Reduce popup body padding on mobile */
+	.rpg-settings-popup-body {
+		padding: 0.75em !important;
+	}
+
+	/* Make section headers smaller */
+	.rpg-editor-section h4 {
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+		gap: 0.25em;
+	}
+
+	.rpg-editor-section h4 i {
+		font-size: clamp(12px, 3.1vw, 15px) !important;
+	}
+
+	/* Make hint text smaller */
+	.rpg-editor-hint {
+		font-size: clamp(11px, 2.8vw, 14px) !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR STAT ITEMS
+       ======================================== */
+
+	/* Make stat items wrap on mobile */
+	.rpg-editor-stat-item {
+		flex-wrap: wrap;
+		gap: 0.5em;
+		padding: 0.5em;
+	}
+
+	/* Make stat name input full width on mobile */
+	.rpg-stat-name,
+	.rpg-attr-name {
+		width: 100%;
+		flex: 1 1 100%;
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+	}
+
+	/* Make toggle and remove button stay on same row */
+	.rpg-stat-toggle,
+	.rpg-attr-toggle {
+		flex: 0 0 auto;
+	}
+
+	.rpg-stat-remove,
+	.rpg-attr-remove {
+		flex: 0 0 auto;
+		font-size: clamp(12px, 3.1vw, 15px) !important;
+		padding: 0.5em 0.75em !important;
+	}
+
+	/* ========================================
+       MOBILE RELATIONSHIP MAPPING
+       ======================================== */
+
+	/* Make relationship items stack vertically on mobile */
+	.rpg-relationship-item {
+		grid-template-columns: 1fr;
+		gap: 0.5em;
+		padding: 0.75em 0.5em;
+	}
+
+	/* Hide arrow on mobile since items are stacked */
+	.rpg-relationship-item .rpg-arrow {
+		display: none;
+	}
+
+	/* Make relationship inputs full width */
+	.rpg-relationship-name,
+	.rpg-relationship-emoji {
+		width: 100%;
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+	}
+
+	.rpg-remove-relationship {
+		font-size: clamp(12px, 3.1vw, 15px) !important;
+		padding: 0.5em 0.75em !important;
+	}
+
+	/* ========================================
+       MOBILE TRACKER EDITOR INPUTS & CONTROLS
+       ======================================== */
+
+	/* Make all input fields readable on mobile */
+	.rpg-editor-tab-content input[type="text"],
+	.rpg-editor-tab-content input[type="number"],
+	.rpg-editor-tab-content select,
+	.rpg-editor-tab-content textarea {
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+		padding: 0.5em !important;
+	}
+
+	/* Make add buttons full width on mobile */
+	.rpg-editor-section button[id*="add"],
+	.rpg-editor-section button[id*="Add"] {
+		width: 100%;
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+		padding: 0.5em !important;
+	}
+
+	/* Make checkboxes with labels easier to tap */
+	.rpg-editor-tab-content label {
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+	}
+
+	.rpg-editor-tab-content input[type="checkbox"] {
+		min-width: 20px;
+		min-height: 20px;
+		margin-right: 0.5em;
+	}
+
+	/* ========================================
+       MOBILE WIDGET ROWS (DATE/TEMPERATURE)
+       ======================================== */
+
+	/* Make widget rows wrap on mobile */
+	.rpg-editor-widget-row {
+		flex-wrap: wrap;
+		gap: 0.5em;
+		padding: 0.75em 0.5em;
+	}
+
+	/* Checkbox and main label on first row */
+	.rpg-editor-widget-row > input[type="checkbox"],
+	.rpg-editor-widget-row > label {
+		flex: 0 0 auto;
+	}
+
+	/* Format dropdown full width on second row */
+	.rpg-editor-widget-row .rpg-select-mini {
+		flex: 1 1 100%;
+		width: 100%;
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+		padding: 0.5em !important;
+	}
+
+	/* Radio group full width on second row */
+	.rpg-editor-widget-row .rpg-radio-group {
+		flex: 1 1 100%;
+		width: 100%;
+		gap: 1.5em;
+		justify-content: flex-start;
+		margin-top: 0.25em;
+	}
+
+	.rpg-radio-group label {
+		font-size: clamp(13px, 3.3vw, 16px) !important;
+		gap: 0.5em;
+	}
+
+	.rpg-radio-group input[type="radio"] {
+		min-width: 18px;
+		min-height: 18px;
+	}
+}

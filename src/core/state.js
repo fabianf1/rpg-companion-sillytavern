@@ -37,7 +37,6 @@ export let extensionSettings = {
 	enableDynamicWeather: true, // Enable dynamic weather effects based on Info Box weather field (v2: enabled by default)
 	weatherBackground: true, // Show weather effects in background (behind chat)
 	weatherForeground: false, // Show weather effects in foreground (on top of chat)
-	dismissedHolidayPromo: false, // User dismissed the holiday promotion banner
 
 	showDynamicWeatherToggle: true, // Show Dynamic Weather Effects toggle in main panel
 	showNarratorMode: true, // Show Narrator Mode toggle in main panel

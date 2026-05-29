@@ -1,0 +1,526 @@
+// ============================================
+// RPG COMPANION - PANEL LAYOUT
+// ============================================
+// Core panel structure, positioning, collapse toggle,
+// content containers, and scrollbar styling.
+// ============================================
+
+/* Ensure chat stays centered when panel is visible */
+body:has(.rpg-panel.rpg-position-right) #sheld {
+	margin: auto !important;
+}
+
+body:has(.rpg-panel.rpg-position-left) #sheld {
+	margin: auto !important;
+}
+
+/* ============================================
+   RPG COMPANION - GAME-LIKE UI - RESPONSIVE
+   ============================================ */
+
+/* CSS Variables for Theming - Default uses SillyTavern's variables */
+.rpg-panel,
+#rpg-thought-panel,
+#rpg-thought-icon,
+.rpg-mobile-toggle {
+	--rpg-bg: var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9));
+	--rpg-accent: var(--black30a, rgba(22, 33, 62, 0.9));
+	--rpg-text: var(--SmartThemeBodyColor, #eaeaea);
+	--rpg-highlight: var(--SmartThemeQuoteColor, #e94560);
+	--rpg-border: var(--SmartThemeBorderColor, #4a7ba7);
+	--rpg-shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* Main Panel Container - Fills available margin space */
+.rpg-panel {
+	position: fixed;
+	top: var(--topBarBlockSize);
+	bottom: 0;
+	background: var(--rpg-bg);
+	box-shadow: 0 0 20px var(--rpg-shadow);
+	font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+	box-sizing: border-box;
+	z-index: 1000;
+	color: var(--rpg-text);
+	display: flex;
+	flex-direction: column;
+	overflow: visible;
+	transition:
+		width 0.3s ease,
+		left 0.3s ease,
+		right 0.3s ease,
+		transform 0.3s ease;
+}
+
+/* Collapsed state - fixed width for collapse */
+.rpg-panel.rpg-collapsed {
+	max-width: 2.5rem !important;
+	min-width: 2.5rem !important;
+	left: auto !important;
+	right: auto !important;
+}
+
+.rpg-panel.rpg-collapsed.rpg-position-right {
+	right: 0 !important;
+}
+
+.rpg-panel.rpg-collapsed.rpg-position-left {
+	left: 0 !important;
+}
+
+/* Fix positioning when collapsed - panel should stick to correct edge */
+.rpg-panel.rpg-position-right.rpg-collapsed {
+	left: calc(100vw - 40px);
+	right: 0;
+}
+
+.rpg-panel.rpg-position-left.rpg-collapsed {
+	right: calc(100vw - 40px);
+	left: 0;
+}
+
+.rpg-panel.rpg-collapsed .rpg-game-container {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Collapse/Expand Toggle Button */
+.rpg-collapse-toggle {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 1.875rem;
+	height: 5rem;
+	background: var(--rpg-accent);
+	border: 2px solid var(--rpg-border);
+	color: var(--rpg-highlight);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10001;
+	transition: all 0.3s ease;
+	font-size: clamp(1rem, 1.5vw, 1.5rem);
+	box-shadow: 0 0 10px var(--rpg-shadow);
+	pointer-events: auto;
+}
+
+.rpg-collapse-toggle:hover {
+	background: var(--rpg-highlight);
+	color: var(--rpg-bg);
+	box-shadow: 0 0 15px var(--rpg-highlight);
+}
+
+/* Position collapse button on the left side for right panel */
+.rpg-panel.rpg-position-right .rpg-collapse-toggle {
+	left: -2rem;
+	border-radius: 0.5em 0 0 0.5em;
+}
+
+/* Position collapse button on the right side for left panel */
+.rpg-panel.rpg-position-left .rpg-collapse-toggle {
+	right: -2rem;
+	border-radius: 0 0.5em 0.5em 0;
+}
+
+/* Hide collapse button for top position */
+.rpg-panel.rpg-position-top .rpg-collapse-toggle {
+	display: none;
+}
+
+/* Right Position (Default) - Panel fills right margin space from chat edge to screen edge */
+.rpg-panel.rpg-position-right {
+	right: 0;
+	width: calc(50vw - var(--sheldWidth) / 2);
+	border-left: 3px solid var(--rpg-border);
+	box-shadow: -5px 0 20px var(--rpg-shadow);
+}
+
+/* Left Position - Panel fills left margin space from screen edge to chat edge */
+.rpg-panel.rpg-position-left {
+	left: 0;
+	width: calc(50vw - var(--sheldWidth) / 2);
+	border-right: 3px solid var(--rpg-border);
+	box-shadow: 5px 0 20px var(--rpg-shadow);
+}
+
+/* Top Position */
+.rpg-panel.rpg-position-top {
+	left: 0;
+	right: 0;
+	bottom: auto;
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	max-height: 18.75rem;
+	border-bottom: 3px solid var(--rpg-border);
+	box-shadow: 0 5px 20px var(--rpg-shadow);
+}
+
+/* Top Position Layout Adjustments */
+.rpg-panel.rpg-position-top .rpg-content-box {
+	display: flex;
+	flex-direction: row;
+	gap: 0.938em;
+}
+
+.rpg-panel.rpg-position-top .rpg-section {
+	flex: 1;
+	min-width: 0;
+}
+
+.rpg-panel.rpg-position-top .rpg-divider {
+	display: none;
+}
+
+.rpg-panel.rpg-position-top .rpg-stats-grid {
+	gap: 0.5em;
+}
+
+.rpg-panel.rpg-position-top .rpg-stat-row {
+	gap: 0.5em;
+}
+
+.rpg-panel.rpg-position-top .rpg-stat-label {
+	min-width: 5.625rem;
+}
+
+.rpg-panel.rpg-position-top .rpg-stat-bar {
+	height: 1.125rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+	.rpg-panel {
+		width: 20rem;
+		max-width: 35vw;
+		min-width: 16.25rem;
+	}
+}
+
+@media (max-width: 768px) {
+	.rpg-section-title {
+		font-size: 1em;
+	}
+}
+
+@media (max-width: 768px) {
+	/* Left position on mobile/tablet */
+	body.rpg-panel-position-left #rpg-companion-panel.rpg-panel,
+	#rpg-companion-panel.rpg-panel.rpg-position-left {
+		left: 0 !important;
+		right: auto !important;
+		width: 85% !important;
+		height: 100dvh !important;
+		top: 0 !important;
+		bottom: 0 !important;
+	}
+
+	/* Right position on mobile/tablet */
+	body.rpg-panel-position-right #rpg-companion-panel.rpg-panel,
+	#rpg-companion-panel.rpg-panel.rpg-position-right {
+		left: auto !important;
+		right: 0 !important;
+		width: 85% !important;
+		height: 100dvh !important;
+		top: 0 !important;
+		bottom: 0 !important;
+	}
+
+	/* Top position on mobile */
+	#rpg-companion-panel.rpg-panel.rpg-position-top {
+		left: 0 !important;
+		right: 0 !important;
+		width: 100% !important;
+		max-height: 40vh !important;
+		top: 0 !important;
+		bottom: auto !important;
+	}
+}
+
+.rpg-panel.rpg-position-top .rpg-stats-title {
+	font-size: clamp(1rem, 1.3vw, 1.3rem);
+}
+
+.rpg-panel.rpg-position-top .rpg-mood {
+	font-size: clamp(0.875rem, 1vw, 1rem);
+	padding: 0.375em;
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stats {
+	margin-top: 0.5em;
+	padding: 0.5em;
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stats-title {
+	font-size: clamp(0.875rem, 1vw, 1rem);
+	margin-bottom: 0.5em;
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stats-grid {
+	gap: 0.375em;
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stat {
+	padding: 0.25em;
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stat-label {
+	font-size: clamp(0.75rem, 0.85vw, 0.875rem);
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stat-value {
+	font-size: clamp(1rem, 1.3vw, 1.3rem);
+}
+
+.rpg-panel.rpg-position-top .rpg-classic-stat-btn {
+	padding: 0.125em;
+	font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+}
+
+.rpg-panel.rpg-position-top .rpg-info-content,
+.rpg-panel.rpg-position-top .rpg-thoughts-content {
+	font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+	max-height: 9.375rem;
+}
+
+/* Custom Scrollbar */
+.rpg-panel::-webkit-scrollbar,
+#rpg-panel-content::-webkit-scrollbar,
+.rpg-content-box::-webkit-scrollbar {
+	width: 0.5rem;
+}
+
+.rpg-panel::-webkit-scrollbar-track,
+#rpg-panel-content::-webkit-scrollbar-track,
+.rpg-content-box::-webkit-scrollbar-track {
+	background: var(--rpg-accent);
+}
+
+.rpg-panel::-webkit-scrollbar-thumb,
+#rpg-panel-content::-webkit-scrollbar-thumb,
+.rpg-content-box::-webkit-scrollbar-thumb {
+	background: var(--rpg-highlight);
+	border-radius: 0.25em;
+}
+
+.rpg-panel::-webkit-scrollbar-thumb:hover,
+#rpg-panel-content::-webkit-scrollbar-thumb:hover,
+.rpg-content-box::-webkit-scrollbar-thumb:hover {
+	background: var(--rpg-border);
+}
+
+/* Game Container - Full height flex container */
+.rpg-game-container {
+	padding: 0.75em;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	transition: opacity 0.3s ease;
+}
+
+/* Panel Content - Main scrollable area */
+#rpg-panel-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.375em;
+	overflow-y: hidden;
+	overflow-x: hidden;
+	min-height: 0;
+}
+
+/* Header - Fixed size, doesn't grow */
+.rpg-panel-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin: 0;
+	margin-bottom: 0.5em;
+	padding: 0;
+	border-bottom: 2px solid var(--rpg-border);
+	flex-shrink: 0;
+}
+
+.rpg-panel-header h3 {
+	margin: 0;
+	font-size: clamp(1.25rem, 1.7vw, 1.75rem);
+	font-weight: bold;
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	color: var(--rpg-highlight);
+	text-shadow: 0 0 8px var(--rpg-highlight);
+	letter-spacing: 0.031em;
+	border-left: none !important;
+	padding-left: 0 !important;
+}
+
+.rpg-panel-header h3 i {
+	border-left: none !important;
+	padding-left: 0 !important;
+	color: var(--rpg-highlight);
+}
+
+/* Loading Indicator - Fixed size */
+.rpg-loading {
+	text-align: center;
+	padding: 0.938em;
+	background: var(--rpg-accent);
+	border-radius: 0.75em;
+	color: var(--rpg-highlight);
+	font-size: clamp(1rem, 1.3vw, 1.3rem);
+	font-weight: bold;
+	animation: pulseGlow 1.5s ease-in-out infinite;
+	flex-shrink: 0;
+}
+
+/* Dice Roll Display - More compact */
+.rpg-dice-display {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	padding: 0.5em;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.5em;
+	border: 2px solid var(--rpg-border);
+	font-size: clamp(0.875rem, 1vw, 1rem);
+	font-weight: bold;
+	color: var(--rpg-text);
+	cursor: pointer;
+	transition: all 0.3s ease;
+	flex-shrink: 0;
+}
+
+.rpg-dice-display:hover {
+	background: var(--rpg-accent);
+	border-color: var(--rpg-highlight);
+	transform: scale(1.02);
+}
+
+.rpg-dice-display i {
+	color: var(--rpg-highlight);
+	font-size: clamp(1rem, 1.3vw, 1.3rem);
+}
+
+/* Clear dice roll button */
+.rpg-clear-dice-btn {
+	background: rgba(255, 0, 0, 0.2);
+	border: 1px solid rgba(255, 0, 0, 0.4);
+	border-radius: 0.25em;
+	color: #ff6b6b;
+	font-size: clamp(1rem, 1.5vw, 1.5rem);
+	font-weight: bold;
+	width: 1.25rem;
+	height: 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	padding: 0;
+	line-height: 1;
+	margin-left: auto;
+}
+
+.rpg-clear-dice-btn:hover {
+	background: rgba(255, 0, 0, 0.4);
+	border-color: #ff6b6b;
+	transform: scale(1.1);
+}
+
+.rpg-clear-dice-btn:active {
+	transform: scale(0.95);
+}
+
+/* Tracker Message Display */
+.rpg-tracker-message {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	padding: 0.5em;
+	background: rgba(0, 0, 0, 0.3);
+	border-radius: 0.5em;
+	border: 2px solid var(--rpg-border);
+	font-size: clamp(0.75rem, 0.9vw, 0.875rem);
+	font-weight: bold;
+	color: var(--rpg-text);
+	cursor: pointer;
+	transition: all 0.3s ease;
+	flex-shrink: 0;
+	margin-top: 0.25em;
+}
+
+.rpg-tracker-message:hover {
+	background: var(--rpg-accent);
+	border-color: var(--rpg-highlight);
+}
+
+.rpg-tracker-message.rpg-tracker-outdated {
+	border-color: #ff9800;
+	color: #ff9800;
+}
+
+.rpg-tracker-message i {
+	color: var(--rpg-highlight);
+	font-size: clamp(0.875rem, 1.1vw, 1rem);
+}
+
+.rpg-tracker-message.rpg-tracker-outdated i {
+	color: #ff9800;
+}
+
+/* Unified Content Box - Contains all sections, scales to fit viewport */
+.rpg-content-box {
+	background: linear-gradient(135deg, var(--rpg-accent) 0%, var(--rpg-bg) 100%);
+	border: 2px solid var(--rpg-border);
+	border-radius: 0.625em;
+	padding: 0.5em;
+	box-shadow:
+		0 4px 18px var(--rpg-shadow),
+		inset 0 0 12px rgba(0, 0, 0, 0.3);
+	display: flex;
+	flex-direction: column;
+	gap: 0.375em;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+/* Section Styling - Flexible to scale with available space */
+.rpg-section {
+	margin: 0;
+	padding: 0;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.rpg-section:empty {
+	display: none;
+}
+
+/* Divider - More compact */
+.rpg-divider {
+	width: 100%;
+	height: 0.062rem;
+	background: linear-gradient(
+		to right,
+		transparent,
+		var(--rpg-highlight),
+		transparent
+	);
+	margin: 0.5em 0;
+	position: relative;
+	flex-shrink: 0;
+}
+
+.rpg-divider::after {
+	display: none; /* Remove diamond decoration for more space */
+}

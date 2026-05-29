@@ -1,5 +1,14 @@
 {
+	"name": "rpg-companion-sillytavern",
+	"version": "1.0.0",
+	"description": "RPG Companion extension for SillyTavern",
+	"scripts": {
+		"build:css": "sass src/sass/main.scss style.css --style=expanded --no-source-map",
+		"build:css:min": "sass src/sass/main.scss style.css --style=compressed --no-source-map",
+		"watch:css": "sass src/sass/main.scss style.css --watch --style=expanded --no-source-map"
+	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.14"
+		"@biomejs/biome": "^2.4.14",
+		"sass": "^1.100.0"
 	}
 }

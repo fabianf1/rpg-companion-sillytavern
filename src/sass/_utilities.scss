@@ -1,0 +1,108 @@
+/* ============================================
+   HTML PROMPT TOGGLE
+   ============================================ */
+.rpg-toggle-container {
+	padding: 0.5em;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 0.312em;
+	margin: 0;
+}
+
+.rpg-toggle-label {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	user-select: none;
+}
+
+.rpg-toggle-label input[type="checkbox"] {
+	margin: 0 0.5em 0 0;
+	cursor: pointer;
+}
+
+.rpg-toggle-label i {
+	margin-right: 0.375em;
+}
+
+/* ============================================
+   THREE-COLUMN FEATURE TOGGLES LAYOUT
+   ================================= */
+
+/* Features row container */
+.rpg-features-row {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+	overflow-x: auto;
+	overflow-y: hidden;
+	flex-wrap: nowrap;
+	padding: 0 4px; /* Prevent first/last items from being cut off */
+	-webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Center items when they fit, allow scrolling when they don't */
+.rpg-features-row::before,
+.rpg-features-row::after {
+	content: "";
+	margin: auto;
+}
+
+/* Hide scrollbar for cleaner look while maintaining functionality */
+.rpg-features-row::-webkit-scrollbar {
+	height: 4px;
+}
+
+.rpg-features-row::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.rpg-features-row::-webkit-scrollbar-thumb {
+	background: rgba(128, 128, 128, 0.3);
+	border-radius: 2px;
+}
+
+.rpg-features-row::-webkit-scrollbar-thumb:hover {
+	background: rgba(128, 128, 128, 0.5);
+}
+
+/* Each feature column */
+.rpg-feature-col {
+	flex: 0 0 auto;
+	min-width: 60px;
+}
+
+.rpg-feature-col .rpg-toggle-label {
+	justify-content: center;
+	align-items: center;
+}
+
+/* Always hide text, show only checkbox + icon */
+.rpg-feature-col .rpg-toggle-text {
+	display: none;
+}
+
+.rpg-feature-col .rpg-toggle-label i {
+	font-size: 0.95rem;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Tablet and below: Hide text, show only checkbox + icon */
+@media (max-width: 768px) {
+	.rpg-feature-col .rpg-toggle-text {
+		display: none;
+	}
+
+	.rpg-feature-col .rpg-toggle-label i {
+		font-size: 1rem;
+	}
+}
+
+/* Very small screens: Remove column layout since we have horizontal scroll */
+@media (max-width: 400px) {
+	.rpg-feature-col .rpg-toggle-label i {
+		font-size: 1rem;
+	}
+}

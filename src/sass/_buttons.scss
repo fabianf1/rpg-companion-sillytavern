@@ -1,0 +1,492 @@
+// ============================================
+// RPG COMPANION - BUTTONS
+// ============================================
+// All button styles: primary, secondary, icon,
+// cancel, settings, split buttons, etc.
+// ============================================
+
+/* ============================================
+   ICON BUTTONS
+   ============================================ */
+.rpg-btn-icon {
+	padding: 0.5em 0.75em;
+	background: var(--rpg-accent);
+	border: 2px solid var(--rpg-border);
+	border-radius: 0.5em;
+	cursor: pointer;
+	color: var(--rpg-text);
+	transition: all 0.3s ease;
+}
+
+.rpg-btn-icon:hover {
+	background: var(--rpg-highlight);
+	border-color: var(--rpg-highlight);
+	transform: scale(1.05);
+}
+
+/* ============================================
+   PRIMARY BUTTON
+   ============================================ */
+.rpg-btn-primary {
+	width: 100%;
+	padding: 0.75em;
+	background: var(--rpg-accent);
+	border: 2px solid var(--rpg-border);
+	border-radius: 0.625em;
+	color: var(--rpg-text);
+	font-size: clamp(1.063rem, 1.4vw, 1.4rem);
+	font-weight: bold;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.625em;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px var(--rpg-shadow);
+}
+
+.rpg-btn-primary:hover {
+	background: var(--rpg-highlight);
+	border-color: var(--rpg-highlight);
+	transform: translateY(-0.125rem);
+	box-shadow: 0 6px 20px var(--rpg-shadow);
+}
+
+.rpg-btn-primary:active {
+	transform: translateY(0);
+}
+
+/* ============================================
+   SECONDARY BUTTON
+   ============================================ */
+.rpg-btn-secondary {
+	padding: 0.625em 1.25em;
+	border: 1px solid var(--rpg-border);
+	border-radius: 0.375em;
+	cursor: pointer;
+	font-size: 0.95em;
+	font-weight: 600;
+	transition: all 0.2s;
+	background: var(--rpg-bg);
+	color: var(--rpg-text);
+	border-color: var(--rpg-border);
+}
+
+.rpg-btn-secondary:hover {
+	background: var(--rpg-accent);
+	transform: translateY(-1px);
+}
+
+/* ============================================
+   CANCEL BUTTON
+   ============================================ */
+.rpg-btn-cancel {
+	padding: 0.625em 1.25em;
+	border: 1px solid var(--rpg-border);
+	border-radius: 0.375em;
+	cursor: pointer;
+	font-size: 0.95em;
+	font-weight: 600;
+	transition: all 0.2s;
+	background: var(--rpg-accent);
+	color: var(--rpg-text);
+	border-color: var(--rpg-border);
+}
+
+.rpg-btn-cancel:hover {
+	background: var(--rpg-bg);
+}
+
+/* ============================================
+   RESET BUTTON
+   ============================================ */
+.rpg-btn-reset {
+	padding: 0.625em 1.25em;
+	border: 1px solid var(--rpg-border);
+	border-radius: 0.375em;
+	cursor: pointer;
+	font-size: 0.95em;
+	font-weight: 600;
+	transition: all 0.2s;
+	background: transparent;
+	color: var(--rpg-text);
+	border-color: var(--rpg-border);
+	opacity: 0.8;
+}
+
+.rpg-btn-reset:hover {
+	opacity: 1;
+	background: var(--rpg-accent);
+}
+
+/* ============================================
+   CLEAR CACHE BUTTON - Danger style
+   ============================================ */
+.rpg-btn-clear-cache {
+	width: 100%;
+	padding: 0.625em;
+	background: rgba(220, 53, 69, 0.2);
+	border: 2px solid rgba(220, 53, 69, 0.5);
+	border-radius: 0.5em;
+	color: #ff6b6b;
+	font-size: clamp(0.938rem, 1.2vw, 1.2rem);
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	transition: all 0.3s ease;
+}
+
+.rpg-btn-clear-cache:hover {
+	background: rgba(220, 53, 69, 0.3);
+	border-color: rgba(220, 53, 69, 0.8);
+	color: #ff8787;
+	transform: translateY(-0.062rem);
+}
+
+.rpg-btn-clear-cache:active {
+	transform: translateY(0);
+}
+
+/* ============================================
+   RESET FAB POSITIONS BUTTON
+   ============================================ */
+.rpg-btn-reset-fab {
+	width: 100%;
+	padding: 0.625em;
+	background: rgba(52, 152, 219, 0.2);
+	border: 2px solid rgba(52, 152, 219, 0.5);
+	border-radius: 0.5em;
+	color: #5dade2;
+	font-size: clamp(0.938rem, 1.2vw, 1.2rem);
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	transition: all 0.3s ease;
+}
+
+.rpg-btn-reset-fab:hover {
+	background: rgba(52, 152, 219, 0.3);
+	border-color: rgba(52, 152, 219, 0.8);
+	color: #85c1e9;
+	transform: translateY(-0.062rem);
+}
+
+.rpg-btn-reset-fab:active {
+	transform: translateY(0);
+}
+
+/* ============================================
+   CUSTOMIZE PROMPTS BUTTON - Neutral gray style
+   ============================================ */
+.rpg-btn-customize-prompts {
+	width: 100%;
+	padding: 0.625em;
+	background: rgba(128, 128, 128, 0.2);
+	border: 2px solid rgba(128, 128, 128, 0.5);
+	border-radius: 0.5em;
+	color: #aaa;
+	font-size: clamp(0.938rem, 1.2vw, 1.2rem);
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+	transition: all 0.3s ease;
+}
+
+.rpg-btn-customize-prompts:hover {
+	background: rgba(128, 128, 128, 0.3);
+	border-color: rgba(128, 128, 128, 0.8);
+	color: #ccc;
+	transform: translateY(-0.062rem);
+}
+
+.rpg-btn-customize-prompts:active {
+	transform: translateY(0);
+}
+
+/* ============================================
+   SETTINGS BUTTON
+   ============================================ */
+.rpg-btn-settings {
+	width: 100%;
+	height: 2.5rem;
+	margin: 0;
+	padding: 0;
+	background: var(--rpg-accent);
+	border: 2px solid var(--rpg-border);
+	border-radius: 0.5em;
+	color: var(--rpg-text);
+	font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375em;
+	flex-shrink: 0;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+	box-sizing: border-box;
+}
+
+.rpg-btn-settings:hover {
+	background: var(--rpg-highlight);
+	border-color: var(--rpg-highlight);
+	transform: translateY(-0.125rem);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.rpg-btn-settings:active {
+	transform: translateY(0);
+}
+
+/* ============================================
+   HALF-WIDTH BUTTONS
+   ============================================ */
+.rpg-btn-half {
+	flex: 1;
+	min-width: 0;
+}
+
+/* ============================================
+   BUTTON ROWS
+   ============================================ */
+/* Character data buttons row (Relationships + Character Cards side by side) */
+.rpg-character-buttons-row {
+	display: flex;
+	gap: 0.5em;
+	width: 100%;
+	margin-bottom: 0.5em;
+}
+
+/* Settings buttons row (Edit Trackers + Settings side by side) */
+.rpg-settings-buttons-row {
+	display: flex;
+	gap: 0.5em;
+	width: 100%;
+}
+
+/* ============================================
+   REFRESH BUTTONS ROW
+   ============================================ */
+.rpg-refresh-buttons-row {
+	display: flex;
+	gap: 0.5em;
+	width: 100%;
+}
+
+/* ============================================
+   SPLIT REFRESH BUTTON
+   ============================================ */
+.rpg-refresh-split-btn {
+	display: flex;
+	width: 100%;
+	height: 2.5rem;
+	border-radius: 0.5em;
+	overflow: hidden;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+	position: relative;
+	flex-shrink: 0;
+}
+
+/* Each half of the split button */
+.rpg-split-half {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	margin: 0 !important;
+	padding: 0 0.375em;
+	border: none;
+	font-size: clamp(0.8rem, 1vw, 1rem);
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3em;
+	box-sizing: border-box;
+	position: relative;
+	color: var(--rpg-text);
+}
+
+/* Full refresh half (left) - primary style */
+.rpg-split-full {
+	background: linear-gradient(135deg, var(--rpg-highlight), var(--rpg-accent));
+	border-right: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.rpg-split-full:hover {
+	background: var(--rpg-highlight);
+}
+
+.rpg-split-full:active {
+	background: var(--rpg-accent);
+}
+
+/* Partial refresh half (right) - secondary style */
+.rpg-split-partial {
+	background: var(--rpg-accent);
+	border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rpg-split-partial:hover {
+	background: var(--rpg-highlight);
+	color: var(--rpg-bg);
+	box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.rpg-split-partial:active {
+	background: var(--rpg-accent);
+}
+
+/* Cancel button - covers entire split button during generation */
+.rpg-split-cancel {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0 !important;
+	padding: 0;
+	border: none;
+	border-radius: 0.5em;
+	background: #dc3545;
+	color: white;
+	font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375em;
+	z-index: 2;
+}
+
+.rpg-split-cancel:hover {
+	background: #c82333;
+	transform: translateY(-0.125rem);
+	box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.rpg-split-cancel:active {
+	transform: translateY(0);
+}
+
+/* Updating state - show a single full-width "Refreshing..." button, cancel hidden by default */
+.rpg-refresh-split-btn.is-updating .rpg-split-half {
+	display: none;
+}
+
+.rpg-refresh-split-btn.is-updating .rpg-split-cancel {
+	display: flex !important;
+	background: linear-gradient(135deg, var(--rpg-accent), var(--rpg-highlight));
+	color: var(--rpg-text);
+	cursor: default;
+	opacity: 0.85;
+	position: relative;
+	z-index: 1;
+}
+
+/* Show "Refreshing..." text by default, hide "Cancel" text */
+.rpg-refresh-split-btn.is-updating .rpg-cancel-refreshing-text {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375em;
+}
+.rpg-refresh-split-btn.is-updating .rpg-cancel-action-text {
+	display: none;
+}
+
+/* On hover over the split button container, show the actual cancel button */
+.rpg-refresh-split-btn.is-updating:hover .rpg-split-cancel {
+	background: #dc3545;
+	color: white;
+	cursor: pointer;
+	opacity: 1;
+	transform: translateY(-0.125rem);
+	box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+/* On hover, swap text: hide "Refreshing...", show "Cancel" */
+.rpg-refresh-split-btn.is-updating:hover .rpg-cancel-refreshing-text {
+	display: none;
+}
+.rpg-refresh-split-btn.is-updating:hover .rpg-cancel-action-text {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375em;
+}
+
+/* ============================================
+   CANCEL GENERATION BUTTON (standalone)
+   ============================================ */
+.rpg-btn-cancel {
+	width: 100%;
+	margin-top: 0.5em;
+	padding: 0.375em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375em;
+	font-size: clamp(0.875rem, 1.1vw, 1.1rem);
+	background: #dc3545;
+	border: 2px solid #dc3545;
+	border-radius: 0.5em;
+	color: white;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.rpg-btn-cancel:hover {
+	background: #c82333;
+	border-color: #c82333;
+	transform: translateY(-0.125rem);
+	box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+.rpg-btn-cancel:active {
+	transform: translateY(0);
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   CLEAR CACHE DROPDOWN BUTTON
+   ============================================ */
+.rpg-clear-cache-options {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: var(--rpg-bg);
+	border: 2px solid var(--rpg-border);
+	border-radius: 8px;
+	padding: 16px;
+	margin-top: 4px;
+	box-shadow: 0 4px 20px var(--rpg-shadow);
+	z-index: 10002;
+	animation: rpg-fade-in 0.2s ease;
+}
+
+.rpg-clear-cache-options label:hover {
+	background: rgba(22, 33, 62, 0.5);
+	border-radius: 4px;
+}
+/* ============================================
+   REFRESH BUTTONS ROW
+   ============================================ */
+.rpg-refresh-buttons-row {
+	display: flex;
+	gap: 0.5em;
+	width: 100%;
+}

@@ -379,13 +379,6 @@ async function initUI() {
 
 	// ── Manual bindings (non-settings actions) ──
 
-	// Dismiss promo button
-	$("#rpg-dismiss-promo").on("click", () => {
-		extensionSettings.dismissedHolidayPromo = true;
-		saveSettings();
-		$("#rpg-holiday-promo").fadeOut(300);
-	});
-
 	// Full Refresh button (left half of split button)
 	$("#rpg-full-refresh").on("click", async () => {
 		if (!extensionSettings.enabled) return;
@@ -451,11 +444,6 @@ async function initUI() {
 		log("Strip cancel button clicked");
 		abortCurrentGeneration();
 	});
-
-	// Hide holiday promo if previously dismissed
-	if (extensionSettings.dismissedHolidayPromo) {
-		$("#rpg-holiday-promo").hide();
-	}
 
 	populateConnectionProfileDropdown();
 
