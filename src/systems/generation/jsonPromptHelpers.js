@@ -265,14 +265,16 @@ export function buildCharactersJSONInstruction() {
 	instruction += '    "name": "CharacterName",\n';
 	instruction += '    "emoji": "Character Emoji"';
 
-	// Details fields
+	// Details fields — use keyword-like example values to discourage verbose prose
 	if (enabledFields.length > 0) {
 		instruction += ',\n    "details": {\n';
 		for (let i = 0; i < enabledFields.length; i++) {
 			const field = enabledFields[i];
 			const fieldKey = toSnakeCase(field.name);
 			const comma = i < enabledFields.length - 1 ? "," : "";
-			instruction += `      "${fieldKey}": "${field.description}"${comma}\n`;
+			// Use the description as a label hint but show a keyword-style example value
+			const keywordHint = `[brief ${field.description.toLowerCase()}, e.g. keyword1, keyword2]`;
+			instruction += `      "${fieldKey}": "${keywordHint}"${comma}  // Use brief, keyword-like descriptions only\n`;
 		}
 		instruction += "    }";
 	}

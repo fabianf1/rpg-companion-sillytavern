@@ -22,7 +22,7 @@ const DEFAULT_PROMPTS = {
 	plotNatural:
 		"Actually, the scene is getting stale. Progress it, to make things more interesting! Reintroduce an unresolved plot point from the past, or push the story further towards the current main goal. Be creative, but stay grounded in the setting.",
 	trackerInstructions:
-		'Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that {userName} perceives about the current scene and the present characters. For example: "Location" becomes Forest Clearing, "Mood Emoji" becomes "😊". DO NOT include {userName} in the characters section, only NPCs. Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user\'s actions, the passage of time, and logical consequences (0% if the time progressed only by a few minutes, 1-5% normally, and above 5% only if a major time-skip/event occurs).',
+		'Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that {userName} perceives about the current scene and the present characters. For example: "Location" becomes Forest Clearing, "Mood Emoji" becomes "😊". DO NOT include {userName} in the characters section, only NPCs. Prefer brief, keyword-like descriptions — a few terse phrases (e.g. "tall, scarred, worn cloak") , if applicable, NOT full sentences or paragraphs. Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user\'s actions, the passage of time, and logical consequences (0% if the time progressed only by a few minutes, 1-5% normally, and above 5% only if a major time-skip/event occurs).',
 	trackerContinuation:
 		'After updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting the protagonist\'s performance, low hygiene influencing their social interactions, environmental factors shaping the scene, a character\'s emotional state coloring their responses, and so on. Remember, all placeholders (e.g., "Location", "Mood Emoji") MUST be replaced with actual content.',
 	combatNarrative:
@@ -107,7 +107,7 @@ function openPromptsEditor() {
 	);
 	$("#rpg-prompt-context-instructions").val(
 		extensionSettings.customContextInstructionsPrompt ||
-			DEFAULT_PROMPTS.contextInstructions,
+		DEFAULT_PROMPTS.contextInstructions,
 	);
 	$("#rpg-prompt-plot-random").val(
 		extensionSettings.customPlotRandomPrompt || DEFAULT_PROMPTS.plotRandom,
@@ -117,15 +117,15 @@ function openPromptsEditor() {
 	);
 	$("#rpg-prompt-tracker-instructions").val(
 		extensionSettings.customTrackerInstructionsPrompt ||
-			DEFAULT_PROMPTS.trackerInstructions,
+		DEFAULT_PROMPTS.trackerInstructions,
 	);
 	$("#rpg-prompt-tracker-continuation").val(
 		extensionSettings.customTrackerContinuationPrompt ||
-			DEFAULT_PROMPTS.trackerContinuation,
+		DEFAULT_PROMPTS.trackerContinuation,
 	);
 	$("#rpg-prompt-combat-narrative").val(
 		extensionSettings.customCombatNarrativePrompt ||
-			DEFAULT_PROMPTS.combatNarrative,
+		DEFAULT_PROMPTS.combatNarrative,
 	);
 
 	// Set theme to match current extension theme
