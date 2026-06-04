@@ -189,34 +189,7 @@
 	color: var(--rpg-highlight);
 }
 
-.rpg-btn-primary {
-	width: 100%;
-	padding: 0.75em;
-	background: var(--rpg-accent);
-	border: 2px solid var(--rpg-border);
-	border-radius: 0.625em;
-	color: var(--rpg-text);
-	font-size: clamp(1.063rem, 1.4vw, 1.4rem);
-	font-weight: bold;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.625em;
-	transition: all 0.3s ease;
-	box-shadow: 0 4px 15px var(--rpg-shadow);
-}
-
-.rpg-btn-primary:hover {
-	background: var(--rpg-highlight);
-	border-color: var(--rpg-highlight);
-	transform: translateY(-0.125rem);
-	box-shadow: 0 6px 20px var(--rpg-shadow);
-}
-
-.rpg-btn-primary:active {
-	transform: translateY(0);
-}
+/* Note: .rpg-btn-primary is defined in _buttons.scss - do not duplicate here */
 
 /* Clear Cache Button - Danger style */
 .rpg-btn-clear-cache {

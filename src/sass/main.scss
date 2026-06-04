@@ -3,7 +3,12 @@
 // ============================================
 // This is the main entry point for SASS compilation.
 // Use @use for modern SASS module system.
-// ============================================
+// =================================
+
+// === Design System (load first) ===
+@use 'variables' as *;
+@use 'mixins' as *;
+@use 'modal-base';
 
 // === Core UI Components ===
 @use 'animations';

@@ -1,15 +1,44 @@
-// ============================================
+// =================================
 // RPG COMPANION - BUTTONS
 // ============================================
 // All button styles: primary, secondary, icon,
 // cancel, settings, split buttons, etc.
-// ============================================
+// =================================
+@use 'variables' as *;
+@use 'mixins' as *;
 
-/* ============================================
-   ICON BUTTONS
-   ============================================ */
+// === Button Base Placeholders ===
+%btn-base {
+	cursor: pointer;
+	font-weight: 600;
+	transition: all 0.2s ease;
+	border-radius: $radius-sm;
+	font-family: inherit;
+}
+
+%btn-full-width {
+	@extend %btn-base;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5em;
+}
+
+%btn-hover-lift {
+	&:hover {
+		transform: translateY(-1px);
+	}
+	&:active {
+		transform: translateY(0);
+	}
+}
+
+// ============================================
+// ICON BUTTONS
+// ============================================ */
 .rpg-btn-icon {
-	padding: 0.5em 0.75em;
+	padding: $space-sm $space-md;
 	background: var(--rpg-accent);
 	border: 2px solid var(--rpg-border);
 	border-radius: 0.5em;

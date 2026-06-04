@@ -1,9 +1,12 @@
-// ============================================
+// =================================
 // RPG COMPANION - PANEL LAYOUT
 // ============================================
 // Core panel structure, positioning, collapse toggle,
 // content containers, and scrollbar styling.
 // ============================================
+
+@use 'variables' as *;
+@use 'mixins' as *;
 
 /* Ensure chat stays centered when panel is visible */
 body:has(.rpg-panel.rpg-position-right) #sheld {
@@ -14,20 +17,32 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
 	margin: auto !important;
 }
 
-/* ============================================
+/* =================================
    RPG COMPANION - GAME-LIKE UI - RESPONSIVE
    ============================================ */
 
-/* CSS Variables for Theming - Default uses SillyTavern's variables */
-.rpg-panel,
-#rpg-thought-panel,
-#rpg-thought-icon,
-.rpg-mobile-toggle {
+/* CSS Variables for Theming - Default uses SillyTavern's variables
+   These are defined once here and inherited by all RPG components.
+   Other components use var(--rpg-*) with fallbacks.
+*/
+.rpg-panel {
 	--rpg-bg: var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9));
 	--rpg-accent: var(--black30a, rgba(22, 33, 62, 0.9));
 	--rpg-text: var(--SmartThemeBodyColor, #eaeaea);
 	--rpg-highlight: var(--SmartThemeQuoteColor, #e94560);
 	--rpg-border: var(--SmartThemeBorderColor, #4a7ba7);
+	--rpg-shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* Inherit variables for thought panel and mobile toggle */
+#rpg-thought-panel,
+#rpg-thought-icon,
+.rpg-mobile-toggle {
+	--rpg-bg: var(--rpg-bg, var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9)));
+	--rpg-accent: var(--rpg-accent, var(--black30a, rgba(22, 33, 62, 0.9)));
+	--rpg-text: var(--rpg-text, var(--SmartThemeBodyColor, #eaeaea));
+	--rpg-highlight: var(--rpg-highlight, var(--SmartThemeQuoteColor, #e94560));
+	--rpg-border: var(--rpg-border, var(--SmartThemeBorderColor, #4a7ba7));
 	--rpg-shadow: rgba(0, 0, 0, 0.5);
 }
 
@@ -284,30 +299,11 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
 	max-height: 9.375rem;
 }
 
-/* Custom Scrollbar */
-.rpg-panel::-webkit-scrollbar,
-#rpg-panel-content::-webkit-scrollbar,
-.rpg-content-box::-webkit-scrollbar {
-	width: 0.5rem;
-}
-
-.rpg-panel::-webkit-scrollbar-track,
-#rpg-panel-content::-webkit-scrollbar-track,
-.rpg-content-box::-webkit-scrollbar-track {
-	background: var(--rpg-accent);
-}
-
-.rpg-panel::-webkit-scrollbar-thumb,
-#rpg-panel-content::-webkit-scrollbar-thumb,
-.rpg-content-box::-webkit-scrollbar-thumb {
-	background: var(--rpg-highlight);
-	border-radius: 0.25em;
-}
-
-.rpg-panel::-webkit-scrollbar-thumb:hover,
-#rpg-panel-content::-webkit-scrollbar-thumb:hover,
-.rpg-content-box::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-border);
+/* Custom Scrollbar - using mixin from _mixins.scss */
+.rpg-panel,
+#rpg-panel-content,
+.rpg-content-box {
+	@include custom-scrollbar(8px, var(--rpg-highlight, #e94560), var(--rpg-accent, rgba(22, 33, 62, 0.9)));
 }
 
 /* Game Container - Full height flex container */

@@ -2,6 +2,8 @@
 /* ============================================
    QUESTS SYSTEM STYLING
    ============================================ */
+@use 'variables' as *;
+@use 'mixins' as *;
 
 /* Quest Container */
 #rpg-quests {
@@ -10,65 +12,6 @@
 	gap: 1rem;
 	padding: 0.5rem;
 	font-size: 0.9rem;
-}
-
-/* Quest Sub-tabs Navigation (Main / Optional) */
-.rpg-quests-subtabs {
-	display: flex;
-	gap: 0.5rem;
-	border-bottom: 2px solid var(--SmartThemeBorderColor);
-	padding-bottom: 0.5rem;
-	overflow-x: auto;
-	overflow-y: hidden;
-	flex-wrap: nowrap;
-	scrollbar-width: thin;
-	scrollbar-color: var(--SmartThemeBorderColor) transparent;
-}
-
-.rpg-quests-subtabs::-webkit-scrollbar {
-	height: 6px;
-}
-
-.rpg-quests-subtabs::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-quests-subtabs::-webkit-scrollbar-thumb {
-	background: var(--SmartThemeBorderColor);
-	border-radius: 3px;
-}
-
-.rpg-quests-subtabs::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-accent);
-}
-
-.rpg-quests-subtab {
-	flex: 1;
-	padding: 0.5rem 1rem;
-	background: transparent;
-	border: 2px solid var(--SmartThemeBorderColor);
-	border-radius: 0.25rem;
-	color: var(--SmartThemeBodyColor);
-	cursor: pointer;
-	transition: all 0.2s ease;
-	font-weight: 500;
-	text-align: center;
-	font-size: clamp(0.75rem, 1vw, 0.9rem);
-	min-width: fit-content;
-	white-space: nowrap;
-}
-
-.rpg-quests-subtab:hover {
-	background: rgba(var(--rpg-highlight-rgb, 233, 69, 96), 0.1);
-	border-color: var(--rpg-highlight);
-	color: var(--rpg-highlight);
-}
-
-.rpg-quests-subtab.active {
-	background: transparent;
-	border-color: var(--rpg-highlight);
-	color: var(--rpg-highlight);
-	font-weight: 600;
 }
 
 /* Quest Sections */
@@ -387,15 +330,6 @@
 
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
-	.rpg-quests-subtabs {
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.rpg-quests-subtab {
-		padding: 0.75rem;
-		font-size: 1rem;
-	}
 
 	.rpg-quest-header h4 {
 		font-size: 1rem;

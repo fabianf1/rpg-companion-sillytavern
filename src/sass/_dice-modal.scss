@@ -4,7 +4,13 @@
    ============================================ */
 
 /* CSS Custom Properties for Responsive Scaling */
-.rpg-dice-popup {
+.rpg-dice-popup {	/* RPG Theme Variables - inherit from SillyTavern */
+	--rpg-bg: var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9));
+	--rpg-accent: var(--black30a, rgba(22, 33, 62, 0.9));
+	--rpg-text: var(--SmartThemeBodyColor, #eaeaea);
+	--rpg-highlight: var(--SmartThemeQuoteColor, #e94560);
+	--rpg-border: var(--SmartThemeBorderColor, #4a7ba7);
+	--rpg-shadow: rgba(0, 0, 0, 0.5);
 	/* Fluid spacing that scales with viewport */
 	--modal-padding: clamp(0.5rem, 2vw, 0.75rem);
 	--modal-gap: clamp(0.375rem, 1.5vw, 0.5rem);

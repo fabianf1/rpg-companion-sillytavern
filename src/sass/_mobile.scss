@@ -1,3 +1,4 @@
+@use 'variables' as *;
 
 /* ============================================
    MOBILE TOGGLE BUTTON (FAB)
@@ -990,7 +991,7 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
-		scrollbar-width: thin;
+		scrollbar-width: thin; // Mobile: just use native scrollbar-width
 		flex-wrap: nowrap;
 	}
 
@@ -1043,24 +1044,29 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
        MOBILE TRACKER EDITOR CONTENT
        ======================================== */
 
-	/* Reduce popup body padding on mobile */
+	/* Ensure adequate padding on mobile for tracker editor */
 	.rpg-settings-popup-body {
-		padding: 0.75em !important;
+		padding: $space-sm !important;
+	}
+
+	/* Section spacing on mobile */
+	.rpg-editor-section {
+		padding: $space-sm $space-xs;
 	}
 
 	/* Make section headers smaller */
 	.rpg-editor-section h4 {
-		font-size: clamp(13px, 3.3vw, 16px) !important;
-		gap: 0.25em;
+		font-size: $font-base !important;
+		gap: $space-xs;
 	}
 
 	.rpg-editor-section h4 i {
-		font-size: clamp(12px, 3.1vw, 15px) !important;
+		font-size: $font-base !important;
 	}
 
 	/* Make hint text smaller */
 	.rpg-editor-hint {
-		font-size: clamp(11px, 2.8vw, 14px) !important;
+		font-size: $font-sm !important;
 	}
 
 	/* ========================================

@@ -3,6 +3,8 @@
    DESKTOP STRIP WIDGETS (Collapsed Panel)
    Shows compact widgets when panel is collapsed
    ============================================ */
+@use 'variables' as *;
+@use 'mixins' as *;
 
 /* Strip Widget Container - hidden by default, shown when collapsed with strip widgets enabled */
 .rpg-strip-widget-container {
@@ -20,8 +22,7 @@
 	width: 100%;
 	overflow-y: auto;
 	overflow-x: hidden;
-	scrollbar-width: thin;
-	scrollbar-color: var(--rpg-border) transparent;
+	@include custom-scrollbar(6px, var(--rpg-border, #4a7ba7), transparent);
 	z-index: 10;
 }
 

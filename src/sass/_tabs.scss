@@ -2,6 +2,8 @@
 /* ============================================
    DESKTOP TABS SYSTEM
    ============================================ */
+@use 'variables' as *;
+@use 'mixins' as *;
 
 /* Desktop tabs container */
 .rpg-tabs-container {
@@ -21,25 +23,7 @@
 	overflow-x: auto;
 	overflow-y: hidden;
 	flex-wrap: nowrap;
-	scrollbar-width: thin;
-	scrollbar-color: var(--SmartThemeBorderColor) transparent;
-}
-
-.rpg-tabs-nav::-webkit-scrollbar {
-	height: 6px;
-}
-
-.rpg-tabs-nav::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-tabs-nav::-webkit-scrollbar-thumb {
-	background: var(--SmartThemeBorderColor);
-	border-radius: 3px;
-}
-
-.rpg-tabs-nav::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-highlight);
+	@include custom-scrollbar(6px, var(--SmartThemeBorderColor, #4a7ba7), transparent, true);
 }
 
 /* Desktop tab button - vertical layout (icon above text) */

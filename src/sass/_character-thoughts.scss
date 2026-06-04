@@ -1,4 +1,7 @@
 
+@use 'variables' as *;
+@use 'mixins' as *;
+
 /* ============================================
    CHARACTER THOUGHTS SECTION
    ============================================ */
@@ -174,26 +177,8 @@
 	box-sizing: border-box; /* Include padding and border in width calculation */
 	flex-shrink: 0; /* Prevent cards from shrinking */
 	overflow: auto;
-	scrollbar-width: thin;
-	scrollbar-color: var(--rpg-border) transparent;
-}
 
-.rpg-character-card::-webkit-scrollbar {
-	width: 4px;
-	height: 4px;
-}
-
-.rpg-character-card::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-character-card::-webkit-scrollbar-thumb {
-	background: var(--rpg-border);
-	border-radius: 2px;
-}
-
-.rpg-character-card::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-highlight);
+	@include custom-scrollbar(4px, var(--rpg-border, #4a7ba7), transparent);
 }
 
 .rpg-character-card:hover {
@@ -301,25 +286,10 @@
 	overflow-x: hidden;
 	flex: 1;
 	min-height: 0;
-	scrollbar-width: thin;
-	scrollbar-color: var(--rpg-border) transparent;
 }
 
-.rpg-character-info::-webkit-scrollbar {
-	width: 4px;
-}
-
-.rpg-character-info::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-character-info::-webkit-scrollbar-thumb {
-	background: var(--rpg-border);
-	border-radius: 2px;
-}
-
-.rpg-character-info::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-highlight);
+.rpg-character-info {
+	@include custom-scrollbar(4px, var(--rpg-border, #4a7ba7), transparent);
 }
 
 /* Character header with emoji and name - now inside header row */
@@ -453,26 +423,7 @@
 	border-radius: clamp(2px, 0.3vh, 4px);
 	box-sizing: border-box;
 	overflow: auto;
-	scrollbar-width: thin;
-	scrollbar-color: var(--rpg-border) transparent;
-}
-
-.rpg-character-stats::-webkit-scrollbar {
-	width: 4px;
-	height: 4px;
-}
-
-.rpg-character-stats::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-character-stats::-webkit-scrollbar-thumb {
-	background: var(--rpg-border);
-	border-radius: 2px;
-}
-
-.rpg-character-stats::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-highlight);
+	@include custom-scrollbar(4px, var(--rpg-border, #4a7ba7), transparent);
 }
 
 .rpg-character-stats-inner {

@@ -106,3 +106,98 @@
 		font-size: 1rem;
 	}
 }
+
+/* ============================================
+   SCROLLBAR UTILITY CLASSES
+   ============================================
+   Use these classes alongside the @mixin custom-scrollbar
+   in SASS files. For quick HTML use: rpg-scrollbar-thin, rpg-scrollbar-wide
+   ============================================ */
+
+/* Thin scrollbar (4px) - most common */
+.rpg-scrollbar-thin {
+	&::-webkit-scrollbar {
+		width: 4px;
+		height: 4px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: var(--rpg-border, #4a7ba7);
+		border-radius: 2px;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background: var(--rpg-highlight, #e94560);
+	}
+
+	scrollbar-width: thin;
+	scrollbar-color: var(--rpg-border, #4a7ba7) transparent;
+}
+
+/* Wide scrollbar (6px) - for tabs/headers */
+.rpg-scrollbar-wide {
+	&::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: var(--rpg-border, #4a7ba7);
+		border-radius: 3px;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background: var(--rpg-highlight, #e94560);
+	}
+
+	scrollbar-width: thin;
+	scrollbar-color: var(--rpg-border, #4a7ba7) transparent;
+}
+
+/* ============================================
+   ACCESSIBILITY UTILITIES
+   ============================================ */
+
+/* Visually hidden but accessible to screen readers */
+.rpg-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Focus visible utility */
+.rpg-focus-visible:focus-visible {
+	outline: 2px solid var(--rpg-highlight, #e94560);
+	outline-offset: 2px;
+}
+
+/* ============================================
+   REDUCED MOTION GLOBAL FALLBACK
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+	/* Override all animations for users who prefer reduced motion */
+	.rpg-snowflakes-container *,
+	.rpg-weather-particles *,
+	.rpg-snowflake,
+	.rpg-raindrop,
+	.rpg-mist,
+	.rpg-clear-ambient-glow {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

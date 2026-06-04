@@ -1,0 +1,157 @@
+// =================================
+// RPG COMPANION - MODAL BASE
+// ============================================
+// Shared styles for all modal/popup components
+// ============================================
+
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// === Modal Container ===
+// Base class for all modal containers
+%modal-container {
+	@include modal-container;
+}
+
+// === Modal Backdrop ===
+// Applied via ::before pseudo-element
+%modal-backdrop {
+	@include modal-backdrop;
+}
+
+// === Modal Content Box ===
+%modal-content {
+	@include modal-content;
+}
+
+// === Modal Header ===
+%modal-header {
+	@include modal-header;
+}
+
+// === Modal Body ===
+%modal-body {
+	@include modal-body;
+}
+
+// === Modal Footer ===
+%modal-footer {
+	@include modal-footer;
+}
+
+// === Modal Close Button ===
+%modal-close-btn {
+	background: transparent;
+	border: none;
+	color: $color-text;
+	font-size: clamp(1.5rem, 2.2vw, 2.2rem);
+	cursor: pointer;
+	padding: $space-md;
+	min-width: $touch-target;
+	min-height: $touch-target;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: $radius-sm;
+	transition: all $transition-normal;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: $color-highlight;
+	}
+
+	&:active {
+		background: rgba(255, 255, 255, 0.1);
+		color: $color-highlight;
+	}
+}
+
+// === Modal Animations ===
+@keyframes rpgFadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes rpgFadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes rpgSlideUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes rpgSlideDown {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+	}
+}
+
+// Alias for consistency with existing code
+@keyframes slideInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+// === Modal Size Variants ===
+@mixin modal-size-small {
+	--modal-max-width: min(90vw, 320px);
+	--modal-max-height: 65vh;
+}
+
+@mixin modal-size-medium {
+	--modal-max-width: min(90vw, 500px);
+	--modal-max-height: 75vh;
+}
+
+@mixin modal-size-large {
+	--modal-max-width: min(95vw, 700px);
+	--modal-max-height: 85vh;
+}
+
+// === Desktop Enhancement ===
+@media (min-width: $breakpoint-lg) {
+	// Larger modals on desktop
+	[data-modal-size="medium"] {
+		--modal-max-width: 600px;
+	}
+
+	[data-modal-size="large"] {
+		--modal-max-width: 900px;
+	}
+}
+
+// === Reduced Motion Support ===
+@include reduced-motion {
+	%modal-content,
+	.is-open,
+	.is-closing {
+		animation-duration: 0.01ms !important;
+	}
+}

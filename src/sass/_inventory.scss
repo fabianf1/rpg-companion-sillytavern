@@ -2,6 +2,8 @@
 /* ========================================
    Inventory System v2 Styles
    ======================================== */
+@use 'variables' as *;
+@use 'mixins' as *;
 
 /* Inventory Container */
 #rpg-inventory {
@@ -29,25 +31,7 @@
 	overflow-x: auto;
 	overflow-y: hidden;
 	flex-wrap: nowrap;
-	scrollbar-width: thin;
-	scrollbar-color: var(--SmartThemeBorderColor) transparent;
-}
-
-.rpg-inventory-subtabs::-webkit-scrollbar {
-	height: 6px;
-}
-
-.rpg-inventory-subtabs::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.rpg-inventory-subtabs::-webkit-scrollbar-thumb {
-	background: var(--SmartThemeBorderColor);
-	border-radius: 3px;
-}
-
-.rpg-inventory-subtabs::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-accent);
+	@include custom-scrollbar(6px, var(--SmartThemeBorderColor, #4a7ba7), transparent, true);
 }
 
 .rpg-inventory-subtab {

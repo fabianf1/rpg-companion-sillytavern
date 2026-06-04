@@ -1,0 +1,69 @@
+// ============================================
+// RPG COMPANION - DESIGN TOKENS
+// ============================================
+// Centralized variables for consistent theming
+// ============================================
+
+// === Color Tokens ===
+// These map to SillyTavern's CSS variables with fallbacks
+$color-bg: var(--SmartThemeBlurTintColor, rgba(26, 26, 46, 0.9));
+$color-accent: var(--black30a, rgba(22, 33, 62, 0.9));
+$color-text: var(--SmartThemeBodyColor, #eaeaea);
+$color-highlight: var(--SmartThemeQuoteColor, #e94560);
+$color-border: var(--SmartThemeBorderColor, #4a7ba7);
+$color-shadow: rgba(0, 0, 0, 0.5);
+
+// Legacy color references for components not yet migrated
+$legacy-bg: rgba(26, 26, 46, 0.9);
+$legacy-accent: rgba(22, 33, 62, 0.9);
+$legacy-text: #eaeaea;
+$legacy-highlight: #e94560;
+$legacy-border: #4a7ba7;
+
+// === Spacing Scale ===
+$space-xs: 0.25em;
+$space-sm: 0.375em;
+$space-md: 0.5em;
+$space-lg: 0.625em;
+$space-xl: 0.75em;
+$space-2xl: 0.938em;
+$space-3xl: 1.25em;
+
+// === Border Radius Scale ===
+$radius-xs: 0.125em;
+$radius-sm: 0.25em;
+$radius-md: 0.375em;
+$radius-lg: 0.5em;
+$radius-xl: 0.625em;
+$radius-2xl: 0.75em;
+$radius-full: 9999px;
+
+// === Transition Timing ===
+$transition-fast: 0.15s ease;
+$transition-normal: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// === Font Size Scale (using clamp for fluid typography) ===
+$font-xs: clamp(0.625rem, 0.8vw, 0.75rem);
+$font-sm: clamp(0.75rem, 1vw, 0.875rem);
+$font-base: clamp(0.875rem, 1.1vw, 1rem);
+$font-md: clamp(1rem, 1.3vw, 1.125rem);
+$font-lg: clamp(1.125rem, 1.5vw, 1.25rem);
+$font-xl: clamp(1.25rem, 1.8vw, 1.5rem);
+$font-2xl: clamp(1.5rem, 2.2vw, 1.75rem);
+
+// === Z-Index Scale ===
+$z-panel: 1000;
+$z-overlay: 1000;
+$z-modal: 10000;
+$z-tooltip: 10001;
+$z-toast: 10002;
+
+// === Breakpoints (matching SillyTavern) ===
+$breakpoint-sm: 480px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1000px;
+$breakpoint-xl: 1400px;
+
+// === Touch Target Size (accessibility) ===
+$touch-target: 44px;

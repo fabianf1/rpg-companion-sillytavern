@@ -1,7 +1,17 @@
 
-/* ============================================
+/* =================================
    TRACKER EDITOR MODAL
    ============================================ */
+@use 'variables' as *;
+@use 'mixins' as *;
+
+/* Tracker editor specific modal sizing */
+#rpg-tracker-editor-popup {
+	--modal-padding: #{$space-md};
+	--modal-gap: #{$space-sm};
+	--modal-max-width: min(95vw, 700px);
+	--modal-max-height: 85vh;
+}
 
 /* Preset Management Section */
 .rpg-preset-management {
@@ -106,15 +116,25 @@
 }
 
 .rpg-editor-section {
-	padding: 1em 0;
+	padding: $space-md $space-sm;
+	border-bottom: 1px solid var(--rpg-border);
+	margin-bottom: $space-sm;
+
+	&:last-child {
+		border-bottom: none;
+		margin-bottom: 0;
+	}
 }
 
 .rpg-editor-section h4 {
 	color: var(--rpg-highlight);
-	margin: 1em 0 0.5em 0;
+	margin: 0 0 $space-sm 0;
+	padding-bottom: $space-xs;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 	display: flex;
 	align-items: center;
-	gap: 0.5em;
+	gap: $space-xs;
+	font-size: $font-base;
 }
 
 .rpg-editor-section h4:first-child {
@@ -122,10 +142,13 @@
 }
 
 .rpg-editor-hint {
-	font-size: 0.9em;
+	font-size: $font-sm;
 	color: var(--rpg-text);
 	opacity: 0.7;
-	margin-bottom: 1em;
+	margin-bottom: $space-sm;
+	padding: $space-xs;
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: $radius-sm;
 }
 
 /* Stats list */
@@ -563,64 +586,6 @@
 
 .rpg-restore-prompt-btn {
 	font-size: 0.9em;
-}
-
-/* Editor buttons */
-.rpg-btn-primary,
-.rpg-btn-secondary,
-.rpg-btn-cancel,
-.rpg-btn-reset {
-	padding: 0.625em 1.25em;
-	border: 1px solid var(--rpg-border);
-	border-radius: 0.375em;
-	cursor: pointer;
-	font-size: 0.95em;
-	font-weight: 600;
-	transition: all 0.2s;
-}
-
-.rpg-btn-primary {
-	background: var(--rpg-highlight);
-	color: white;
-	border-color: var(--rpg-highlight);
-}
-
-.rpg-btn-primary:hover {
-	opacity: 0.9;
-	transform: translateY(-1px);
-}
-
-.rpg-btn-secondary {
-	background: var(--rpg-bg);
-	color: var(--rpg-text);
-	border-color: var(--rpg-border);
-}
-
-.rpg-btn-secondary:hover {
-	background: var(--rpg-accent);
-	transform: translateY(-1px);
-}
-
-.rpg-btn-cancel {
-	background: var(--rpg-accent);
-	color: var(--rpg-text);
-	border-color: var(--rpg-border);
-}
-
-.rpg-btn-cancel:hover {
-	background: var(--rpg-bg);
-}
-
-.rpg-btn-reset {
-	background: transparent;
-	color: var(--rpg-text);
-	border-color: var(--rpg-border);
-	opacity: 0.8;
-}
-
-.rpg-btn-reset:hover {
-	opacity: 1;
-	background: var(--rpg-accent);
 }
 
 /* ===== Raw JSON Tab ===== */

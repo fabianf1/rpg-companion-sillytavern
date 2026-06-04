@@ -3,6 +3,9 @@
    INFO BOX SECTION
    ============================================ */
 
+@use 'variables' as *;
+@use 'mixins' as *;
+
 .rpg-info-header {
 	font-size: clamp(1rem, 1.3vw, 1.3rem);
 	font-weight: bold;
@@ -52,22 +55,8 @@
 	overflow-x: hidden;
 }
 
-.rpg-info-content::-webkit-scrollbar {
-	width: 0.188rem;
-}
-
-.rpg-info-content::-webkit-scrollbar-track {
-	background: var(--rpg-bg);
-	border-radius: 2px;
-}
-
-.rpg-info-content::-webkit-scrollbar-thumb {
-	background: var(--rpg-highlight);
-	border-radius: 2px;
-}
-
-.rpg-info-content::-webkit-scrollbar-thumb:hover {
-	background: var(--rpg-text);
+.rpg-info-content {
+	@include custom-scrollbar(3px, rgba(255, 255, 255, 0.2), transparent);
 }
 
 .rpg-dashboard {
@@ -214,13 +203,8 @@
 	background: transparent;
 }
 
-.rpg-calendar-day::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.2);
-	border-radius: 2px;
-}
-
-.rpg-calendar-day::-webkit-scrollbar-thumb:hover {
-	background: rgba(255, 255, 255, 0.3);
+.rpg-calendar-day {
+	@include custom-scrollbar(3px, rgba(255, 255, 255, 0.2), transparent);
 }
 
 /* Weather Widget */

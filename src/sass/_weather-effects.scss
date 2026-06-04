@@ -26,17 +26,6 @@
 	opacity: 0.8;
 }
 
-/* Snowfall animation */
-@keyframes rpg-snowfall {
-	0% {
-		transform: translateY(0) rotate(0deg);
-		opacity: 0.8;
-	}
-	100% {
-		transform: translateY(100dvh) rotate(360deg);
-		opacity: 0.2;
-	}
-}
 
 /* Create variations for different snowflakes */
 .rpg-snowflake:nth-child(2n) {
