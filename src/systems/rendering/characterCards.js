@@ -94,10 +94,9 @@ export async function renderCharacterCards() {
 		const charName = card.characterName || "Unknown";
 		const cardData = card.cardData || {};
 		const isFocused = _focusedCharacterName && _focusedCharacterName.toLowerCase() === charName.toLowerCase();
-
-		html += `<div class="rpg-character-card${isFocused ? " rpg-character-card-focused" : ""}" data-character="${escapeHtml(charName)}">`;
-		// Build card HTML - collapsed by default, expand if focused
 		const isExpanded = isFocused;
+
+		// Build card HTML - collapsed by default, expand if focused
 		html += `<div class="rpg-character-card${isFocused ? " rpg-character-card-focused" : ""}${isExpanded ? " expanded" : ""}" data-character="${escapeHtml(charName)}">`;
 		html += `<div class="rpg-character-card-header">`;
 		html += `<i class="fa-solid fa-chevron-right rpg-character-card-expand-icon" aria-hidden="true"></i>`;
