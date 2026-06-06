@@ -45,13 +45,6 @@ export async function updateCharacterCards(
         return false;
     }
 
-    if (!extensionSettings.characterCards?.lorebookName) {
-        // Per-card lorebook selection is available, so we don't strictly need a global setting.
-        // However, if no global default is set, we'll try to use character or chat lorebook per card.
-        log(
-            "[RPG Companion] No global lorebook configured for character cards. Will use per-card lorebook selection or character/chat lorebook as fallback.",
-        );
-    }
 
     const lorebookName = getCharacterCardLorebookForChat();
     if (!lorebookName) {
@@ -92,7 +85,7 @@ export async function updateCharacterCards(
                 Array.isArray(parsedData.characterCards)
             ) {
                 // Get enabled field IDs for filtering
-                const config = extensionSettings.characterCards || {};
+                const config = extensionSettings.trackerConfig?.characterCards || {};
                 const enabledFieldIds = new Set(
                     (config.fields || []).filter((f) => f.enabled).map((f) => f.id),
                 );
@@ -250,7 +243,7 @@ export function incrementCharacterCardCounter() {
     // Per-card lorebook selection means we don't strictly need a global lorebook
     // to count messages — the counter still works for auto-update triggers
 
-    const interval = extensionSettings.characterCards?.updateInterval ?? 10;
+    const interval = extensionSettings.trackerConfig?.characterCards?.updateInterval ?? 10;
     if (interval <= 0) return false; // Auto-update disabled
 
     const counter = incrementCounterInMetadata();

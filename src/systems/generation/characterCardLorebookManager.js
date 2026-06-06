@@ -9,10 +9,13 @@
  *   content: JSON string of card fields  — the actual card data
  */
 
-import { extensionSettings } from "../../core/state.js";
+import {
+    chat_metadata,
+    saveChatDebounced,
+} from "../../../../../../../script.js";
 import { getContext } from "../../../../../../extensions.js";
+import { extensionSettings } from "../../core/state.js";
 import { log, error as logError } from "../../utils/logger.js";
-import { chat_metadata, saveChatDebounced } from "../../../../../../../script.js";
 
 /** Prefix used in lorebook entry comments to identify character card entries */
 export const CHARCARD_ENTRY_PREFIX = "[CharCard]";
@@ -20,15 +23,6 @@ export const CHARCARD_ENTRY_PREFIX = "[CharCard]";
 /** Simple in-memory cache for lorebook data (30s TTL) */
 const _wiCache = {};
 const _wiPromises = {};
-
-/**
- * Gets the configured lorebook name for character cards.
- * Falls back to empty string (default world info) if not set.
- * @returns {string} The lorebook name to use
- */
-export function getCharacterCardLorebookName() {
-    return extensionSettings.characterCards?.lorebookName || "";
-}
 
 /**
  * Gets the character-specific lorebook name for the current character.
@@ -47,14 +41,18 @@ export function getCharacterLorebookName() {
     const ST_WorldInfo = window.ST_WorldInfo;
     let fileName = character.avatar;
     // Try to get the proper filename via ST_Utils if available
-    if (window.ST_Utils && typeof window.ST_Utils.getCharaFilename === "function") {
+    if (
+        window.ST_Utils &&
+        typeof window.ST_Utils.getCharaFilename === "function"
+    ) {
         try {
             fileName = window.ST_Utils.getCharaFilename(charId);
         } catch {
             // Fall back to avatar
         }
     }
-    const charLoreList = ST_WorldInfo?.world_info?.charLore || window.world_info?.charLore;
+    const charLoreList =
+        ST_WorldInfo?.world_info?.charLore || window.world_info?.charLore;
     if (fileName && Array.isArray(charLoreList)) {
         const extraCharLore = charLoreList.find((e) => e.name === fileName);
         if (extraCharLore?.extraBooks?.[0]) return extraCharLore.extraBooks[0];
@@ -71,17 +69,20 @@ export function getChatLorebookName() {
     const ctx = getContext();
     // Access ST_WorldInfo if available
     const ST_WorldInfo = window.ST_WorldInfo;
-    const wiKey = ST_WorldInfo?.METADATA_KEY || window.WI_METADATA_KEY || "world_info";
+    const wiKey =
+        ST_WorldInfo?.METADATA_KEY || window.WI_METADATA_KEY || "world_info";
     const chatWorldName = ctx.chatMetadata?.[wiKey];
     if (chatWorldName && typeof chatWorldName === "string") return chatWorldName;
 
     const personaWorldName = ctx.powerUserSettings?.persona_description_lorebook;
-    if (personaWorldName && typeof personaWorldName === "string") return personaWorldName;
+    if (personaWorldName && typeof personaWorldName === "string")
+        return personaWorldName;
 
     return null;
 }
 
-const CHARACTER_CARD_LOREBOOK_METADATA_KEY = "rpg_companion_character_card_lorebook";
+const CHARACTER_CARD_LOREBOOK_METADATA_KEY =
+    "rpg_companion_character_card_lorebook";
 
 function getChatMetadataRoot() {
     if (!chat_metadata || typeof chat_metadata !== "object") return null;
@@ -92,7 +93,9 @@ function getChatMetadataId() {
     const ctx = getContext();
     const firstMessage = ctx.chat?.[0];
     if (!firstMessage || typeof firstMessage !== "object") return "default";
-    return String(firstMessage.id ?? firstMessage.messageId ?? firstMessage.uid ?? "default");
+    return String(
+        firstMessage.id ?? firstMessage.messageId ?? firstMessage.uid ?? "default",
+    );
 }
 
 /**
@@ -135,7 +138,8 @@ export function setCharacterCardLorebookForChat(lorebookName) {
     saveChatDebounced();
 }
 
-const CHARACTER_CARD_COUNTER_METADATA_KEY = "rpg_companion_character_card_counter";
+const CHARACTER_CARD_COUNTER_METADATA_KEY =
+    "rpg_companion_character_card_counter";
 
 /**
  * Gets the message counter for character cards from chat metadata.
@@ -163,7 +167,6 @@ export function setCharacterCardCounter(counter) {
     }
 
     const chatKey = getChatMetadataId();
-
 
     root[CHARACTER_CARD_COUNTER_METADATA_KEY][chatKey] = counter;
 
@@ -201,7 +204,8 @@ export function getActiveLorebookNames() {
     const ST_WorldInfo = window.ST_WorldInfo;
 
     // 1. GLOBAL
-    const globalBooks = ST_WorldInfo?.selected_world_info || window.selected_world_info || [];
+    const globalBooks =
+        ST_WorldInfo?.selected_world_info || window.selected_world_info || [];
     if (Array.isArray(globalBooks)) {
         globalBooks.forEach((n) => {
             if (n) names.add(n);
@@ -218,14 +222,18 @@ export function getActiveLorebookNames() {
 
         let fileName = character.avatar;
         // Try to get the proper filename via ST_Utils if available
-        if (window.ST_Utils && typeof window.ST_Utils.getCharaFilename === "function") {
+        if (
+            window.ST_Utils &&
+            typeof window.ST_Utils.getCharaFilename === "function"
+        ) {
             try {
                 fileName = window.ST_Utils.getCharaFilename(charId);
             } catch {
                 // Fall back to avatar
             }
         }
-        const charLoreList = ST_WorldInfo?.world_info?.charLore || window.world_info?.charLore;
+        const charLoreList =
+            ST_WorldInfo?.world_info?.charLore || window.world_info?.charLore;
         if (fileName && Array.isArray(charLoreList)) {
             const extraCharLore = charLoreList.find((e) => e.name === fileName);
             if (extraCharLore && Array.isArray(extraCharLore.extraBooks)) {
@@ -237,7 +245,8 @@ export function getActiveLorebookNames() {
     }
 
     // 3. CHAT
-    const wiKey = ST_WorldInfo?.METADATA_KEY || window.WI_METADATA_KEY || "world_info";
+    const wiKey =
+        ST_WorldInfo?.METADATA_KEY || window.WI_METADATA_KEY || "world_info";
     const chatWorldName = ctx.chatMetadata?.[wiKey];
     if (chatWorldName && typeof chatWorldName === "string")
         names.add(chatWorldName);
@@ -285,10 +294,7 @@ async function fetchWorldInfoBook(name) {
             _wiCache[name] = data;
             return data;
         } catch (e) {
-            logError(
-                `[RPG Companion] WI load failed for "${name}":`,
-                e,
-            );
+            logError(`[RPG Companion] WI load failed for "${name}":`, e);
             return null;
         } finally {
             delete _wiPromises[name];
@@ -326,10 +332,7 @@ async function saveWorldInfoBook(name, data) {
             }
         }
     } catch (e) {
-        logError(
-            `[RPG Companion] saveWorldInfoBook failed for "${name}":`,
-            e,
-        );
+        logError(`[RPG Companion] saveWorldInfoBook failed for "${name}":`, e);
         throw e;
     }
     delete _wiCache[name];
@@ -379,7 +382,7 @@ export function extractCharacterName(comment) {
  *   Array of objects with the entry, extracted character name, and book name
  */
 export async function getAllCharacterCardEntries(lorebookName = "") {
-    const bookName = lorebookName || getCharacterCardLorebookName();
+    const bookName = lorebookName;
     const booksToSearch = bookName ? [bookName] : getActiveLorebookNames();
     const results = [];
 
@@ -408,7 +411,7 @@ export async function getAllCharacterCardEntries(lorebookName = "") {
  * @returns {Promise<{entry: Object, bookName: string}|null>} The entry and book name, or null
  */
 export async function findCharacterCardEntry(characterName, lorebookName = "") {
-    const bookName = lorebookName || getCharacterCardLorebookName();
+    const bookName = lorebookName;
     const booksToSearch = bookName ? [bookName] : getActiveLorebookNames();
     const targetComment = buildEntryComment(characterName).toLowerCase();
     const targetName = characterName.toLowerCase();
@@ -452,7 +455,10 @@ export function parseCardContent(content) {
         }
         return null;
     } catch {
-        logError("[RPG Companion] Failed to parse character card content:", content);
+        logError(
+            "[RPG Companion] Failed to parse character card content:",
+            content,
+        );
         return null;
     }
 }
@@ -482,7 +488,7 @@ export async function saveCharacterCard(
     additionalTriggers = [],
     lorebookName = "",
 ) {
-    const bookName = lorebookName || getCharacterCardLorebookName();
+    const bookName = lorebookName;
     if (!bookName) {
         logError(
             "[RPG Companion] No lorebook configured for character cards. Set one in Settings → Character Cards or select one per card.",
@@ -492,9 +498,7 @@ export async function saveCharacterCard(
 
     const data = await fetchWorldInfoBook(bookName);
     if (!data) {
-        logError(
-            `[RPG Companion] Lorebook "${bookName}" not found or not active.`,
-        );
+        logError(`[RPG Companion] Lorebook "${bookName}" not found or not active.`);
         return false;
     }
 
@@ -556,10 +560,7 @@ export async function saveCharacterCard(
         );
         return true;
     } catch (e) {
-        logError(
-            `[RPG Companion] Failed to save lorebook "${bookName}":`,
-            e,
-        );
+        logError(`[RPG Companion] Failed to save lorebook "${bookName}":`, e);
         return false;
     }
 }
@@ -624,7 +625,7 @@ export async function populateLorebookDropdown(selectElement) {
     if (!selectElement) return;
 
     const currentValue =
-        extensionSettings.characterCards?.lorebookName || "";
+        extensionSettings.trackerConfig?.characterCards?.lorebookName || "";
     const activeNames = getActiveLorebookNames();
 
     selectElement.innerHTML = '<option value="">Default World Info</option>';
@@ -639,7 +640,7 @@ export async function populateLorebookDropdown(selectElement) {
     if (currentValue && activeNames.includes(currentValue)) {
         selectElement.value = currentValue;
     } else if (currentValue && !activeNames.includes(currentValue)) {
-        extensionSettings.characterCards.lorebookName = "";
+        extensionSettings.trackerConfig.characterCards.lorebookName = "";
         selectElement.value = "";
     }
 }

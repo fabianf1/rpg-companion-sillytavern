@@ -15,7 +15,7 @@ import { getTrackerDataForContext } from "./trackerDataUtils.js";
  * @returns {Array<{id: string, name: string, description: string}>} Enabled fields
  */
 function getEnabledFields() {
-    const config = extensionSettings.characterCards || {};
+    const config = extensionSettings.trackerConfig?.characterCards || {};
     return (config.fields || []).filter((f) => f.enabled);
 }
 
@@ -157,13 +157,22 @@ async function buildCharacterCardInstructionMessage(userName, fields) {
         .map((f) => `      "${f.id}": "stable value or null"`)
         .join(",\n");
 
+    // Build explicit field list with descriptions for clarity
+    const fieldDescriptions = fields
+        .map((f) => `   - "${f.id}": ${f.description || f.name}`)
+        .join("\n");
+
     instruction += `RULES FOR UPDATING AND CREATING CARDS:\n`;
     instruction += `1. **High Bar for Changes**: For existing characters, do NOT update a field unless a permanent truth or major, unchangeable lore detail has been explicitly revealed.\n`;
     instruction += `2. **Absolute Continuity**: Preserve existing field values entirely unless the new dialogue directly overrides a fundamental trait (e.g., discovering their true age, lineage, or a permanent physical change like losing an eye).\n`;
     instruction += `3. **Ignore the Transient**: Do NOT alter cards to match fleeting emotional states, immediate plot destinations, or temporary equipment.\n`;
     instruction += `4. **Conciseness**: Each field must be a concise structural description (1-2 sentences max) or null if unknown.\n`;
     instruction += `5. **Scope**: Do NOT include the protagonist ("${userName}") as a character card.\n`;
-    instruction += `6. **Efficiency**: Return ONLY the cards that need to be created or meaningfully updated. If no cards require stable updates, return an empty array: {"characterCards": []}\n\n`;
+    instruction += `6. **Efficiency**: Return ONLY the cards that need to be created or meaningfully updated. If no cards require stable updates, return an empty array: {"characterCards": []}\n`;
+    instruction += `7. **Field Preservation**: When updating existing cards, include ALL existing fields even if unchanged. Only modify fields where you have explicit new information.\n\n`;
+
+    instruction += `AVAILABLE FIELDS (use these exact JSON keys):\n`;
+    instruction += `${fieldDescriptions}\n\n`;
 
     instruction += `TRIGGER KEYWORDS:\n`;
     instruction += `- Include 2-4 keywords that will trigger this character's card in the lorebook.\n`;
