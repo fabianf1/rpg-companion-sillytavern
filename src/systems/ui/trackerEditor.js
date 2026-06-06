@@ -923,10 +923,17 @@ function renderCharacterCardsTab() {
 
 	// Fields list
 	html += '<div class="rpg-fields-list">';
-	for (const field of fields) {
+	for (let i = 0; i < fields.length; i++) {
+		const field = fields[i];
 		const checked = field.enabled ? "checked" : "";
 		html += `
-			<div class="rpg-field-row" data-field-id="${escapeHtml(field.id)}">
+			<div class="rpg-field-row" data-field-id="${escapeHtml(field.id)}" data-field-index="${i}">
+				<button class="rpg-field-move-up rpg-btn-small" data-field-id="${field.id}" data-index="${i}" title="Move up" ${i === 0 ? "disabled" : ""}>
+					<i class="fa-solid fa-chevron-up"></i>
+				</button>
+				<button class="rpg-field-move-down rpg-btn-small" data-field-id="${field.id}" data-index="${i}" title="Move down" ${i === fields.length - 1 ? "disabled" : ""}>
+					<i class="fa-solid fa-chevron-down"></i>
+				</button>
 				<input type="checkbox" class="rpg-field-enabled" data-field-id="${field.id}" ${checked} title="Enable/disable field" />
 				<input type="text" class="rpg-field-name" data-field-id="${field.id}" value="${escapeHtml(field.name)}" placeholder="Field name" />
 				<input type="text" class="rpg-field-desc" data-field-id="${field.id}" value="${escapeHtml(field.description || "")}" placeholder="Description (optional)" />
@@ -960,6 +967,16 @@ function _attachCharacterCardsTabHandlers() {
 	// characterCards lives under trackerConfig
 	const config = extensionSettings.trackerConfig?.characterCards || {};
 
+	// Helper to remove empty fields and save
+	const removeEmptyFieldsAndSave = () => {
+		if (!config.fields) return;
+		// Remove fields where both name AND description are empty
+		config.fields = config.fields.filter(
+			(f) => f.name?.trim() || f.description?.trim()
+		);
+		saveToPreset();
+	};
+
 	// Enable/disable toggle
 	$container
 		.find(".rpg-field-enabled")
@@ -977,29 +994,32 @@ function _attachCharacterCardsTabHandlers() {
 	// Name edit
 	$container
 		.find(".rpg-field-name")
-		.off("change")
-		.on("change", function () {
+		.off("blur")
+		.on("blur", function () {
 			const fieldId = $(this).data("field-id");
 			const name = $(this).val().trim();
-			if (!name) return;
 			const field = (config.fields || []).find((f) => f.id === fieldId);
 			if (field) {
 				field.name = name;
-				saveToPreset();
+				// Auto-remove empty fields
+				removeEmptyFieldsAndSave();
+				renderCharacterCardsTab();
 			}
 		});
 
 	// Description edit
 	$container
 		.find(".rpg-field-desc")
-		.off("change")
-		.on("change", function () {
+		.off("blur")
+		.on("blur", function () {
 			const fieldId = $(this).data("field-id");
 			const description = $(this).val().trim();
 			const field = (config.fields || []).find((f) => f.id === fieldId);
 			if (field) {
 				field.description = description;
-				saveToPreset();
+				// Auto-remove empty fields
+				removeEmptyFieldsAndSave();
+				renderCharacterCardsTab();
 			}
 		});
 
@@ -1014,28 +1034,59 @@ function _attachCharacterCardsTabHandlers() {
 			renderCharacterCardsTab();
 		});
 
-	// Add field
+	// Move field up
+	$container
+		.find(".rpg-field-move-up")
+		.off("click")
+		.on("click", function () {
+			const index = parseInt($(this).data("index"), 10);
+			if (index > 0 && config.fields) {
+				const fields = config.fields;
+				[fields[index - 1], fields[index]] = [fields[index], fields[index - 1]];
+				saveToPreset();
+				renderCharacterCardsTab();
+			}
+		});
+
+	// Move field down
+	$container
+		.find(".rpg-field-move-down")
+		.off("click")
+		.on("click", function () {
+			const index = parseInt($(this).data("index"), 10);
+			if (config.fields && index < config.fields.length - 1) {
+				const fields = config.fields;
+				[fields[index], fields[index + 1]] = [fields[index + 1], fields[index]];
+				saveToPreset();
+				renderCharacterCardsTab();
+			}
+		});
+
+	// Add field (inline - no popup)
 	$container
 		.find("#rpg-editor-add-card-field")
 		.off("click")
 		.on("click", () => {
-			const name = prompt("Enter field name:");
-			if (!name?.trim()) return;
-
-			const id = name
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9]/g, "_");
-			const description = prompt("Enter field description (optional):") || "";
-
 			if (!config.fields) config.fields = [];
-			if (config.fields.some((f) => f.id === id)) {
-				alert(`A field with ID "${id}" already exists.`);
-				return;
+			// Generate a unique temporary ID
+			let newId = "new_field";
+			let counter = 1;
+			while (config.fields.some((f) => f.id === newId)) {
+				newId = `new_field_${counter}`;
+				counter++;
 			}
-			config.fields.push({ id, name: name.trim(), enabled: true, description });
+			// Add empty field - user will edit inline
+			config.fields.push({
+				id: newId,
+				name: "",
+				enabled: true,
+				description: "",
+			});
 			saveToPreset();
 			renderCharacterCardsTab();
+			// Focus the name input of the new field
+			const $newRow = $container.find(".rpg-field-row").last();
+			$newRow.find(".rpg-field-name").focus();
 		});
 }
 

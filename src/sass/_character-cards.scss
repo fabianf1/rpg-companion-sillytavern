@@ -458,55 +458,8 @@
 	}
 }
 
-/* =================================
-   TAB NAVIGATION
-   ================================= */
-.rpg-character-cards-tabs {
-	display: flex;
-	gap: 0;
-	border-bottom: 2px solid var(--rpg-border, #2a2a4a);
-	background: var(--rpg-accent, #16213e);
-}
-
-.rpg-character-cards-tab {
-	flex: 1;
-	padding: 0.75em 1em;
-	background: transparent;
-	border: none;
-	color: var(--rpg-text, #eaeaea);
-	font-size: 0.9em;
-	font-weight: 600;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5em;
-	transition: all 0.2s ease;
-	border-bottom: 2px solid transparent;
-	margin-bottom: -2px;
-}
-
-.rpg-character-cards-tab:hover {
-	background: rgba(255, 255, 255, 0.05);
-}
-
-.rpg-character-cards-tab.active {
-	color: var(--rpg-highlight, #e94560);
-	border-bottom-color: var(--rpg-highlight, #e94560);
-	background: rgba(233, 69, 96, 0.1);
-}
-
-.rpg-character-cards-tab i {
-	font-size: 0.85em;
-}
-
-/* Tab Content */
-.rpg-character-cards-tab-content {
-	padding: 1em 0;
-}
-
 /* ============================================
-   FIELDS EDITOR
+   FIELDS EDITOR (used in Tracker Editor)
    ============================================ */
 .rpg-fields-editor {
 	display: flex;
@@ -581,10 +534,37 @@
 	border-color: var(--rpg-highlight, #e94560);
 }
 
+.rpg-field-move-up,
+.rpg-field-move-down {
+	background: transparent;
+	border: 1px solid var(--rpg-border, #2a2a4a);
+	color: var(--rpg-text, #eaeaea);
+	padding: 0.2em 0.4em;
+	font-size: 0.75em;
+	cursor: pointer;
+	border-radius: 0.25em;
+	transition: all 0.2s ease;
+	min-width: 24px;
+	min-height: 24px;
+}
+
+.rpg-field-move-up:hover:not(:disabled),
+.rpg-field-move-down:hover:not(:disabled) {
+	border-color: var(--rpg-highlight, #e94560);
+	background: rgba(233, 69, 96, 0.1);
+}
+
+.rpg-field-move-up:disabled,
+.rpg-field-move-down:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
 .rpg-field-remove {
 	flex-shrink: 0;
 }
 
-#rpg-add-field-btn {
+#rpg-add-field-btn,
+#rpg-editor-add-card-field {
 	align-self: flex-start;
 }

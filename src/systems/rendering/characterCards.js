@@ -5,7 +5,6 @@
  */
 
 import { i18n } from "../../core/i18n.js";
-import { saveSettings } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
 import { escapeHtml } from "../../utils/html.js";
 import { updateCharacterCards } from "../generation/characterCardApiClient.js";
@@ -78,8 +77,8 @@ export async function renderCharacterCards() {
 		return;
 	}
 
-	// Get enabled fields for display order
-	const config = extensionSettings.characterCards || {};
+	// Get enabled fields for display order (from trackerConfig, same as tracker editor)
+	const config = extensionSettings.trackerConfig?.characterCards || {};
 	const enabledFields = (config.fields || []).filter((f) => f.enabled);
 
 	html += '<div class="rpg-character-cards-list">';
@@ -154,120 +153,6 @@ export async function renderCharacterCards() {
 
 	// Clear focused character after rendering
 	_focusedCharacterName = null;
-}
-
-/**
- * Renders the Fields tab content for editing character card fields.
- */
-export function renderCharacterCardsFieldsTab() {
-	const $modal = $("#rpg-character-cards-popup");
-	if (!$modal.length) return;
-
-	const $fieldsTab = $modal.find("#rpg-character-cards-tab-fields");
-	if (!$fieldsTab.length) return;
-
-	const config = extensionSettings.characterCards || {};
-	const fields = config.fields || [];
-
-	let html = '<div class="rpg-fields-editor">';
-	html += `<p class="rpg-fields-note" data-i18n-key="characterCards.fieldsTabNote">Configure which fields appear in character cards. Enable/disable, rename, or add custom fields.</p>`;
-	html += '<div class="rpg-fields-list">';
-
-	for (const field of fields) {
-		const checked = field.enabled ? "checked" : "";
-		html += `
-			<div class="rpg-field-row" data-field-id="${escapeHtml(field.id)}">
-				<input type="checkbox" class="rpg-field-enabled" data-field-id="${field.id}" ${checked} title="Enable/disable field" />
-				<input type="text" class="rpg-field-name" data-field-id="${field.id}" value="${escapeHtml(field.name)}" placeholder="Field name" />
-				<input type="text" class="rpg-field-desc" data-field-id="${field.id}" value="${escapeHtml(field.description || "")}" placeholder="Description (optional)" />
-				<button class="rpg-field-remove rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="Remove field">
-					<i class="fa-solid fa-times"></i>
-				</button>
-			</div>
-		`;
-	}
-
-	html += "</div>"; // .rpg-fields-list
-	html += `<button id="rpg-add-field-btn" class="rpg-btn-primary" type="button">
-		<i class="fa-solid fa-plus"></i> <span data-i18n-key="characterCards.addField">Add Field</span>
-	</button>`;
-	html += "</div>"; // .rpg-fields-editor
-
-	$fieldsTab.html(html);
-
-	// Bind event handlers
-	_attachFieldEditorHandlers($fieldsTab);
-}
-
-/**
- * Attaches event handlers for the field editor.
- * @param {jQuery} $fieldsTab - The fields tab element
- */
-function _attachFieldEditorHandlers($fieldsTab) {
-	const config = extensionSettings.characterCards || {};
-
-	// Enable/disable toggle
-	$fieldsTab.find(".rpg-field-enabled").on("change", function () {
-		const fieldId = $(this).data("field-id");
-		const enabled = $(this).prop("checked");
-		const field = (config.fields || []).find((f) => f.id === fieldId);
-		if (field) {
-			field.enabled = enabled;
-			saveSettings();
-		}
-	});
-
-	// Name edit
-	$fieldsTab.find(".rpg-field-name").on("change", function () {
-		const fieldId = $(this).data("field-id");
-		const name = $(this).val().trim();
-		if (!name) return;
-		const field = (config.fields || []).find((f) => f.id === fieldId);
-		if (field) {
-			field.name = name;
-			saveSettings();
-		}
-	});
-
-	// Description edit
-	$fieldsTab.find(".rpg-field-desc").on("change", function () {
-		const fieldId = $(this).data("field-id");
-		const description = $(this).val().trim();
-		const field = (config.fields || []).find((f) => f.id === fieldId);
-		if (field) {
-			field.description = description;
-			saveSettings();
-		}
-	});
-
-	// Remove field
-	$fieldsTab.find(".rpg-field-remove").on("click", function () {
-		const fieldId = $(this).data("field-id");
-		config.fields = (config.fields || []).filter((f) => f.id !== fieldId);
-		saveSettings();
-		renderCharacterCardsFieldsTab();
-	});
-
-	// Add field
-	$fieldsTab.find("#rpg-add-field-btn").on("click", () => {
-		const name = prompt("Enter field name:");
-		if (!name?.trim()) return;
-
-		const id = name
-			.trim()
-			.toLowerCase()
-			.replace(/[^a-z0-9]/g, "_");
-		const description = prompt("Enter field description (optional):") || "";
-
-		if (!config.fields) config.fields = [];
-		if (config.fields.some((f) => f.id === id)) {
-			alert(`A field with ID "${id}" already exists.`);
-			return;
-		}
-		config.fields.push({ id, name: name.trim(), enabled: true, description });
-		saveSettings();
-		renderCharacterCardsFieldsTab();
-	});
 }
 
 /**
@@ -408,14 +293,14 @@ function _attachCardHandlers($body) {
 		}
 	});
 
-	// Update interval setting
+	// Update interval setting (stored in trackerConfig.characterCards)
 	$body.find("#rpg-character-cards-interval").on("change", function () {
 		const value = parseInt($(this).val(), 10);
 		if (!Number.isNaN(value) && value >= 0) {
-			if (!extensionSettings.characterCards) {
-				extensionSettings.characterCards = {};
+			if (!extensionSettings.trackerConfig.characterCards) {
+				extensionSettings.trackerConfig.characterCards = {};
 			}
-			extensionSettings.characterCards.updateInterval = value;
+			extensionSettings.trackerConfig.characterCards.updateInterval = value;
 			// Update the counter display
 			const $counterDisplay = $body.find(".rpg-character-cards-setting-value");
 			const currentCounter = getCharacterCardCounter();
@@ -616,28 +501,6 @@ export function setupCharacterCardsPopup() {
 		} finally {
 			$btn.prop("disabled", false);
 			$btn.find("i").removeClass("fa-spin");
-		}
-	});
-
-	// Tab switching
-	$(document).on("click", ".rpg-character-cards-tab", function () {
-		const tab = $(this).data("tab");
-		const $modal = $("#rpg-character-cards-popup");
-		if (!$modal.length) return;
-
-		// Update active tab
-		$modal.find(".rpg-character-cards-tab").removeClass("active");
-		$(this).addClass("active");
-
-		// Show/hide tab content
-		$modal.find(".rpg-character-cards-tab-content").hide();
-		$modal.find(`#rpg-character-cards-tab-${tab}`).show();
-
-		// Render content for the tab
-		if (tab === "cards") {
-			renderCharacterCards();
-		} else if (tab === "fields") {
-			renderCharacterCardsFieldsTab();
 		}
 	});
 
