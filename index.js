@@ -4,9 +4,9 @@ import {
 	saveSettingsDebounced,
 } from "../../../../script.js";
 import {
+	getContext,
 	renderExtensionTemplateAsync,
 	extension_settings as st_extension_settings,
-	getContext,
 } from "../../../extensions.js";
 
 // Core modules
@@ -42,6 +42,7 @@ import {
 	getAvailableConnectionProfiles,
 	updateRPGData,
 } from "./src/systems/generation/apiClient.js";
+import { populateLorebookDropdown } from "./src/systems/generation/characterCardLorebookManager.js";
 import { onGenerationStarted } from "./src/systems/generation/injector.js";
 // Integration modules
 import {
@@ -53,21 +54,20 @@ import {
 	onMessageReceived,
 	onMessageSent,
 	onMessageSwiped,
-	updatePersonaAvatar,
 	runTrackerAndRelationshipUpdate,
+	updatePersonaAvatar,
 } from "./src/systems/integration/sillytavern.js";
 // Interaction modules
 import { initInventoryEventListeners } from "./src/systems/interaction/inventoryActions.js";
 import { renderAppearance } from "./src/systems/rendering/appearance.js";
-import { renderInfoBox } from "./src/systems/rendering/infoBox.js";
-import { renderInventory } from "./src/systems/rendering/inventory.js";
-import { renderQuests } from "./src/systems/rendering/quests.js";
-import { renderRelationships } from "./src/systems/rendering/relationships.js";
 import {
 	renderCharacterCards,
 	setupCharacterCardsPopup,
 } from "./src/systems/rendering/characterCards.js";
-import { populateLorebookDropdown } from "./src/systems/generation/characterCardLorebookManager.js";
+import { renderInfoBox } from "./src/systems/rendering/infoBox.js";
+import { renderInventory } from "./src/systems/rendering/inventory.js";
+import { renderQuests } from "./src/systems/rendering/quests.js";
+import { renderRelationships } from "./src/systems/rendering/relationships.js";
 import {
 	renderThoughts,
 	updateChatThoughts,
@@ -240,27 +240,30 @@ function populateConnectionProfileDropdown() {
 
 /**
  * Renders the character card fields UI in settings.
- * Populates the default fields checkboxes and custom fields list.
+ * Populates the unified fields list with enable toggles, editable names/descriptions, and delete buttons.
  */
 function _renderCharacterCardFieldsUI() {
 	const config = extensionSettings.characterCards || {};
 
-	// Render default fields checkboxes
+	// Render unified fields list
 	const $fieldsList = $("#rpg-character-cards-fields-list");
 	if ($fieldsList.length) {
 		$fieldsList.empty();
 		for (const field of config.fields || []) {
 			const checked = field.enabled ? "checked" : "";
 			$fieldsList.append(`
-				<label class="checkbox_label" style="display: flex; align-items: center; gap: 0.5em;">
-					<input type="checkbox" data-field-id="${field.id}" ${checked} />
-					<span>${field.name}</span>
-					<small style="color: #888; font-size: 11px;">— ${field.description}</small>
-				</label>
+				<div class="rpg-field-row" style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.25em;">
+					<input type="checkbox" data-field-id="${field.id}" ${checked} title="Enable/disable field" />
+					<input type="text" class="rpg-field-name-input" data-field-id="${field.id}" value="${field.name}" style="width: 100px;" placeholder="Field name" />
+					<input type="text" class="rpg-field-desc-input" data-field-id="${field.id}" value="${field.description || ""}" style="flex: 1;" placeholder="Description" />
+					<button class="rpg-remove-field rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="Remove field">
+						<i class="fa-solid fa-times"></i>
+					</button>
+				</div>
 			`);
 		}
 
-		// Bind change handlers for default fields
+		// Bind change handlers for enable toggles
 		$fieldsList.find("input[type='checkbox']").on("change", function () {
 			const fieldId = $(this).data("field-id");
 			const enabled = $(this).prop("checked");
@@ -270,54 +273,62 @@ function _renderCharacterCardFieldsUI() {
 				saveSettings();
 			}
 		});
+
+		// Bind change handlers for name edits
+		$fieldsList.find(".rpg-field-name-input").on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const name = $(this).val().trim();
+			if (!name) return;
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.name = name;
+				saveSettings();
+			}
+		});
+
+		// Bind change handlers for description edits
+		$fieldsList.find(".rpg-field-desc-input").on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const description = $(this).val().trim();
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.description = description;
+				saveSettings();
+			}
+		});
+
+		// Bind remove buttons
+		$fieldsList.find(".rpg-remove-field").on("click", function () {
+			const fieldId = $(this).data("field-id");
+			config.fields = (config.fields || []).filter((f) => f.id !== fieldId);
+			saveSettings();
+			_renderCharacterCardFieldsUI();
+		});
 	}
 
-	// Render custom fields
-	_renderCustomFieldsList(config);
+	// Bind add field button
+	$("#rpg-add-character-card-field")
+		.off("click")
+		.on("click", () => {
+			const name = prompt("Enter field name:");
+			if (!name?.trim()) return;
 
-	// Bind add custom field button
-	$("#rpg-add-character-card-custom-field").on("click", () => {
-		const name = prompt("Enter custom field name:");
-		if (!name?.trim()) return;
+			const id = name
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]/g, "_");
+			const description = prompt("Enter field description (optional):") || "";
 
-		const id = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_");
-		const description = prompt("Enter field description (optional):") || name.trim();
-
-		if (!config.customFields) config.customFields = [];
-		config.customFields.push({ id, name: name.trim(), description });
-		saveSettings();
-		_renderCustomFieldsList(config);
-	});
-}
-
-/**
- * Renders the custom fields list in settings.
- * @param {Object} config - The characterCards config object
- */
-function _renderCustomFieldsList(config) {
-	const $customList = $("#rpg-character-cards-custom-fields-list");
-	if (!$customList.length) return;
-
-	$customList.empty();
-	for (const field of config.customFields || []) {
-		$customList.append(`
-			<div class="rpg-custom-field-row" style="display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.25em;">
-				<span style="font-weight: 600;">${field.name}</span>
-				<small style="color: #888; font-size: 11px;">— ${field.description || ""}</small>
-				<button class="rpg-remove-custom-field rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="Remove field">
-					<i class="fa-solid fa-times"></i>
-				</button>
-			</div>
-		`);
-	}
-
-	// Bind remove buttons
-	$customList.find(".rpg-remove-custom-field").on("click", function () {
-		const fieldId = $(this).data("field-id");
-		config.customFields = (config.customFields || []).filter((f) => f.id !== fieldId);
-		saveSettings();
-		_renderCustomFieldsList(config);
-	});
+			if (!config.fields) config.fields = [];
+			// Check for duplicate ID
+			if (config.fields.some((f) => f.id === id)) {
+				alert(`A field with ID "${id}" already exists.`);
+				return;
+			}
+			config.fields.push({ id, name: name.trim(), enabled: true, description });
+			saveSettings();
+			_renderCharacterCardFieldsUI();
+		});
 }
 
 /**
@@ -481,7 +492,9 @@ async function initUI() {
 	setupPartialRefreshPopup();
 	setupRelationshipsPopup();
 	setupCharacterCardsPopup();
-	populateLorebookDropdown(document.getElementById("rpg-character-cards-lorebook"));
+	populateLorebookDropdown(
+		document.getElementById("rpg-character-cards-lorebook"),
+	);
 	_renderCharacterCardFieldsUI();
 	initTrackerEditor();
 	initPromptsEditor();

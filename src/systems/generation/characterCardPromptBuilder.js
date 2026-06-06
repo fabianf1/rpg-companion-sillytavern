@@ -12,18 +12,11 @@ import { getTrackerDataForContext } from "./trackerDataUtils.js";
 
 /**
  * Gets the list of enabled fields for character cards.
- * Combines default fields and custom fields, filtering by enabled status.
  * @returns {Array<{id: string, name: string, description: string}>} Enabled fields
  */
 function getEnabledFields() {
     const config = extensionSettings.characterCards || {};
-    const defaultFields = (config.fields || []).filter((f) => f.enabled);
-    const customFields = (config.customFields || []).map((f) => ({
-        id: f.id,
-        name: f.name,
-        description: f.description || f.name,
-    }));
-    return [...defaultFields, ...customFields];
+    return (config.fields || []).filter((f) => f.enabled);
 }
 
 /**

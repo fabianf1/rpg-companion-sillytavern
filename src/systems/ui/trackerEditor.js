@@ -2,7 +2,7 @@
  * Tracker Editor Module
  * Provides UI for customizing tracker configurations
  */
-import { escapeHtml } from "../../utils/html.js";
+
 import { i18n } from "../../core/i18n.js";
 import {
 	associatePresetWithCurrentEntity,
@@ -26,11 +26,12 @@ import {
 	updateMessageSwipeData,
 } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
+import { escapeHtml } from "../../utils/html.js";
+import { sanitizeParsedData } from "../generation/parser.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
 import { renderThoughts } from "../rendering/thoughts.js";
 import { renderUserStats } from "../rendering/userStats.js";
-import { sanitizeParsedData } from "../generation/parser.js";
-import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { updateFabWidgets } from "./mobile.js";
 
 let $editorModal = null;
@@ -346,9 +347,7 @@ function applyTrackerConfig() {
 
 		pendingRawJsonData = null;
 		toastr.success(
-			i18n.getTranslation(
-				"template.trackerEditorModal.rawJsonTab.saveSuccess",
-			),
+			i18n.getTranslation("template.trackerEditorModal.rawJsonTab.saveSuccess"),
 		);
 	}
 
@@ -902,8 +901,142 @@ function renderEditorUI() {
 	renderUserStatsTab();
 	renderInfoBoxTab();
 	renderPresentCharactersTab();
+	renderCharacterCardsTab();
 	renderHistoryPersistenceTab();
 	renderRawJsonTab();
+}
+
+/**
+ * Render Character Cards configuration tab
+ */
+function renderCharacterCardsTab() {
+	const $container = $("#rpg-editor-tab-characterCards");
+	if (!$container.length) return;
+
+	// characterCards lives under trackerConfig
+	const config = extensionSettings.trackerConfig?.characterCards || {};
+	const fields = config.fields || [];
+
+	let html = '<div class="rpg-editor-section">';
+	html += `<h4><i class="fa-solid fa-id-card"></i> ${i18n.getTranslation("template.trackerEditorModal.characterCardsTab.fieldsTitle") || "Card Fields"}</h4>`;
+	html += `<p class="rpg-editor-note">${i18n.getTranslation("characterCards.fieldsTabNote") || "Configure fields for character cards. These determine what information is tracked for each NPC."}</p>`;
+
+	// Fields list
+	html += '<div class="rpg-fields-list">';
+	for (const field of fields) {
+		const checked = field.enabled ? "checked" : "";
+		html += `
+			<div class="rpg-field-row" data-field-id="${escapeHtml(field.id)}">
+				<input type="checkbox" class="rpg-field-enabled" data-field-id="${field.id}" ${checked} title="Enable/disable field" />
+				<input type="text" class="rpg-field-name" data-field-id="${field.id}" value="${escapeHtml(field.name)}" placeholder="Field name" />
+				<input type="text" class="rpg-field-desc" data-field-id="${field.id}" value="${escapeHtml(field.description || "")}" placeholder="Description (optional)" />
+				<button class="rpg-field-remove rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="${i18n.getTranslation("template.settingsModal.characterCards.removeField") || "Remove field"}">
+					<i class="fa-solid fa-times"></i>
+				</button>
+			</div>
+		`;
+	}
+	html += "</div>";
+
+	// Add field button
+	html += `<button id="rpg-editor-add-card-field" class="rpg-btn-primary" type="button">
+		<i class="fa-solid fa-plus"></i> <span>${i18n.getTranslation("characterCards.addField") || "Add Field"}</span>
+	</button>`;
+
+	html += "</div>";
+	$container.html(html);
+
+	// Bind event handlers
+	_attachCharacterCardsTabHandlers();
+}
+
+/**
+ * Attach event handlers for Character Cards tab
+ */
+function _attachCharacterCardsTabHandlers() {
+	const $container = $("#rpg-editor-tab-characterCards");
+	if (!$container.length) return;
+
+	// characterCards lives under trackerConfig
+	const config = extensionSettings.trackerConfig?.characterCards || {};
+
+	// Enable/disable toggle
+	$container
+		.find(".rpg-field-enabled")
+		.off("change")
+		.on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const enabled = $(this).prop("checked");
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.enabled = enabled;
+				saveToPreset();
+			}
+		});
+
+	// Name edit
+	$container
+		.find(".rpg-field-name")
+		.off("change")
+		.on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const name = $(this).val().trim();
+			if (!name) return;
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.name = name;
+				saveToPreset();
+			}
+		});
+
+	// Description edit
+	$container
+		.find(".rpg-field-desc")
+		.off("change")
+		.on("change", function () {
+			const fieldId = $(this).data("field-id");
+			const description = $(this).val().trim();
+			const field = (config.fields || []).find((f) => f.id === fieldId);
+			if (field) {
+				field.description = description;
+				saveToPreset();
+			}
+		});
+
+	// Remove field
+	$container
+		.find(".rpg-field-remove")
+		.off("click")
+		.on("click", function () {
+			const fieldId = $(this).data("field-id");
+			config.fields = (config.fields || []).filter((f) => f.id !== fieldId);
+			saveToPreset();
+			renderCharacterCardsTab();
+		});
+
+	// Add field
+	$container
+		.find("#rpg-editor-add-card-field")
+		.off("click")
+		.on("click", () => {
+			const name = prompt("Enter field name:");
+			if (!name?.trim()) return;
+
+			const id = name
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]/g, "_");
+			const description = prompt("Enter field description (optional):") || "";
+
+			if (!config.fields) config.fields = [];
+			if (config.fields.some((f) => f.id === id)) {
+				alert(`A field with ID "${id}" already exists.`);
+				return;
+			}
+			config.fields.push({ id, name: name.trim(), enabled: true, description });
+			saveToPreset();
+			renderCharacterCardsTab();
+		});
 }
 
 /**

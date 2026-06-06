@@ -9,13 +9,13 @@ import { saveChatData } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
 import { log, error as logError } from "../../utils/logger.js";
 import { getCurrentProfile } from "./apiClient.js";
-import { generateCharacterCardPrompt } from "./characterCardPromptBuilder.js";
 import {
-    saveCharacterCard,
     getCharacterCardLorebookForChat,
     incrementCharacterCardCounter as incrementCounterInMetadata,
     resetCharacterCardCounter as resetCounterInMetadata,
+    saveCharacterCard,
 } from "./characterCardLorebookManager.js";
+import { generateCharacterCardPrompt } from "./characterCardPromptBuilder.js";
 
 /**
  * Updates character cards using a dedicated API call.
@@ -87,19 +87,45 @@ export async function updateCharacterCards(
             const parsedData = parseCharacterCardResponse(response);
             console.log("[RPG Companion] Parsed character card data:", parsedData);
 
-            if (parsedData?.characterCards && Array.isArray(parsedData.characterCards)) {
+            if (
+                parsedData?.characterCards &&
+                Array.isArray(parsedData.characterCards)
+            ) {
+                // Get enabled field IDs for filtering
+                const config = extensionSettings.characterCards || {};
+                const enabledFieldIds = new Set(
+                    (config.fields || []).filter((f) => f.enabled).map((f) => f.id),
+                );
+                // Always keep triggerKeywords (handled separately)
+                enabledFieldIds.add("triggerKeywords");
+
                 // Save each card to the lorebook
                 let savedCount = 0;
                 for (const card of parsedData.characterCards) {
                     if (!card.name) continue;
 
+                    // Filter card data to only include enabled fields
+                    const { name: _name, triggerKeywords, ...rawCardData } = card;
+                    const filteredCardData = {};
+                    for (const [key, value] of Object.entries(rawCardData)) {
+                        if (
+                            enabledFieldIds.has(key) &&
+                            value !== undefined &&
+                            value !== null
+                        ) {
+                            filteredCardData[key] = value;
+                        }
+                    }
+
                     // Extract trigger keywords from the card data
                     const triggers = buildTriggerKeywords(card);
 
-                    // Remove 'name' and 'triggerKeywords' from the card data since they're stored separately
-                    const { name: _name, triggerKeywords: _keywords, ...cardData } = card;
-
-                    const success = await saveCharacterCard(card.name, cardData, triggers, lorebookName);
+                    const success = await saveCharacterCard(
+                        card.name,
+                        filteredCardData,
+                        triggers,
+                        lorebookName,
+                    );
                     if (success) savedCount++;
                 }
 
@@ -153,9 +179,7 @@ function parseCharacterCardResponse(response) {
         }
 
         // Try to find a JSON object anywhere in the response
-        const objectMatch = trimmed.match(
-            /\{[\s\S]*"characterCards"[\s\S]*\}/,
-        );
+        const objectMatch = trimmed.match(/\{[\s\S]*"characterCards"[\s\S]*\}/);
         if (objectMatch) {
             return JSON.parse(objectMatch[0]);
         }
@@ -184,10 +208,17 @@ function parseCharacterCardResponse(response) {
  */
 function buildTriggerKeywords(card) {
     // If AI provided explicit triggerKeywords, use those
-    if (card.triggerKeywords && Array.isArray(card.triggerKeywords) && card.triggerKeywords.length > 0) {
+    if (
+        card.triggerKeywords &&
+        Array.isArray(card.triggerKeywords) &&
+        card.triggerKeywords.length > 0
+    ) {
         // Ensure the character name is included
         const keywords = [...card.triggerKeywords];
-        if (card.name && !keywords.some(k => k.toLowerCase() === card.name.toLowerCase())) {
+        if (
+            card.name &&
+            !keywords.some((k) => k.toLowerCase() === card.name.toLowerCase())
+        ) {
             keywords.unshift(card.name);
         }
         return [...new Set(keywords.filter(Boolean))];
@@ -224,9 +255,7 @@ export function incrementCharacterCardCounter() {
 
     const counter = incrementCounterInMetadata();
 
-    log(
-        `[RPG Companion] Character card message counter: ${counter}/${interval}`,
-    );
+    log(`[RPG Companion] Character card message counter: ${counter}/${interval}`);
 
     if (counter >= interval) {
         resetCounterInMetadata();

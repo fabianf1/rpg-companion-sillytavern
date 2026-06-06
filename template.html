@@ -500,22 +500,13 @@
                 <h5 data-i18n-key="template.settingsModal.characterCards.fields" style="margin-top: 12px;">Card Fields</h5>
                 <small style="display: block; margin-bottom: 8px; color: #888; font-size: 11px;"
                     data-i18n-key="template.settingsModal.characterCards.fieldsNote">
-                    Enable or disable fields included in character cards. Disabled fields won't be generated or stored.
+                    Configure fields included in character cards. Enable/disable, rename, or add custom fields.
                 </small>
                 <div id="rpg-character-cards-fields-list" style="margin-left: 10px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
-                    <!-- Default fields rendered by JavaScript -->
+                    <!-- Fields rendered by JavaScript -->
                 </div>
-
-                <h5 data-i18n-key="template.settingsModal.characterCards.customFields" style="margin-top: 12px;">Custom Fields</h5>
-                <small style="display: block; margin-bottom: 8px; color: #888; font-size: 11px;"
-                    data-i18n-key="template.settingsModal.characterCards.customFieldsNote">
-                    Add custom fields to character cards. These will be generated alongside the default fields.
-                </small>
-                <div id="rpg-character-cards-custom-fields-list" style="margin-left: 10px; border-left: 2px solid var(--SmartThemeBorderColor); padding-left: 10px;">
-                    <!-- Custom fields rendered by JavaScript -->
-                </div>
-                <button id="rpg-add-character-card-custom-field" class="rpg-btn-primary" type="button" style="margin-top: 8px;">
-                    <i class="fa-solid fa-plus"></i> <span data-i18n-key="template.settingsModal.characterCards.addCustomField">Add Custom Field</span>
+                <button id="rpg-add-character-card-field" class="rpg-btn-primary" type="button" style="margin-top: 8px;">
+                    <i class="fa-solid fa-plus"></i> <span data-i18n-key="template.settingsModal.characterCards.addField">Add Field</span>
                 </button>
             </div>
 
@@ -1016,6 +1007,10 @@
                 <i class="fa-solid fa-users"></i> <span
                     data-i18n-key="template.trackerEditorModal.tabs.presentCharacters">Present Characters</span>
             </button>
+            <button class="rpg-editor-tab" data-tab="characterCards">
+                <i class="fa-solid fa-id-card"></i> <span
+                    data-i18n-key="template.trackerEditorModal.tabs.characterCards">Character Cards</span>
+            </button>
             <button class="rpg-editor-tab" data-tab="historyPersistence">
                 <i class="fa-solid fa-clock-rotate-left"></i> <span
                     data-i18n-key="template.trackerEditorModal.tabs.historyPersistence">History Persistence</span>
@@ -1031,6 +1026,7 @@
             <div id="rpg-editor-tab-userStats" class="rpg-editor-tab-content"></div>
             <div id="rpg-editor-tab-infoBox" class="rpg-editor-tab-content" style="display: none;"></div>
             <div id="rpg-editor-tab-presentCharacters" class="rpg-editor-tab-content" style="display: none;"></div>
+            <div id="rpg-editor-tab-characterCards" class="rpg-editor-tab-content" style="display: none;"></div>
             <div id="rpg-editor-tab-historyPersistence" class="rpg-editor-tab-content" style="display: none;"></div>
             <div id="rpg-editor-tab-rawJson" class="rpg-editor-tab-content" style="display: none;"></div>
         </div>
@@ -1210,8 +1206,26 @@
             <button id="rpg-close-character-cards" class="rpg-popup-close" type="button"
                 aria-label="Close character cards">&times;</button>
         </header>
+        <!-- Tab Navigation -->
+        <div class="rpg-character-cards-tabs">
+            <button class="rpg-character-cards-tab active" data-tab="cards">
+                <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                <span data-i18n-key="template.characterCardsModal.tabs.cards">Cards</span>
+            </button>
+            <button class="rpg-character-cards-tab" data-tab="fields">
+                <i class="fa-solid fa-list" aria-hidden="true"></i>
+                <span data-i18n-key="template.characterCardsModal.tabs.fields">Fields</span>
+            </button>
+        </div>
         <div class="rpg-character-cards-popup-body">
-            <!-- Content rendered by JavaScript -->
+            <!-- Cards Tab Content -->
+            <div id="rpg-character-cards-tab-cards" class="rpg-character-cards-tab-content">
+                <!-- Content rendered by JavaScript -->
+            </div>
+            <!-- Fields Tab Content -->
+            <div id="rpg-character-cards-tab-fields" class="rpg-character-cards-tab-content" style="display: none;">
+                <!-- Content rendered by JavaScript -->
+            </div>
         </div>
         <footer class="rpg-character-cards-popup-footer">
             <button id="rpg-refresh-character-cards" class="rpg-btn-primary" type="button">

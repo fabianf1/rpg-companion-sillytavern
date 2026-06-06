@@ -172,6 +172,9 @@ export function loadSettings() {
 
 		// Ensure all stats have maxValue (for number display mode)
 		ensureStatsHaveMaxValue();
+
+		// Ensure characterCards has default fields if empty
+		ensureCharacterCardsDefaultFields();
 	} catch (error) {
 		console.error("[RPG Companion] Error loading settings:", error);
 		console.error("[RPG Companion] Error details:", error.message, error.stack);
@@ -778,6 +781,41 @@ function ensureStatsHaveMaxValue() {
 }
 
 /**
+ * Default fields for character cards
+ */
+const DEFAULT_CHARACTER_CARD_FIELDS = [
+	{ id: "name", name: "Name", enabled: true, description: "Character's full name" },
+	{ id: "age", name: "Age", enabled: true, description: "Character's approximate age" },
+	{ id: "appearance", name: "Appearance", enabled: true, description: "General physical appearance (hair, build, distinguishing features)" },
+	{ id: "demeanor", name: "Demeanor", enabled: true, description: "General demeanor and typical behavior" },
+	{ id: "role", name: "Role", enabled: true, description: "Character's role or occupation in the story" },
+	{ id: "personality", name: "Personality", enabled: true, description: "Core personality traits and temperament" },
+	{ id: "background", name: "Background", enabled: true, description: "Brief history or backstory" },
+];
+
+/**
+ * Ensures characterCards has default fields if empty or missing.
+ * This seeds the fields array on first load or when cleared.
+ */
+function ensureCharacterCardsDefaultFields() {
+	// characterCards lives under trackerConfig
+	if (!extensionSettings.trackerConfig) {
+		extensionSettings.trackerConfig = {};
+	}
+	if (!extensionSettings.trackerConfig.characterCards) {
+		extensionSettings.trackerConfig.characterCards = {};
+	}
+
+	const characterCards = extensionSettings.trackerConfig.characterCards;
+
+	// If fields array is missing or empty, seed with defaults
+	if (!characterCards.fields || characterCards.fields.length === 0) {
+		characterCards.fields = JSON.parse(JSON.stringify(DEFAULT_CHARACTER_CARD_FIELDS));
+		console.log("[RPG Companion] Seeded characterCards.fields with defaults");
+	}
+}
+
+/**
  * Migrates appearance data from inventory.clothing to userStats.appearance
  * This migration moves clothing data from the old inventory structure to the new appearance structure
  */
@@ -1067,7 +1105,7 @@ export function hasPresetAssociation() {
 	return (
 		entityKey &&
 		extensionSettings.presetManager.characterAssociations[entityKey] !==
-			undefined
+		undefined
 	);
 }
 

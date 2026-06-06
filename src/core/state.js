@@ -283,7 +283,7 @@ export let extensionSettings = {
 			lorebookName: "", // User-selected lorebook name (empty = use default world info)
 			updateInterval: 10, // Messages between automatic character card updates
 			messageCounter: 0, // Tracks messages since last update (runtime only, not persisted)
-			// Default fields for character cards
+			// Fields for character cards (unified list - users can add/remove/enable/disable)
 			fields: [
 				{ id: "name", name: "Name", enabled: true, description: "Character's full name" },
 				{ id: "age", name: "Age", enabled: true, description: "Character's approximate age" },
@@ -293,8 +293,6 @@ export let extensionSettings = {
 				{ id: "personality", name: "Personality", enabled: true, description: "Core personality traits and temperament" },
 				{ id: "background", name: "Background", enabled: true, description: "Brief history or backstory" },
 			],
-			// Custom fields added by the user
-			customFields: [],
 		},
 	},
 	quests: {

@@ -4,19 +4,20 @@
  * Cards are stored in lorebook entries and rendered here for viewing/editing.
  */
 
-import { escapeHtml } from "../../utils/html.js";
 import { i18n } from "../../core/i18n.js";
+import { saveSettings } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
-import {
-	getAllCharacterCards,
-	saveCharacterCard,
-	deleteCharacterCard,
-	getLorebookOptionsForDropdown,
-	getCharacterCardLorebookForChat,
-	setCharacterCardLorebookForChat,
-	getCharacterCardCounter,
-} from "../generation/characterCardLorebookManager.js";
+import { escapeHtml } from "../../utils/html.js";
 import { updateCharacterCards } from "../generation/characterCardApiClient.js";
+import {
+	deleteCharacterCard,
+	getAllCharacterCards,
+	getCharacterCardCounter,
+	getCharacterCardLorebookForChat,
+	getLorebookOptionsForDropdown,
+	saveCharacterCard,
+	setCharacterCardLorebookForChat,
+} from "../generation/characterCardLorebookManager.js";
 
 /** Tracks the currently focused character name (from the thoughts.js button click) */
 let _focusedCharacterName = null;
@@ -31,7 +32,9 @@ export async function renderCharacterCards() {
 	const $modal = $("#rpg-character-cards-popup");
 	if (!$modal.length) return;
 
-	const $body = $modal.find(".rpg-character-cards-popup-body");
+	// Render into the Cards tab content
+	const $cardsTab = $modal.find("#rpg-character-cards-tab-cards");
+	if (!$cardsTab.length) return;
 
 	// Get the current lorebook selection for this chat
 	const currentLorebook = getCharacterCardLorebookForChat();
@@ -49,7 +52,7 @@ export async function renderCharacterCards() {
 	let html = '<div class="rpg-character-cards-header">';
 	html += `<label class="rpg-character-cards-lorebook-label">${i18n.getTranslation("characterCards.lorebookLabel")}:</label>`;
 	html += lorebookSelectHtml;
-	html += '</div>';
+	html += "</div>";
 
 	// Build settings row with counter and update interval
 	const currentCounter = getCharacterCardCounter();
@@ -63,37 +66,30 @@ export async function renderCharacterCards() {
 	html += `<label class="rpg-character-cards-setting-label" for="rpg-character-cards-interval">${i18n.getTranslation("characterCards.updateIntervalLabel")}:</label>`;
 	html += `<input type="number" id="rpg-character-cards-interval" class="rpg-character-cards-setting-input" value="${updateInterval}" min="0" max="100" step="1">`;
 	html += `</div>`;
-	html += '</div>';
+	html += "</div>";
 
 	// Fetch all cards
 	const cards = await getAllCharacterCards();
 
 	if (!cards || cards.length === 0) {
 		html += `<div class="rpg-character-cards-empty">${i18n.getTranslation("characterCards.noCards")}</div>`;
-		$body.html(html);
-		_attachLorebookHandler($body);
+		$cardsTab.html(html);
+		_attachLorebookHandler($cardsTab);
 		return;
 	}
 
 	// Get enabled fields for display order
 	const config = extensionSettings.characterCards || {};
-	const allFields = [
-		...(config.fields || []),
-		...(config.customFields || []).map((f) => ({
-			id: f.id,
-			name: f.name,
-			enabled: true,
-			description: f.description || f.name,
-		})),
-	];
-	const enabledFields = allFields.filter((f) => f.enabled);
+	const enabledFields = (config.fields || []).filter((f) => f.enabled);
 
 	html += '<div class="rpg-character-cards-list">';
 
 	for (const card of cards) {
 		const charName = card.characterName || "Unknown";
 		const cardData = card.cardData || {};
-		const isFocused = _focusedCharacterName && _focusedCharacterName.toLowerCase() === charName.toLowerCase();
+		const isFocused =
+			_focusedCharacterName &&
+			_focusedCharacterName.toLowerCase() === charName.toLowerCase();
 		const isExpanded = isFocused;
 
 		// Build card HTML - collapsed by default, expand if focused
@@ -115,28 +111,20 @@ export async function renderCharacterCards() {
 			html += _renderField("name", "Name", cardData.name);
 		}
 
-		// Render enabled fields in order
+		// Render enabled fields in order (skip name, already rendered)
 		for (const field of enabledFields) {
-			if (field.id === "name") continue; // Already rendered above
+			if (field.id === "name") continue;
 			const value = cardData[field.id];
 			if (value !== undefined && value !== null) {
 				html += _renderField(field.id, field.name, value);
 			}
 		}
 
-		// Render any extra fields in the card data that aren't in the enabled fields list
-		const knownFieldIds = new Set(enabledFields.map((f) => f.id));
-		for (const [key, value] of Object.entries(cardData)) {
-			if (key === "name") continue;
-			if (knownFieldIds.has(key)) continue;
-			if (value !== undefined && value !== null) {
-				html += _renderField(key, key, value);
-			}
-		}
-
 		// Render trigger keywords field
 		const triggerKeywords = card.triggerKeywords || [];
-		const keywordsValue = Array.isArray(triggerKeywords) ? triggerKeywords.join(", ") : "";
+		const keywordsValue = Array.isArray(triggerKeywords)
+			? triggerKeywords.join(", ")
+			: "";
 		html += `<div class="rpg-character-card-field rpg-character-card-keywords-field" data-field-id="_triggerKeywords">`;
 		html += `<div class="rpg-character-card-field-label">${i18n.getTranslation("characterCards.triggerKeywords")}</div>`;
 		html += `<div class="rpg-character-card-field-value rpg-editable" contenteditable="true" data-placeholder="${i18n.getTranslation("characterCards.editField")}">${escapeHtml(keywordsValue)}</div>`;
@@ -148,15 +136,15 @@ export async function renderCharacterCards() {
 	}
 
 	html += "</div>"; // .rpg-character-cards-list
-	$body.html(html);
+	$cardsTab.html(html);
 
 	// Attach event handlers
-	_attachCardHandlers($body);
-	_attachLorebookHandler($body);
+	_attachCardHandlers($cardsTab);
+	_attachLorebookHandler($cardsTab);
 
 	// Scroll to focused card if applicable
 	if (_focusedCharacterName) {
-		const $focused = $body.find(".rpg-character-card-focused");
+		const $focused = $cardsTab.find(".rpg-character-card-focused");
 		if ($focused.length) {
 			setTimeout(() => {
 				$focused[0].scrollIntoView({ behavior: "smooth", block: "center" });
@@ -169,14 +157,130 @@ export async function renderCharacterCards() {
 }
 
 /**
- * Attaches event handler for the lorebook dropdown.
- * @param {jQuery} $body - The modal body element
+ * Renders the Fields tab content for editing character card fields.
  */
-function _attachLorebookHandler($body) {
-	$body.find("#rpg-character-cards-lorebook-select").on("change", function () {
-		const lorebookName = $(this).val() || "";
-		setCharacterCardLorebookForChat(lorebookName);
+export function renderCharacterCardsFieldsTab() {
+	const $modal = $("#rpg-character-cards-popup");
+	if (!$modal.length) return;
+
+	const $fieldsTab = $modal.find("#rpg-character-cards-tab-fields");
+	if (!$fieldsTab.length) return;
+
+	const config = extensionSettings.characterCards || {};
+	const fields = config.fields || [];
+
+	let html = '<div class="rpg-fields-editor">';
+	html += `<p class="rpg-fields-note" data-i18n-key="characterCards.fieldsTabNote">Configure which fields appear in character cards. Enable/disable, rename, or add custom fields.</p>`;
+	html += '<div class="rpg-fields-list">';
+
+	for (const field of fields) {
+		const checked = field.enabled ? "checked" : "";
+		html += `
+			<div class="rpg-field-row" data-field-id="${escapeHtml(field.id)}">
+				<input type="checkbox" class="rpg-field-enabled" data-field-id="${field.id}" ${checked} title="Enable/disable field" />
+				<input type="text" class="rpg-field-name" data-field-id="${field.id}" value="${escapeHtml(field.name)}" placeholder="Field name" />
+				<input type="text" class="rpg-field-desc" data-field-id="${field.id}" value="${escapeHtml(field.description || "")}" placeholder="Description (optional)" />
+				<button class="rpg-field-remove rpg-btn-small rpg-btn-danger" data-field-id="${field.id}" title="Remove field">
+					<i class="fa-solid fa-times"></i>
+				</button>
+			</div>
+		`;
+	}
+
+	html += "</div>"; // .rpg-fields-list
+	html += `<button id="rpg-add-field-btn" class="rpg-btn-primary" type="button">
+		<i class="fa-solid fa-plus"></i> <span data-i18n-key="characterCards.addField">Add Field</span>
+	</button>`;
+	html += "</div>"; // .rpg-fields-editor
+
+	$fieldsTab.html(html);
+
+	// Bind event handlers
+	_attachFieldEditorHandlers($fieldsTab);
+}
+
+/**
+ * Attaches event handlers for the field editor.
+ * @param {jQuery} $fieldsTab - The fields tab element
+ */
+function _attachFieldEditorHandlers($fieldsTab) {
+	const config = extensionSettings.characterCards || {};
+
+	// Enable/disable toggle
+	$fieldsTab.find(".rpg-field-enabled").on("change", function () {
+		const fieldId = $(this).data("field-id");
+		const enabled = $(this).prop("checked");
+		const field = (config.fields || []).find((f) => f.id === fieldId);
+		if (field) {
+			field.enabled = enabled;
+			saveSettings();
+		}
 	});
+
+	// Name edit
+	$fieldsTab.find(".rpg-field-name").on("change", function () {
+		const fieldId = $(this).data("field-id");
+		const name = $(this).val().trim();
+		if (!name) return;
+		const field = (config.fields || []).find((f) => f.id === fieldId);
+		if (field) {
+			field.name = name;
+			saveSettings();
+		}
+	});
+
+	// Description edit
+	$fieldsTab.find(".rpg-field-desc").on("change", function () {
+		const fieldId = $(this).data("field-id");
+		const description = $(this).val().trim();
+		const field = (config.fields || []).find((f) => f.id === fieldId);
+		if (field) {
+			field.description = description;
+			saveSettings();
+		}
+	});
+
+	// Remove field
+	$fieldsTab.find(".rpg-field-remove").on("click", function () {
+		const fieldId = $(this).data("field-id");
+		config.fields = (config.fields || []).filter((f) => f.id !== fieldId);
+		saveSettings();
+		renderCharacterCardsFieldsTab();
+	});
+
+	// Add field
+	$fieldsTab.find("#rpg-add-field-btn").on("click", () => {
+		const name = prompt("Enter field name:");
+		if (!name?.trim()) return;
+
+		const id = name
+			.trim()
+			.toLowerCase()
+			.replace(/[^a-z0-9]/g, "_");
+		const description = prompt("Enter field description (optional):") || "";
+
+		if (!config.fields) config.fields = [];
+		if (config.fields.some((f) => f.id === id)) {
+			alert(`A field with ID "${id}" already exists.`);
+			return;
+		}
+		config.fields.push({ id, name: name.trim(), enabled: true, description });
+		saveSettings();
+		renderCharacterCardsFieldsTab();
+	});
+}
+
+/**
+ * Attaches event handler for the lorebook dropdown.
+ * @param {jQuery} $cardsTab - The cards tab element
+ */
+function _attachLorebookHandler($cardsTab) {
+	$cardsTab
+		.find("#rpg-character-cards-lorebook-select")
+		.on("change", function () {
+			const lorebookName = $(this).val() || "";
+			setCharacterCardLorebookForChat(lorebookName);
+		});
 }
 
 /**
@@ -218,7 +322,12 @@ function _attachCardHandlers($body) {
 		$btn.prop("disabled", true);
 		$btn.find("i").removeClass("fa-floppy-disk").addClass("fa-spinner fa-spin");
 
-		const success = await saveCharacterCard(characterName, cardData, triggerKeywords, lorebookName);
+		const success = await saveCharacterCard(
+			characterName,
+			cardData,
+			triggerKeywords,
+			lorebookName,
+		);
 
 		$btn.prop("disabled", false);
 		$btn.find("i").removeClass("fa-spinner fa-spin").addClass("fa-floppy-disk");
@@ -331,7 +440,10 @@ function _collectCardData($card) {
 
 		if (fieldId === "_triggerKeywords") {
 			// Parse trigger keywords as comma-separated values
-			triggerKeywords = value.split(",").map((k) => k.trim()).filter(Boolean);
+			triggerKeywords = value
+				.split(",")
+				.map((k) => k.trim())
+				.filter(Boolean);
 		} else if (fieldId && value) {
 			cardData[fieldId] = value;
 		}
@@ -386,7 +498,9 @@ export function closeCharacterCardsModal(force = false) {
 
 	// Check for unsaved changes
 	if (!force && _hasUnsavedChanges) {
-		const confirmed = confirm(i18n.getTranslation("characterCards.unsavedChanges"));
+		const confirmed = confirm(
+			i18n.getTranslation("characterCards.unsavedChanges"),
+		);
 		if (!confirmed) return;
 	}
 
@@ -502,6 +616,28 @@ export function setupCharacterCardsPopup() {
 		} finally {
 			$btn.prop("disabled", false);
 			$btn.find("i").removeClass("fa-spin");
+		}
+	});
+
+	// Tab switching
+	$(document).on("click", ".rpg-character-cards-tab", function () {
+		const tab = $(this).data("tab");
+		const $modal = $("#rpg-character-cards-popup");
+		if (!$modal.length) return;
+
+		// Update active tab
+		$modal.find(".rpg-character-cards-tab").removeClass("active");
+		$(this).addClass("active");
+
+		// Show/hide tab content
+		$modal.find(".rpg-character-cards-tab-content").hide();
+		$modal.find(`#rpg-character-cards-tab-${tab}`).show();
+
+		// Render content for the tab
+		if (tab === "cards") {
+			renderCharacterCards();
+		} else if (tab === "fields") {
+			renderCharacterCardsFieldsTab();
 		}
 	});
 
