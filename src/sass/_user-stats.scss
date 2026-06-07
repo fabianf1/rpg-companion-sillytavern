@@ -8,6 +8,8 @@
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
+	/* CSS containment for performance optimization */
+	contain: content;
 }
 
 .rpg-stats-section {

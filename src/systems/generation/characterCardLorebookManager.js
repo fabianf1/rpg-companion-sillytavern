@@ -515,6 +515,8 @@ export async function saveCharacterCard(
         existing.entry.content = content;
         existing.entry.key = triggers;
         existing.entry.comment = comment;
+        existing.entry.order = 100;
+        existing.entry.probability = 100;
         log(
             `[RPG Companion] Updated character card for "${characterName}" in "${existing.bookName}"`,
         );
@@ -532,6 +534,8 @@ export async function saveCharacterCard(
             group: "",
             selective: false,
             constant: triggers.length === 0,
+            order: 100,
+            probability: 100,
             position: 0,
             depth: 4,
             displayIndex: newUid,

@@ -183,6 +183,24 @@ export function buildUserStatsText() {
 }
 
 /**
+ * State tracking for render optimization - skips re-render if data unchanged
+ */
+let lastUserStatsDataHash = null;
+
+/**
+ * Computes a simple hash of data for change detection
+ * @param {*} data - Data to hash
+ * @returns {string} Hash string
+ */
+function computeDataHash(data) {
+	try {
+		return JSON.stringify(data);
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Renders the user stats panel with health bars, mood, inventory, and classic stats.
  * Includes event listeners for editable fields.
 ```
@@ -197,6 +215,13 @@ export function renderUserStats() {
 
 	// Check if tracker data exists (from swipe store or extensionSettings)
 	const trackerData = getTrackerDataForContext("userStats");
+
+	// State diffing: Skip render if data hasn't changed
+	const currentHash = computeDataHash(trackerData);
+	if (currentHash && currentHash === lastUserStatsDataHash) {
+		return; // Skip re-render - data unchanged
+	}
+	lastUserStatsDataHash = currentHash;
 
 	if (!trackerData) {
 		// Always render to the #rpg-user-stats container

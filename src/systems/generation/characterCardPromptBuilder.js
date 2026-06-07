@@ -98,14 +98,14 @@ function buildCharacterCardSystemMessage(userName, _fields) {
  */
 async function buildCharacterCardInstructionMessage(userName, fields) {
     let instruction = `</history>\n\n`;
-    instruction += `Based on the context above, generate or update character cards for the NPCs.\n\n`;
+    instruction += `Based on the context above, generate or update character cards for the characters.\n\n`;
 
     // Include character thoughts data for reference (ensures same characters are used)
     const characterThoughtsData = getTrackerDataForContext("characterThoughts");
     if (characterThoughtsData && Array.isArray(characterThoughtsData)) {
         instruction += `<character_tracker>\n`;
         for (const char of characterThoughtsData) {
-            if (char.name && char.name !== userName) {
+            if (char.name) {
                 instruction += `--- ${char.name} ---\n`;
                 if (char.details && typeof char.details === "object") {
                     for (const [key, value] of Object.entries(char.details)) {
@@ -133,6 +133,27 @@ async function buildCharacterCardInstructionMessage(userName, fields) {
             }
         }
         instruction += `</character_tracker>\n\n`;
+    }
+
+    // Include protagonist appearance data for reference
+    const userStatsData = getTrackerDataForContext("userStats");
+    if (userStatsData?.appearance) {
+        instruction += `<protagonist_appearance>\n`;
+        const app = userStatsData.appearance;
+        if (app.hair) instruction += `Hair: ${app.hair}\n`;
+        if (app.scent) instruction += `Scent: ${app.scent}\n`;
+        if (app.posture) instruction += `Posture: ${app.posture}\n`;
+        if (app.demeanor) instruction += `Demeanor: ${app.demeanor}\n`;
+        if (Array.isArray(app.clothing) && app.clothing.length) {
+            instruction += `Clothing: ${app.clothing.map((i) => (typeof i === "object" ? i.name : i)).filter(Boolean).join(", ")}\n`;
+        }
+        if (Array.isArray(app.accessories) && app.accessories.length) {
+            instruction += `Accessories: ${app.accessories.map((i) => (typeof i === "object" ? i.name : i)).filter(Boolean).join(", ")}\n`;
+        }
+        if (Array.isArray(app.physicalFeatures) && app.physicalFeatures.length) {
+            instruction += `Physical Features: ${app.physicalFeatures.map((i) => (typeof i === "object" ? i.name : i)).filter(Boolean).join(", ")}\n`;
+        }
+        instruction += `</protagonist_appearance>\n\n`;
     }
 
     // Include existing cards as context
@@ -167,9 +188,8 @@ async function buildCharacterCardInstructionMessage(userName, fields) {
     instruction += `2. **Absolute Continuity**: Preserve existing field values entirely unless the new dialogue directly overrides a fundamental trait (e.g., discovering their true age, lineage, or a permanent physical change like losing an eye).\n`;
     instruction += `3. **Ignore the Transient**: Do NOT alter cards to match fleeting emotional states, immediate plot destinations, or temporary equipment.\n`;
     instruction += `4. **Conciseness**: Each field must be a concise structural description (1-2 sentences max) or null if unknown.\n`;
-    instruction += `5. **Scope**: Do NOT include the protagonist ("${userName}") as a character card.\n`;
-    instruction += `6. **Efficiency**: Return ONLY the cards that need to be created or meaningfully updated. If no cards require stable updates, return an empty array: {"characterCards": []}\n`;
-    instruction += `7. **Field Preservation**: When updating existing cards, include ALL existing fields even if unchanged. Only modify fields where you have explicit new information.\n\n`;
+    instruction += `5. **Efficiency**: Return ONLY the cards that need to be created or meaningfully updated. If no cards require stable updates, return an empty array: {"characterCards": []}\n`;
+    instruction += `6. **Field Preservation**: When updating existing cards, include ALL existing fields even if unchanged. Only modify fields where you have explicit new information.\n\n`;
 
     instruction += `AVAILABLE FIELDS (use these exact JSON keys):\n`;
     instruction += `${fieldDescriptions}\n\n`;

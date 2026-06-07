@@ -266,7 +266,7 @@ export function renderOptionalQuestsView(optionalQuests) {
  * Main render function for quests
  */
 export function renderQuests() {
-	if (!extensionSettings.showInventory || !$questsContainer) {
+	if (!extensionSettings.showQuests || !$questsContainer) {
 		return;
 	}
 

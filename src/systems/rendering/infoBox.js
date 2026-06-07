@@ -28,6 +28,24 @@ const DATE_FIELDS = ["weekday", "month", "year"];
  * Renders the info box as a visual dashboard with calendar, weather, temperature, clock, and map widgets.
  * Includes event listeners for editable fields.
  */
+/**
+ * State tracking for render optimization - skips re-render if data unchanged
+ */
+let lastInfoBoxDataHash = null;
+
+/**
+ * Computes a simple hash of data for change detection
+ * @param {*} data - Data to hash
+ * @returns {string} Hash string
+ */
+function computeDataHash(data) {
+	try {
+		return JSON.stringify(data);
+	} catch {
+		return null;
+	}
+}
+
 export function renderInfoBox() {
 	// console.log('[RPG InfoBox Render] ==================== RENDERING INFO BOX ====================');
 	// console.log('[RPG InfoBox Render] showInfoBox setting:', extensionSettings.showInfoBox);
@@ -40,6 +58,13 @@ export function renderInfoBox() {
 
 	// Read info box data from swipe store
 	const infoBoxData = getTrackerDataForContext("infoBox");
+
+	// State diffing: Skip render if data hasn't changed
+	const currentHash = computeDataHash(infoBoxData);
+	if (currentHash && currentHash === lastInfoBoxDataHash) {
+		return; // Skip re-render - data unchanged
+	}
+	lastInfoBoxDataHash = currentHash;
 	// console.log('[RPG InfoBox Render] infoBoxData length:', infoBoxData ? infoBoxData.length : 'null');
 	// console.log('[RPG InfoBox Render] infoBoxData preview:', infoBoxData ? infoBoxData.substring(0, 200) : 'null');
 

@@ -325,6 +325,8 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
 	overflow-y: hidden;
 	overflow-x: hidden;
 	min-height: 0;
+	/* CSS containment for performance optimization */
+	contain: content;
 }
 
 /* Header - Fixed size, doesn't grow */

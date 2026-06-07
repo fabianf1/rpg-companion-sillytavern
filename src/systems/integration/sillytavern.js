@@ -40,15 +40,10 @@ import {
 } from "../generation/characterCardApiClient.js";
 import { initHistoryInjectionListeners } from "../generation/injector.js";
 import { getLockedItemsFromSwipeStore } from "../generation/lockManager.js";
-import { renderAppearance } from "../rendering/appearance.js";
-import { renderInfoBox } from "../rendering/infoBox.js";
-import { renderInventory } from "../rendering/inventory.js";
-import { renderQuests } from "../rendering/quests.js";
-import { renderRelationships } from "../rendering/relationships.js";
-import { renderThoughts, updateChatThoughts } from "../rendering/thoughts.js";
+import { updateChatThoughts } from "../rendering/thoughts.js";
 import { refreshLorebookDropdowns } from "../rendering/characterCards.js";
 // Rendering
-import { renderUserStats } from "../rendering/userStats.js";
+import { batchedRenderOnCharacterChange, batchedRenderOnSwipe, batchedRenderOnDelete } from "../rendering/batched.js";
 import { updateStripWidgets } from "../ui/desktop.js";
 // UI
 import { updateFabWidgets } from "../ui/mobile.js";
@@ -294,14 +289,8 @@ export function onCharacterChanged() {
 	// Reload lock settings from the current message's swipeStore
 	reloadLocksFromSwipeStore();
 
-	// Re-render with the loaded data
-	renderUserStats();
-	renderInfoBox();
-	renderThoughts();
-	renderInventory();
-	renderAppearance();
-	renderQuests();
-	renderRelationships();
+	// Re-render with the loaded data (batched for performance)
+	batchedRenderOnCharacterChange();
 
 	// Update FAB widgets and strip widgets with loaded data
 	updateFabWidgets();
@@ -361,13 +350,8 @@ export function onMessageSwiped(messageIndex) {
 		);
 	}
 
-	// Re-render the panels
-	renderUserStats();
-	renderInfoBox();
-	renderThoughts();
-	renderInventory();
-	renderQuests();
-	renderRelationships();
+	// Re-render the panels (batched for performance)
+	batchedRenderOnSwipe();
 
 	// Reload lock settings from the current message's swipeStore
 	reloadLocksFromSwipeStore();
@@ -391,14 +375,9 @@ export function onMessageDeleted() {
 	// its result is not applied to the (now-changed) chat tail.
 	abortCurrentGeneration();
 
-	// Re-render all panels.
+	// Re-render all panels (batched for performance).
 	// Render functions now read directly from the swipe store, so no state management needed.
-	renderUserStats();
-	renderInfoBox();
-	renderThoughts();
-	renderInventory();
-	renderQuests();
-	renderRelationships();
+	batchedRenderOnDelete();
 
 	// Update widget strips.
 	updateFabWidgets();

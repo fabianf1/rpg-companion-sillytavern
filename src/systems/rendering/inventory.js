@@ -568,6 +568,24 @@ export function updateInventoryDisplay(containerId, options = {}) {
 }
 
 /**
+ * State tracking for render optimization - skips re-render if data unchanged
+ */
+let lastInventoryDataHash = null;
+
+/**
+ * Computes a simple hash of data for change detection
+ * @param {*} data - Data to hash
+ * @returns {string} Hash string
+ */
+function computeDataHash(data) {
+	try {
+		return JSON.stringify(data);
+	} catch {
+		return null;
+	}
+}
+
+/**
  * Main inventory rendering function (matches pattern of other render functions)
  * Gets data from state/settings and updates DOM directly.
  * Call this after AI generation, character changes, or swipes.
@@ -581,6 +599,21 @@ export function renderInventory() {
 	// Check if tracker data exists (from swipe store or extensionSettings)
 	const trackerData = getTrackerDataForContext("userStats");
 
+	// Get current render options (active tab, collapsed locations)
+	// Must be called BEFORE hash check so UI state changes (tab switches) trigger re-render
+	const options = getInventoryRenderOptions();
+
+	// State diffing: Skip render if data AND UI state haven't changed
+	const currentHash = computeDataHash({
+		inventory: trackerData?.inventory,
+		activeSubTab: options.activeSubTab,
+		collapsedLocations: options.collapsedLocations,
+	});
+	if (currentHash && currentHash === lastInventoryDataHash) {
+		return; // Skip re-render - data and UI state unchanged
+	}
+	lastInventoryDataHash = currentHash;
+
 	if (!trackerData || !trackerData.inventory) {
 		console.warn(
 			"[RPG Companion] No inventory data found in tracker for userStats context.",
@@ -591,9 +624,6 @@ export function renderInventory() {
 		return;
 	}
 	const inventory = trackerData.inventory;
-
-	// Get current render options (active tab, collapsed locations)
-	const options = getInventoryRenderOptions();
 
 	// Generate HTML and update DOM
 	const html = generateInventoryHTML(inventory, options);

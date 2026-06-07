@@ -439,7 +439,7 @@ export async function updateRPGData(
 			}
 
 			// Render the updated data (filtered by selectedSections if provided)
-			if (selectedSections) {
+			if (selectedSections && selectedSections.length > 0) {
 				if (selectedSections.includes("userStats")) renderUserStats();
 				if (selectedSections.includes("infoBox")) renderInfoBox();
 				if (selectedSections.includes("characterThoughts")) renderThoughts();
@@ -447,6 +447,7 @@ export async function updateRPGData(
 				if (selectedSections.includes("inventory")) renderInventory();
 				if (selectedSections.includes("quests")) renderQuests();
 			} else {
+				// Full refresh - render all panels
 				renderUserStats();
 				renderInfoBox();
 				renderThoughts();
@@ -472,8 +473,6 @@ export async function updateRPGData(
 		setStripCancelState(false); // Hide cancel button on desktop
 		updateFabWidgets(); // Update FAB widgets with new data
 		updateStripWidgets(); // Update strip widgets with new data
-		renderUserStats(); // To show the outdated message
-		renderAppearance(); // To show the outdated appearance data
 
 		// Reset the flag after tracker generation completes
 		// This ensures the flag persists through both main generation AND tracker generation

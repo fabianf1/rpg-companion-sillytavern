@@ -12,6 +12,8 @@
 	gap: 1rem;
 	padding: 0.5rem;
 	font-size: 0.9rem;
+	/* CSS containment for performance optimization */
+	contain: content;
 }
 
 /* Quest Sections */
