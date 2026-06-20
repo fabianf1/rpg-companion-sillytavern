@@ -92,8 +92,8 @@ function getCurrentTime() {
 		const parsed =
 			typeof infoBoxData === "string" ? repairJSON(infoBoxData) : infoBoxData;
 		if (parsed?.time) {
-			// Use the end time if available (current time), otherwise start time
-			return parsed.time.end || parsed.time.start || null;
+			// Backwards compat: read time.value, fallback to time.end
+			return parsed.time.value || parsed.time.end || null;
 		}
 	} catch (_e) {
 		// Not JSON, try old text format

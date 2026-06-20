@@ -196,8 +196,9 @@ export function buildInfoBoxJSONInstruction() {
 	let hasFields = false;
 
 	if (widgets.date?.enabled) {
-		const dateFormat = widgets.date.format || "Weekday, Month, Year";
-		instruction += `  "date": {"value": "${dateFormat}"}`;
+		// Flexible date format - works for modern, historical, or fantasy settings
+		// Examples: "Tuesday, October 17th, 2023", "Day 15 of the Third Moon", "June, 1245"
+		instruction += `  "date": {"value": "Date string (any format)"}`;
 		hasFields = true;
 	}
 
@@ -222,9 +223,10 @@ export function buildInfoBoxJSONInstruction() {
 	}
 
 	if (widgets.time?.enabled) {
+		// Single time value representing the time at the end of the message
 		instruction +=
 			(hasFields ? ",\n" : "") +
-			'  "time": {"start": "TimeStart", "end": "TimeEnd"}';
+			'  "time": {"value": "HH:MM"}';
 		hasFields = true;
 	}
 

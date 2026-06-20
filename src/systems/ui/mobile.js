@@ -1451,8 +1451,8 @@ export function updateFabWidgets() {
 
 	// Clock/Time (bottom position with animated clock face)
 	if (widgetSettings.clock?.enabled && infoData?.time) {
-		const timeStr =
-			infoData.time.end || infoData.time.value || infoData.time.start || "";
+		// Backwards compat: read time.value, fallback to time.end
+		const timeStr = infoData.time.value || infoData.time.end || "";
 		if (timeStr) {
 			const { hourAngle, minuteAngle } = parseTimeForClock(timeStr);
 			widgets.push({

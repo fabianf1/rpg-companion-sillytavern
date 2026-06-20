@@ -586,15 +586,23 @@ export function parseResponse(response) {
 		) {
 			const preference =
 				extensionSettings.trackerConfig.infoBox.widgets.time.format;
-			if (parsed.infoBox.time.start) {
-				parsed.infoBox.time.start = convertTimeFormat(
-					parsed.infoBox.time.start,
+			// Handle new single-value format (time.value)
+			if (parsed.infoBox.time.value) {
+				parsed.infoBox.time.value = convertTimeFormat(
+					parsed.infoBox.time.value,
 					preference,
 				);
 			}
+			// Backwards compat: handle old format (time.end)
 			if (parsed.infoBox.time.end) {
 				parsed.infoBox.time.end = convertTimeFormat(
 					parsed.infoBox.time.end,
+					preference,
+				);
+			}
+			if (parsed.infoBox.time.start) {
+				parsed.infoBox.time.start = convertTimeFormat(
+					parsed.infoBox.time.start,
 					preference,
 				);
 			}

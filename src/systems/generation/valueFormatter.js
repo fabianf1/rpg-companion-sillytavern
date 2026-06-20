@@ -778,8 +778,9 @@ export function formatHistoricalTrackerData(
 
 			// Time
 			if (shouldInclude(infoBoxConfig.widgets.time) && infoBoxData.time) {
-				const time = getValue(infoBoxData.time);
-				if (time) infoFormatted += `Time: ${time}, `;
+				// Backwards compat: prefer time.value, fallback to time.end
+				const timeVal = infoBoxData.time.value || infoBoxData.time.end || "";
+				if (timeVal) infoFormatted += `Time: ${timeVal}, `;
 			}
 
 			// Weather

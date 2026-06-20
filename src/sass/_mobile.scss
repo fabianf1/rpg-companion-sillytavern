@@ -526,18 +526,6 @@ body:has(.rpg-panel.rpg-mobile-open) .rpg-fab-widget-container {
 		font-size: min(2.5vw, 0.8125rem) !important;
 	}
 
-	.rpg-time-range {
-		gap: 0.15em;
-		overflow-x: auto;
-		overflow-y: hidden;
-		max-width: 100%;
-		white-space: nowrap;
-	}
-
-	.rpg-time-separator {
-		font-size: min(2vw, 0.625rem) !important;
-	}
-
 	.rpg-location-text {
 		font-size: min(2.8vw, 0.875rem) !important;
 	}

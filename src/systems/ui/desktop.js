@@ -77,8 +77,8 @@ export function updateStripWidgets() {
 	// Clock Widget with animated face
 	const $clockWidget = $container.find(".rpg-strip-widget-clock");
 	if (widgetSettings.clock?.enabled && infoData?.time) {
-		const timeStr =
-			infoData.time.end || infoData.time.value || infoData.time.start || "";
+		// Backwards compat: read time.value, fallback to time.end
+		const timeStr = infoData.time.value || infoData.time.end || "";
 		if (timeStr) {
 			// Update clock hands
 			const { hourAngle, minuteAngle } = parseTimeForClock(timeStr);

@@ -5,6 +5,8 @@
 
 import { saveSettings } from "../../core/persistence.js";
 import { $inventoryContainer, extensionSettings } from "../../core/state.js";
+import { escapeHtml } from "../../utils/html.js";
+import { getLockIconHtml } from "../../utils/lockIcon.js";
 // parseItems is no longer imported - arrays are used directly
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
@@ -13,8 +15,6 @@ import {
 	restoreFormStates,
 } from "../interaction/inventoryActions.js";
 import { updateInventoryItem } from "../interaction/inventoryEdit.js";
-import { getLockIconHtml } from "../../utils/lockIcon.js";
-import { escapeHtml } from "../../utils/html.js";
 
 /**
  * Converts a location name to a safe ID for use in HTML element IDs.
@@ -210,8 +210,8 @@ export function renderStoredView(
 			// Convert array to display strings for UI
 			const displayItems = Array.isArray(locationItems)
 				? locationItems.map((item) =>
-					typeof item === "object" ? item.name : item,
-				)
+						typeof item === "object" ? item.name : item,
+					)
 				: [];
 			const isCollapsed = collapsedLocations.includes(location);
 			const locationId = getLocationId(location);
@@ -670,5 +670,3 @@ export function renderInventory() {
 			saveSettings();
 		});
 }
-
-
