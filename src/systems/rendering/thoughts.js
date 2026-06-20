@@ -233,6 +233,7 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 			const character = {
 				name: char.name,
 				emoji: char.emoji || "👤",
+				inScene: char.inScene !== false, // Default to true, only false if explicitly set
 			};
 
 			// Extract details (appearance, demeanor, etc.)
@@ -309,6 +310,18 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 	);
 	debugLog("[RPG Thoughts] Total characters parsed:", presentCharacters.length);
 	debugLog("[RPG Thoughts] Characters array:", presentCharacters);
+
+	// Sort by visibility - characters in scene first
+	presentCharacters.sort((a, b) => {
+		const aInScene = a.inScene !== false;
+		const bInScene = b.inScene !== false;
+		// In-scene characters come first (true sorts before false when negated)
+		if (aInScene !== bInScene) {
+			return bInScene - aInScene;
+		}
+		// Secondary sort: alphabetically by name for consistent ordering
+		return (a.name || "").localeCompare(b.name || "");
+	});
 
 	// Build HTML
 	let html = "";
@@ -477,90 +490,24 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 
 				debugLog(`[RPG Thoughts] Building HTML card for ${char.name}...`);
 
+				// Determine card state classes
+				const isInScene = char.inScene !== false;
+				const sceneClass = isInScene ? "" : "rpg-character-not-in-scene";
+
+				// Compact card - just image, relationship, emoji, name, and scene status
 				html += `
-                    <div class="rpg-character-card" data-character-name="${char.name}">
-                        <div class="rpg-character-header-row">
-                            <div class="rpg-character-avatar rpg-avatar-upload" data-character="${char.name}" title="${i18n.getTranslation("thoughts.clickToUpload")}">
-                                <img src="${characterPortrait}" alt="${char.name}" onerror="this.style.opacity='0.5';this.onerror=null;" />
-                                <div class="rpg-relationship-badge" data-character="${char.name}" title="Relationship">${relationshipBadge}</div>
-                            </div>
-                            <div class="rpg-character-header">
-                                <span class="rpg-character-emoji rpg-editable" contenteditable="true" data-character="${char.name}" data-field="emoji" title="${i18n.getTranslation("thoughts.clickToEdit")}">${char.emoji}</span>
-                                <span class="rpg-character-name rpg-editable" contenteditable="true" data-character="${char.name}" data-field="name" title="${i18n.getTranslation("thoughts.clickToEdit")}">${char.name}</span>
-                                <button class="rpg-character-card-btn" data-character="${char.name}" title="${i18n.getTranslation("template.mainPanel.characterCardsButton") || "Character Card"}"><i class="fa-solid fa-id-card"></i></button>
-                                <button class="rpg-character-remove" data-character="${char.name}" title="${i18n.getTranslation("thoughts.removeCharacter")}">×</button>
-                            </div>
-                        </div>
-                        <div class="rpg-character-content">
-                            <div class="rpg-character-info">
-                `;
-
-				// Render custom fields dynamically
-				for (const field of enabledFields) {
-					const rawValue = char[field.name];
-					const fieldValue = extractFieldValue(rawValue);
-					const fieldId = field.name.toLowerCase().replace(/\s+/g, "-");
-					const fieldNameLower = field.name.toLowerCase();
-					// Skip lock icons for thoughts field
-					const showLock = !fieldNameLower.includes("thought");
-					// Add placeholder for empty fields
-					const placeholder = fieldValue
-						? ""
-						: `data-placeholder="${field.name}"`;
-					const emptyClass = fieldValue ? "" : " rpg-empty-field";
-					if (showLock) {
-						const lockIconHtml = getLockIconHtml(
-							"characters",
-							`${char.name}.${field.name}`,
-						);
-						html += `
-                                <div class="rpg-character-field rpg-character-${fieldId}" style="position: relative;">
-                                    ${lockIconHtml}
-                                    <span class="rpg-editable${emptyClass}" contenteditable="true" data-character="${char.name}" data-field="${field.name}" title="${i18n.getTranslation("thoughts.clickToEdit")}" ${placeholder}>${fieldValue}</span>
-                                </div>
-                        `;
-					} else {
-						html += `
-                                <div class="rpg-character-field rpg-character-${fieldId} rpg-editable${emptyClass}" contenteditable="true" data-character="${char.name}" data-field="${field.name}" title="${i18n.getTranslation("thoughts.clickToEdit")}" ${placeholder}>${fieldValue}</div>
-                        `;
-					}
-				}
-
-				html += `
-                            </div>
-                `;
-
-				// Render character stats if enabled (outside rpg-character-info)
-				if (enabledCharStats.length > 0) {
-					const lockIconHtml = getLockIconHtml(
-						"characters",
-						`${char.name}.stats`,
-					);
-					html += `<div class="rpg-character-stats" style="position: relative;">
-                        <span class="rpg-section-lock-icon" style="position: absolute; top: 4px; right: 4px; font-size: 1rem; z-index: 10; opacity: 0.7; pointer-events: auto;">${lockIconHtml}</span>
-                        <div class="rpg-character-stats-inner">`;
-					for (const stat of enabledCharStats) {
-						const statValue = char[stat.name] || 0;
-						const statColor = getStatColor(
-							statValue,
-							extensionSettings.statBarColorLow,
-							extensionSettings.statBarColorHigh,
-							extensionSettings.statBarColorLowOpacity ?? 100,
-							extensionSettings.statBarColorHighOpacity ?? 100,
-						);
-						html += `
-                                <div class="rpg-character-stat">
-                                    <span class="rpg-stat-name">${stat.name}: </span><span class="rpg-editable" contenteditable="true" data-character="${char.name}" data-field="${stat.name}" style="color: ${statColor}" title="${i18n.getTranslation("thoughts.clickToEdit")}">${statValue}%</span>
-                                </div>
-                        `;
-					}
-					html += `</div></div>`;
-				}
-
-				html += `
-                        </div>
+                <div class="rpg-character-card-compact ${sceneClass}" data-character-name="${char.name}" title="Click to view details">
+                    <div class="rpg-character-compact-avatar">
+                        <img src="${characterPortrait}" alt="${char.name}" onerror="this.style.opacity='0.5';this.onerror=null;" />
+                        <div class="rpg-relationship-badge-compact">${relationshipBadge}</div>
                     </div>
-                `;
+                    <span class="rpg-character-compact-emoji">${char.emoji}</span>
+                    <span class="rpg-character-compact-name">${char.name}</span>
+                    <span class="rpg-character-compact-scene ${isInScene ? "in-scene" : "not-in-scene"}" title="${isInScene ? "In Scene" : "Not in Scene"}">
+                        <i class="fa-solid ${isInScene ? "fa-eye" : "fa-eye-slash"}"></i>
+                    </span>
+                </div>
+            `;
 
 				debugLog(`[RPG Thoughts] ✓ Successfully built HTML for ${char.name}`);
 			} catch (charError) {
@@ -594,113 +541,42 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 		"[RPG Thoughts] =======================================================",
 	);
 
-	// Add event handlers for editable character fields
-	$thoughtsContainer.find(".rpg-editable").on("blur", function () {
-		const character = $(this).data("character");
-		const field = $(this).data("field");
-		const value = $(this).text().trim();
-		// console.log('[RPG Companion] Character stat edit:', { character, field, value });
-		updateCharacterField(character, field, value);
-	});
-
-	// Prevent click events on editable elements from bubbling to avatar upload handler
-	$thoughtsContainer.find(".rpg-editable").on("click mousedown", (e) => {
-		e.stopPropagation();
-	});
-
-	// Add event listener for section lock icon clicks (support both click and touch)
-	$thoughtsContainer
-		.find(".rpg-section-lock-icon")
-		.on("click touchend", function (e) {
-			e.preventDefault();
-			e.stopPropagation();
-			const $icon = $(this);
-			const trackerType = $icon.data("tracker");
-			const itemPath = $icon.data("path");
-			const currentlyLocked = isItemLocked(trackerType, itemPath);
-
-			// Toggle lock state
-			setItemLock(trackerType, itemPath, !currentlyLocked);
-
-			// Update icon
-			const newIcon = !currentlyLocked ? "🔒" : "🔓";
-			const newTitle = !currentlyLocked ? "Locked" : "Unlocked";
-			$icon.text(newIcon);
-			$icon.attr("title", newTitle);
-
-			// Toggle 'locked' class for persistent visibility
-			$icon.toggleClass("locked", !currentlyLocked);
-
-			// Save settings
-			saveSettings();
-		});
-
-	// Add event listener for character remove button
-	$thoughtsContainer.find(".rpg-character-remove").on("click", function (e) {
+	// Add event listener for compact character card clicks - opens detail modal
+	$thoughtsContainer.find(".rpg-character-card-compact").on("click", function (e) {
 		e.preventDefault();
 		e.stopPropagation();
 
-		const characterName = $(this).data("character");
-		removeCharacter(characterName);
-	});
-
-	// Add event listener for character card button
-	$thoughtsContainer.find(".rpg-character-card-btn").on("click", function (e) {
-		e.preventDefault();
-		e.stopPropagation();
-
-		const characterName = $(this).data("character");
+		const characterName = $(this).data("character-name");
+		console.log(`[RPG Companion] Compact card clicked for: ${characterName}`);
 		// Dispatch a custom event so the modal module can handle it
-		const event = new CustomEvent("rpg-open-character-card", {
+		const event = new CustomEvent("rpg-open-character-detail", {
 			detail: { characterName },
 		});
 		document.dispatchEvent(event);
 	});
 
-	// Add event listener for avatar upload clicks
-	$thoughtsContainer.find(".rpg-avatar-upload").on("click", function (e) {
+	// Add event listener for scene toggle on compact cards
+	$thoughtsContainer.find(".rpg-character-compact-scene").on("click", function (e) {
 		e.preventDefault();
 		e.stopPropagation();
 
-		const characterName = $(this).data("character");
+		const $btn = $(this);
+		const $card = $btn.closest(".rpg-character-card-compact");
+		const characterName = $card.data("character-name");
+		const currentInScene = !$btn.hasClass("not-in-scene");
+		const newInScene = !currentInScene;
 
-		// Create hidden file input
-		const fileInput = $(
-			'<input type="file" accept="image/*" style="display: none;">',
-		);
+		// Update button state
+		$btn.removeClass(currentInScene ? "in-scene" : "not-in-scene");
+		$btn.addClass(newInScene ? "in-scene" : "not-in-scene");
+		$btn.find("i").removeClass("fa-eye fa-eye-slash").addClass(newInScene ? "fa-eye" : "fa-eye-slash");
+		$btn.attr("title", newInScene ? "In Scene" : "Not in Scene");
 
-		fileInput.on("change", function () {
-			const file = this.files[0];
-			if (!file) return;
+		// Update card styling
+		$card.toggleClass("rpg-character-not-in-scene", !newInScene);
 
-			// Read file as data URL
-			const reader = new FileReader();
-			reader.onload = (e) => {
-				const imageUrl = e.target.result;
-
-				// Store in npcAvatars
-				if (!extensionSettings.npcAvatars) {
-					extensionSettings.npcAvatars = {};
-				}
-				extensionSettings.npcAvatars[characterName] = imageUrl;
-
-				// Save settings
-				saveSettings();
-
-				// Update the avatar image immediately
-				const $avatar = $thoughtsContainer.find(
-					`.rpg-avatar-upload[data-character="${characterName}"] img`,
-				);
-				$avatar.attr("src", imageUrl);
-
-				console.log(`[RPG Companion] Avatar uploaded for ${characterName}`);
-			};
-
-			reader.readAsDataURL(file);
-		});
-
-		// Trigger file selection
-		fileInput.trigger("click");
+		// Persist to swipe store
+		updateCharacterField(characterName, "inScene", newInScene);
 	});
 
 	// Add event listener for "Add Character" button (support both click and touch for mobile)
@@ -711,26 +587,6 @@ export function renderThoughts({ preserveScroll = false } = {}) {
 			e.stopPropagation();
 			addNewCharacter();
 		});
-
-	// Handle empty field focus - remove placeholder styling on focus
-	$thoughtsContainer
-		.find(".rpg-editable.rpg-empty-field")
-		.on("focus", function () {
-			$(this).removeClass("rpg-empty-field");
-			$(this).removeAttr("data-placeholder");
-		});
-
-	// Restore placeholder if field becomes empty on blur (after the main blur handler)
-	$thoughtsContainer.find(".rpg-editable").on("blur", function () {
-		const $this = $(this);
-		if (!$this.text().trim()) {
-			const field = $this.data("field");
-			if (field) {
-				$this.addClass("rpg-empty-field");
-				$this.attr("data-placeholder", field);
-			}
-		}
-	});
 
 	// Remove updating class after animation
 	if (extensionSettings.enableAnimations) {
@@ -1047,6 +903,9 @@ export function updateCharacterField(characterName, field, value) {
 				char.name = value;
 			} else if (field === "emoji") {
 				char.emoji = value;
+			} else if (field === "inScene") {
+				// Handle scene presence toggle - value should be boolean
+				char.inScene = value === true || value === "true";
 			} else if (
 				field.toLowerCase() === "thoughts" ||
 				field === (presentCharsConfig?.thoughts?.name || "Thoughts")

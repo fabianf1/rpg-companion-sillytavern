@@ -78,7 +78,7 @@ const INFO_BOX_WEATHER_KEYS = ["icon", "condition"];
 const INFO_BOX_TEMPERATURE_KEYS = ["outdoor", "indoor"];
 const INFO_BOX_TEMPERATURE_OUTDOOR_KEYS = ["value", "unit"];
 const INFO_BOX_TEMPERATURE_INDOOR_KEYS = ["value", "unit", "climate"];
-const INFO_BOX_TIME_KEYS = ["start", "end"];
+const INFO_BOX_TIME_KEYS = ["value"];
 const INFO_BOX_LOCATION_KEYS = ["value"];
 
 /** Keys allowed in character objects */

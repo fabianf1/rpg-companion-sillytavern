@@ -615,6 +615,8 @@ export function renderInfoBox() {
  * @param {object} infoBoxData - Modified infoBox data to persist
  */
 function persistInfoBoxChanges(infoBoxData) {
+	// Reset hash to force re-render after user edit
+	lastInfoBoxDataHash = null;
 	updateMessageSwipeData(TRACKER_NAME, infoBoxData);
 	saveChatData();
 	renderInfoBox();

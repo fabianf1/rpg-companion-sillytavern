@@ -1215,3 +1215,61 @@
         </footer>
     </div>
 </div>
+
+<!-- Character Detail Modal -->
+<div id="rpg-character-detail-popup" class="rpg-character-detail-popup" role="dialog" aria-modal="true"
+    aria-labelledby="rpg-character-detail-title" style="display: none;">
+    <div class="rpg-character-detail-popup-content">
+        <header class="rpg-character-detail-popup-header">
+            <div class="rpg-character-detail-header-left">
+                <div class="rpg-character-detail-avatar-container">
+                    <img id="rpg-character-detail-avatar" src="" alt="Character Avatar" />
+                    <button id="rpg-character-detail-avatar-upload" class="rpg-avatar-upload-btn" type="button" title="Upload Avatar">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                </div>
+                <div class="rpg-character-detail-header-info">
+                    <h3 id="rpg-character-detail-title">
+                        <span id="rpg-character-detail-emoji"></span>
+                        <span id="rpg-character-detail-name"></span>
+                    </h3>
+                    <div class="rpg-character-detail-badges">
+                        <span id="rpg-character-detail-relationship-badge" class="rpg-relationship-badge"></span>
+                        <span id="rpg-character-detail-scene-status" class="rpg-scene-status-badge"></span>
+                    </div>
+                </div>
+            </div>
+            <button id="rpg-close-character-detail" class="rpg-popup-close" type="button"
+                aria-label="Close character detail">&times;</button>
+        </header>
+        <div class="rpg-character-detail-popup-body">
+            <div class="rpg-character-detail-section">
+                <h4><i class="fa-solid fa-user"></i> <span data-i18n-key="thoughts.appearance">Appearance</span></h4>
+                <div id="rpg-character-detail-appearance" class="rpg-editable rpg-character-detail-field" contenteditable="true" data-field="appearance"></div>
+            </div>
+            <div class="rpg-character-detail-section">
+                <h4><i class="fa-solid fa-masks-theater"></i> <span data-i18n-key="thoughts.demeanor">Demeanor</span></h4>
+                <div id="rpg-character-detail-demeanor" class="rpg-editable rpg-character-detail-field" contenteditable="true" data-field="demeanor"></div>
+            </div>
+            <div class="rpg-character-detail-section">
+                <h4><i class="fa-solid fa-comment-dots"></i> <span data-i18n-key="thoughts.thoughts">Thoughts</span></h4>
+                <div id="rpg-character-detail-thoughts" class="rpg-editable rpg-character-detail-field" contenteditable="true" data-field="thoughts"></div>
+            </div>
+            <div class="rpg-character-detail-section" id="rpg-character-detail-stats-section">
+                <h4><i class="fa-solid fa-chart-bar"></i> <span data-i18n-key="thoughts.stats">Stats</span></h4>
+                <div id="rpg-character-detail-stats" class="rpg-character-detail-stats-grid"></div>
+            </div>
+        </div>
+        <footer class="rpg-character-detail-popup-footer">
+            <button id="rpg-character-detail-toggle-scene" class="rpg-btn-secondary" type="button">
+                <i class="fa-solid fa-eye"></i> <span data-i18n-key="thoughts.toggleScenePresence">Toggle Scene</span>
+            </button>
+            <button id="rpg-character-detail-remove" class="rpg-btn-danger" type="button">
+                <i class="fa-solid fa-trash"></i> <span data-i18n-key="thoughts.removeCharacter">Remove</span>
+            </button>
+            <button id="rpg-character-detail-close-btn" class="rpg-btn-primary" type="button">
+                <span data-i18n-key="global.close">Close</span>
+            </button>
+        </footer>
+    </div>
+</div>

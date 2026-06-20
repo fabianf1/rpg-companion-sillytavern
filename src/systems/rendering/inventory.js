@@ -210,8 +210,8 @@ export function renderStoredView(
 			// Convert array to display strings for UI
 			const displayItems = Array.isArray(locationItems)
 				? locationItems.map((item) =>
-						typeof item === "object" ? item.name : item,
-					)
+					typeof item === "object" ? item.name : item,
+				)
 				: [];
 			const isCollapsed = collapsedLocations.includes(location);
 			const locationId = getLocationId(location);
@@ -571,6 +571,13 @@ export function updateInventoryDisplay(containerId, options = {}) {
  * State tracking for render optimization - skips re-render if data unchanged
  */
 let lastInventoryDataHash = null;
+
+/**
+ * Resets the hash to force next render (call after user edits)
+ */
+export function resetInventoryHash() {
+	lastInventoryDataHash = null;
+}
 
 /**
  * Computes a simple hash of data for change detection

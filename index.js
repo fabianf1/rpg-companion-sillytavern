@@ -97,6 +97,7 @@ import {
 	addDiceQuickReply,
 	getPartialRefreshModal,
 	openPartialRefreshPopup,
+	setupCharacterDetailPopup,
 	setupDiceRoller,
 	setupPartialRefreshPopup,
 	setupRelationshipsPopup,
@@ -398,6 +399,7 @@ async function initUI() {
 	setupSettingsPopup();
 	setupPartialRefreshPopup();
 	setupRelationshipsPopup();
+	setupCharacterDetailPopup();
 	setupCharacterCardsPopup();
 	populateLorebookDropdown(
 		document.getElementById("rpg-character-cards-lorebook"),

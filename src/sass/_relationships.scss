@@ -103,6 +103,31 @@
 	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
+/* Not in scene styling */
+.rpg-relationship-card.rpg-relationship-not-in-scene {
+	opacity: 0.5;
+	border-color: rgba(255, 255, 255, 0.05);
+}
+
+.rpg-relationship-card.rpg-relationship-not-in-scene:hover {
+	opacity: 0.7;
+}
+
+/* Scene presence indicator */
+.rpg-scene-indicator {
+	font-size: 0.7em;
+	margin-right: 0.5em;
+}
+
+.rpg-scene-indicator.in-scene {
+	color: var(--rpg-highlight, #e94560);
+}
+
+.rpg-scene-indicator.not-in-scene {
+	color: var(--rpg-text, #eaeaea);
+	opacity: 0.4;
+}
+
 .rpg-relationship-header {
 	display: flex;
 	align-items: center;

@@ -7,6 +7,7 @@ import { getContext } from "../../../../../../extensions.js";
 import { i18n } from "../../core/i18n.js";
 import {
 	clearCache,
+	getTrackerDataForContext,
 	saveChatData,
 	saveSettings,
 	updateMessageSwipeData,
@@ -16,6 +17,7 @@ import {
 	$thoughtsContainer,
 	$userStatsContainer,
 	extensionSettings,
+	FALLBACK_AVATAR_DATA_URI,
 	getPendingDiceRoll,
 	setPendingDiceRoll,
 } from "../../core/state.js";
@@ -26,9 +28,13 @@ import {
 	updateDiceDisplay as updateDiceDisplayCore,
 } from "../features/dice.js";
 import {
-	openRelationshipsModal,
 	closeRelationshipsModal,
+	openRelationshipsModal,
 } from "../rendering/relationships.js";
+import {
+	removeCharacter,
+	updateCharacterField,
+} from "../rendering/thoughts.js";
 
 /**
  * Modern DiceModal ES6 Class
@@ -762,4 +768,550 @@ export function setupRelationshipsPopup() {
 			closeRelationshipsModal();
 		}
 	});
+}
+
+/**
+ * Converts a field name to snake_case
+ * @param {string} name - Field name to convert
+ * @returns {string} snake_case version
+ */
+function toSnakeCase(name) {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Gets an icon for a field name
+ * @param {string} fieldName - The field name
+ * @returns {string} Font Awesome icon class
+ */
+function getFieldIcon(fieldName) {
+	const iconMap = {
+		appearance: "fa-user",
+		demeanor: "fa-masks-theater",
+		thoughts: "fa-comment-dots",
+		mood: "fa-face-smile",
+		outfit: "fa-shirt",
+		location: "fa-location-dot",
+		activity: "fa-person-walking",
+		status: "fa-heart-pulse",
+		health: "fa-heart",
+		energy: "fa-bolt",
+		inventory: "fa-bag-shopping",
+		notes: "fa-sticky-note",
+	};
+
+	const lowerName = fieldName.toLowerCase();
+	return iconMap[lowerName] || "fa-circle-info";
+}
+
+/**
+ * CharacterDetailModal - Manages the character detail popup modal
+ * Shows full character information when clicking a compact character card
+ */
+export class CharacterDetailModal {
+	constructor() {
+		this.modal = document.getElementById("rpg-character-detail-popup");
+		this.characterName = null;
+		this.isAnimating = false;
+	}
+
+	/**
+	 * Opens the modal for a specific character
+	 * @param {string} characterName - The name of the character to display
+	 */
+	open(characterName) {
+		if (this.isAnimating || !this.modal) return;
+
+		console.log(
+			`[RPG Companion] Opening character detail modal for: ${characterName}`,
+		);
+		this.characterName = characterName;
+		this._populateCharacterData();
+		this._setupEventHandlers();
+
+		// Apply theme
+		const theme = extensionSettings.theme || "default";
+		this.modal.setAttribute("data-theme", theme);
+
+		// Open modal with CSS class
+		this.modal.classList.add("is-open");
+		this.modal.classList.remove("is-closing");
+		this.modal.style.display = "flex";
+
+		// Focus management
+		this.modal.querySelector("#rpg-close-character-detail")?.focus();
+	}
+
+	/**
+	 * Closes the modal with animation
+	 */
+	close() {
+		if (this.isAnimating || !this.modal) return;
+
+		console.log(`[RPG Companion] Closing character detail modal`);
+		this.isAnimating = true;
+		this.modal.classList.add("is-closing");
+		this.modal.classList.remove("is-open");
+
+		setTimeout(() => {
+			this.modal.classList.remove("is-closing");
+			this.modal.style.display = "none";
+			this.isAnimating = false;
+			this.characterName = null;
+		}, 200);
+	}
+
+	/**
+	 * Populates the modal with character data
+	 * @private
+	 */
+	_populateCharacterData() {
+		// Get character thoughts data from swipe store
+		const characterThoughtsData = getTrackerDataForContext("characterThoughts");
+		console.log(
+			`[RPG Companion] Character thoughts data:`,
+			characterThoughtsData,
+		);
+
+		if (!characterThoughtsData) {
+			console.warn(`[RPG Companion] No character thoughts data found`);
+			this.close();
+			return;
+		}
+
+		// Parse the data
+		let parsedData;
+		try {
+			parsedData =
+				typeof characterThoughtsData === "object"
+					? characterThoughtsData
+					: JSON.parse(characterThoughtsData);
+			console.log(`[RPG Companion] Parsed data:`, parsedData);
+		} catch (e) {
+			console.warn(
+				`[RPG Companion] Failed to parse character thoughts data:`,
+				e,
+			);
+			this.close();
+			return;
+		}
+
+		// Get characters array
+		const charactersArray = Array.isArray(parsedData)
+			? parsedData
+			: parsedData.characters || [];
+
+		console.log(
+			`[RPG Companion] Characters array (${charactersArray.length} items):`,
+			charactersArray,
+		);
+
+		const character = charactersArray.find(
+			(c) =>
+				c.name && c.name.toLowerCase() === this.characterName.toLowerCase(),
+		);
+
+		if (!character) {
+			console.warn(
+				`[RPG Companion] Character not found: ${this.characterName}`,
+			);
+			this.close();
+			return;
+		}
+
+		console.log(`[RPG Companion] Found character:`, character);
+
+		// Get tracker config for enabled fields
+		const presentCharsConfig =
+			extensionSettings.trackerConfig?.presentCharacters;
+		const enabledFields =
+			presentCharsConfig?.customFields?.filter((f) => f?.enabled && f?.name) ||
+			[];
+		const characterStatsConfig = presentCharsConfig?.characterStats;
+		const enabledCharStats =
+			(characterStatsConfig?.enabled &&
+				characterStatsConfig?.customStats?.filter(
+					(s) => s?.enabled && s?.name,
+				)) ||
+			[];
+
+		// Get avatar - use fallback from state
+		const portrait =
+			extensionSettings.npcAvatars?.[character.name] ||
+			this._getCharacterAvatar(character.name);
+
+		// Get relationship badge
+		const relationship = this._getCharacterRelationship(character.name);
+		const isInScene = character.inScene !== false;
+
+		// Update header
+		$("#rpg-character-detail-avatar").attr("src", portrait);
+		$("#rpg-character-detail-emoji").text(character.emoji || "👤");
+		$("#rpg-character-detail-name").text(character.name);
+
+		// Show relationship status
+		if (relationship) {
+			$("#rpg-character-detail-relationship-badge")
+				.html(
+					`<span class="rpg-rel-emoji">${relationship.emoji || "❤️"}</span> ${relationship.status || "Unknown"}`,
+				)
+				.show();
+		} else {
+			$("#rpg-character-detail-relationship-badge").hide();
+		}
+
+		// Update scene status
+		const $sceneStatus = $("#rpg-character-detail-scene-status");
+		$sceneStatus.removeClass("in-scene not-in-scene");
+		$sceneStatus.addClass(isInScene ? "in-scene" : "not-in-scene");
+		$sceneStatus.html(
+			`<i class="fa-solid ${isInScene ? "fa-eye" : "fa-eye-slash"}"></i> ${isInScene ? i18n.getTranslation("thoughts.inScene") : i18n.getTranslation("thoughts.notInScene")}`,
+		);
+
+		// Build dynamic fields HTML
+		const $body = $(".rpg-character-detail-popup-body");
+		$body.empty();
+
+		// Get details object
+		const details = character.details || {};
+
+		// Render each enabled custom field
+		for (const field of enabledFields) {
+			const fieldName = field.name;
+			// Try multiple variations of the field name
+			const fieldValue =
+				details[fieldName] ||
+				details[fieldName.toLowerCase()] ||
+				details[toSnakeCase(fieldName)] ||
+				character[fieldName] ||
+				character[toSnakeCase(fieldName)] ||
+				"";
+
+			const fieldIcon = getFieldIcon(fieldName);
+
+			const $section = $(`
+				<div class="rpg-character-detail-section">
+					<h4><i class="fa-solid ${fieldIcon}"></i> <span>${fieldName}</span></h4>
+					<div class="rpg-editable rpg-character-detail-field" contenteditable="true" data-field="${fieldName}">${fieldValue}</div>
+				</div>
+			`);
+			$body.append($section);
+		}
+
+		// Render stats if enabled
+		if (enabledCharStats.length > 0) {
+			const stats = character.stats || {};
+			const $statsSection = $(`
+				<div class="rpg-character-detail-section" id="rpg-character-detail-stats-section">
+					<h4><i class="fa-solid fa-chart-bar"></i> <span data-i18n-key="thoughts.stats">Stats</span></h4>
+					<div class="rpg-character-detail-stats-grid"></div>
+				</div>
+			`);
+			const $statsGrid = $statsSection.find(".rpg-character-detail-stats-grid");
+
+			for (const stat of enabledCharStats) {
+				let statValue = 100; // Default value
+				// Handle array format: [{name: "Health", value: 80}]
+				if (Array.isArray(stats)) {
+					const statObj = stats.find((s) => s.name === stat.name);
+					if (statObj && statObj.value !== undefined) {
+						statValue = statObj.value;
+					}
+				} else if (typeof stats === "object") {
+					// Handle object format: {Health: 80, Energy: 95}
+					statValue = stats[stat.name] ?? 100;
+				}
+
+				const $statItem = $(`
+					<div class="rpg-character-detail-stat-item">
+						<span class="rpg-character-detail-stat-label">${stat.name}</span>
+						<span class="rpg-character-detail-stat-value">${statValue}${typeof statValue === "number" ? "%" : ""}</span>
+					</div>
+				`);
+				$statsGrid.append($statItem);
+			}
+
+			$body.append($statsSection);
+		}
+
+		// Setup editable field handlers
+		$(".rpg-character-detail-field")
+			.off("blur.characterDetail")
+			.on(
+				"blur.characterDetail",
+				function () {
+					const field = $(this).data("field");
+					const value = $(this).text().trim();
+					updateCharacterField(this.characterName, field, value);
+				}.bind(this),
+			);
+	}
+
+	/**
+	 * Gets the avatar URL for a character
+	 * @private
+	 */
+	_getCharacterAvatar(characterName) {
+		try {
+			const context = getContext();
+			const characters = context.characters || [];
+
+			// Try to find the character in the list
+			const char = characters.find(
+				(c) => c.name && c.name.toLowerCase() === characterName.toLowerCase(),
+			);
+
+			if (char?.avatar && char.avatar !== "none") {
+				// Use getSafeThumbnailUrl if available
+				const { getSafeThumbnailUrl } = require("../../utils/avatars.js");
+				if (getSafeThumbnailUrl) {
+					const thumbnailUrl = getSafeThumbnailUrl("avatar", char.avatar);
+					if (thumbnailUrl) return thumbnailUrl;
+				}
+				return char.avatar;
+			}
+		} catch (e) {
+			console.warn(
+				`[RPG Companion] Error getting avatar for ${characterName}:`,
+				e,
+			);
+		}
+
+		// Return fallback avatar
+		return FALLBACK_AVATAR_DATA_URI;
+	}
+
+	/**
+	 * Gets the relationship for a character
+	 * @private
+	 */
+	_getCharacterRelationship(characterName) {
+		const relationshipsData = getTrackerDataForContext("relationships");
+		if (!relationshipsData) return null;
+
+		let relationships;
+		try {
+			relationships =
+				typeof relationshipsData === "object"
+					? relationshipsData
+					: JSON.parse(relationshipsData);
+		} catch {
+			return null;
+		}
+
+		const userName = getContext()?.name1;
+		if (!userName) return null;
+
+		return relationships.find(
+			(r) =>
+				(r.character1 === userName && r.character2 === characterName) ||
+				(r.character2 === userName && r.character1 === characterName),
+		);
+	}
+
+	/**
+	 * Sets up event handlers for the modal
+	 * @private
+	 */
+	_setupEventHandlers() {
+		const self = this;
+
+		// Close button (X)
+		$("#rpg-close-character-detail")
+			.off("click.characterDetail")
+			.on("click.characterDetail", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				console.log(`[RPG Companion] Close button (X) clicked`);
+				self.close();
+			});
+
+		// Close button (footer)
+		$("#rpg-character-detail-close-btn")
+			.off("click.characterDetail")
+			.on("click.characterDetail", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				console.log(`[RPG Companion] Close button (footer) clicked`);
+				self.close();
+			});
+
+		// Close on backdrop click
+		$("#rpg-character-detail-popup")
+			.off("click.characterDetail")
+			.on("click.characterDetail", function (e) {
+				if (e.target === this) {
+					console.log(`[RPG Companion] Backdrop clicked, closing modal`);
+					self.close();
+				}
+			});
+
+		// Toggle scene status
+		$("#rpg-character-detail-toggle-scene")
+			.off("click.characterDetail")
+			.on("click.characterDetail", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				self._toggleSceneStatus();
+			});
+
+		// Remove character
+		$("#rpg-character-detail-remove")
+			.off("click.characterDetail")
+			.on("click.characterDetail", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				self._removeCharacter();
+			});
+
+		// Avatar upload
+		$("#rpg-character-detail-avatar-upload")
+			.off("click.characterDetail")
+			.on("click.characterDetail", (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				self._uploadAvatar();
+			});
+
+		// Editable fields
+		$(".rpg-character-detail-field")
+			.off("blur.characterDetail")
+			.on("blur.characterDetail", function () {
+				const field = $(this).data("field");
+				const value = $(this).text().trim();
+				self._updateField(field, value);
+			});
+	}
+
+	/**
+	 * Toggles the character's scene status
+	 * @private
+	 */
+	_toggleSceneStatus() {
+		if (!this.characterName) return;
+
+		const trackerData = getTrackerDataForContext();
+		const character = trackerData?.presentCharacters?.find(
+			(c) => c.name === this.characterName,
+		);
+
+		if (!character) return;
+
+		const newInScene = character.inScene !== false;
+		updateCharacterField(this.characterName, "inScene", !newInScene);
+		this._populateCharacterData();
+	}
+
+	/**
+	 * Removes the character from the tracker
+	 * @private
+	 */
+	_removeCharacter() {
+		if (!this.characterName) return;
+
+		if (confirm(i18n.getTranslation("thoughts.confirmRemove"))) {
+			removeCharacter(this.characterName);
+			this.close();
+		}
+	}
+
+	/**
+	 * Handles avatar upload
+	 * @private
+	 */
+	_uploadAvatar() {
+		if (!this.characterName) return;
+
+		const fileInput = $(
+			'<input type="file" accept="image/*" style="display: none;">',
+		);
+
+		fileInput.on("change", () => {
+			const file = fileInput[0].files[0];
+			if (!file) return;
+
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				const imageUrl = e.target.result;
+
+				if (!extensionSettings.npcAvatars) {
+					extensionSettings.npcAvatars = {};
+				}
+				extensionSettings.npcAvatars[this.characterName] = imageUrl;
+				saveSettings();
+
+				$("#rpg-character-detail-avatar").attr("src", imageUrl);
+				console.log(
+					`[RPG Companion] Avatar uploaded for ${this.characterName}`,
+				);
+			};
+
+			reader.readAsDataURL(file);
+		});
+
+		fileInput.trigger("click");
+	}
+
+	/**
+	 * Updates a character field
+	 * @private
+	 */
+	_updateField(field, value) {
+		if (!this.characterName || !field) return;
+		updateCharacterField(this.characterName, field, value);
+	}
+}
+
+// Global instance
+let characterDetailModal = null;
+
+/**
+ * Sets up the character detail modal functionality.
+ * @returns {CharacterDetailModal} The initialized CharacterDetailModal instance
+ */
+export function setupCharacterDetailPopup() {
+	characterDetailModal = new CharacterDetailModal();
+
+	// Listen for custom event from thoughts.js
+	document.addEventListener("rpg-open-character-detail", (e) => {
+		const { characterName } = e.detail;
+		console.log(
+			`[RPG Companion] Received rpg-open-character-detail event for: ${characterName}`,
+		);
+		if (characterDetailModal && characterName) {
+			characterDetailModal.open(characterName);
+		}
+	});
+
+	return characterDetailModal;
+}
+
+/**
+ * Opens the character detail popup.
+ * @param {string} characterName - The name of the character to display
+ */
+export function openCharacterDetailPopup(characterName) {
+	if (characterDetailModal && characterName) {
+		characterDetailModal.open(characterName);
+	}
+}
+
+/**
+ * Closes the character detail popup.
+ */
+export function closeCharacterDetailPopup() {
+	if (characterDetailModal) {
+		characterDetailModal.close();
+	}
+}
+
+/**
+ * Returns the CharacterDetailModal instance for external use
+ * @returns {CharacterDetailModal} The global CharacterDetailModal instance
+ */
+export function getCharacterDetailModal() {
+	return characterDetailModal;
 }

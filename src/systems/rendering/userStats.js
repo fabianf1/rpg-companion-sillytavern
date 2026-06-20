@@ -19,9 +19,9 @@ import {
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 import { escapeHtml } from "../../utils/html.js";
 import { getLockIconHtml } from "../../utils/lockIcon.js";
+import { buildInventorySummary } from "../generation/inventoryFormatter.js";
 import { isItemLocked, setItemLock } from "../generation/lockManager.js";
 import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
-import { buildInventorySummary } from "../generation/inventoryFormatter.js";
 import { updateFabWidgets } from "../ui/mobile.js";
 import { getStatBarColors } from "../ui/theme.js";
 
@@ -234,7 +234,8 @@ export function renderUserStats() {
 	}
 
 	const stats = trackerData;
-	const config = extensionSettings.trackerConfig?.userStats || DEFAULT_USER_STATS_CONFIG;
+	const config =
+		extensionSettings.trackerConfig?.userStats || DEFAULT_USER_STATS_CONFIG;
 	const userName = getContext().name1;
 
 	// Get user portrait
@@ -469,6 +470,8 @@ export function renderUserStats() {
 			saveSettings();
 			saveChatData();
 
+			// Reset hash to force re-render after user edit
+			lastUserStatsDataHash = null;
 			// Re-render to update the bar and FAB widgets
 			renderUserStats();
 			updateFabWidgets();
@@ -542,6 +545,8 @@ export function renderUserStats() {
 			saveSettings();
 			saveChatData();
 
+			// Reset hash to force re-render after user edit
+			lastUserStatsDataHash = null;
 			// Re-render to update the display
 			renderUserStats();
 		});
@@ -564,6 +569,8 @@ export function renderUserStats() {
 			saveSettings();
 			saveChatData();
 
+			// Reset hash to force re-render after user edit
+			lastUserStatsDataHash = null;
 			// Re-render to update the display
 			renderUserStats();
 		});

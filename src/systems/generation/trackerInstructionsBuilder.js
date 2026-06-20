@@ -5,6 +5,7 @@
 
 import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
+import { buildAttributesString } from "./characterInfoBuilder.js";
 import {
 	addLockInstruction,
 	buildCharactersJSONInstruction,
@@ -17,7 +18,6 @@ import {
 	formatRelationshipsForContext,
 	formatTrackerDataForContext,
 } from "./valueFormatter.js";
-import { buildAttributesString } from "./characterInfoBuilder.js";
 
 // ============================================================================
 // TRACKER EXAMPLE
@@ -54,8 +54,23 @@ export function generateTrackerExample() {
 	}
 
 	if (extensionSettings.showCharacterThoughts && characterThoughtsData) {
+		// Filter to only include characters in scene for context injection
+		let filteredData = characterThoughtsData;
+		if (Array.isArray(characterThoughtsData)) {
+			filteredData = characterThoughtsData.filter(
+				(char) => char.inScene !== false,
+			);
+		} else if (characterThoughtsData?.characters) {
+			filteredData = {
+				...characterThoughtsData,
+				characters: characterThoughtsData.characters.filter(
+					(char) => char.inScene !== false,
+				),
+			};
+		}
+
 		// Apply locks to object data
-		const lockedData = applyLocks(characterThoughtsData, "characters");
+		const lockedData = applyLocks(filteredData, "characters");
 		parts.push(`  "characters": ${JSON.stringify(lockedData, null, 2)}`);
 	}
 
@@ -334,8 +349,23 @@ export function generateContextualSummary() {
 		const characterThoughtsData = getTrackerDataForContext("characterThoughts");
 		if (characterThoughtsData) {
 			try {
+				// Filter to only include characters in scene for context injection
+				let filteredData = characterThoughtsData;
+				if (Array.isArray(characterThoughtsData)) {
+					filteredData = characterThoughtsData.filter(
+						(char) => char.inScene !== false,
+					);
+				} else if (characterThoughtsData?.characters) {
+					filteredData = {
+						...characterThoughtsData,
+						characters: characterThoughtsData.characters.filter(
+							(char) => char.inScene !== false,
+						),
+					};
+				}
+
 				const formatted = formatTrackerDataForContext(
-					characterThoughtsData,
+					filteredData,
 					"characters",
 					userName,
 				);
@@ -356,7 +386,31 @@ export function generateContextualSummary() {
 		const relationshipsData = getTrackerDataForContext("relationships");
 		if (relationshipsData && Array.isArray(relationshipsData)) {
 			try {
-				const formatted = formatRelationshipsForContext(relationshipsData);
+				// Filter relationships to only include pairs where at least one character is in scene
+				const characterThoughtsData =
+					getTrackerDataForContext("characterThoughts");
+				const charactersInScene = new Set();
+
+				// Build set of characters currently in scene
+				if (characterThoughtsData) {
+					const chars = Array.isArray(characterThoughtsData)
+						? characterThoughtsData
+						: characterThoughtsData?.characters || [];
+					for (const char of chars) {
+						if (char.inScene !== false && char.name) {
+							charactersInScene.add(char.name.toLowerCase());
+						}
+					}
+				}
+
+				// Filter relationships: include if either character is in scene
+				const filteredRelationships = relationshipsData.filter((rel) => {
+					const c1 = (rel.character1 || "").toLowerCase();
+					const c2 = (rel.character2 || "").toLowerCase();
+					return charactersInScene.has(c1) || charactersInScene.has(c2);
+				});
+
+				const formatted = formatRelationshipsForContext(filteredRelationships);
 				if (formatted) {
 					summary += formatted + "\n";
 				}

@@ -62,6 +62,9 @@ function validateSettings(settings) {
 	return true;
 }
 
+// Re-export getTrackerDataForContext for use in other modules
+export { getTrackerDataForContext } from "../systems/generation/trackerDataUtils.js";
+
 /**
  * Loads the extension settings from the global settings object.
  * Automatically migrates v1 inventory to v2 format if needed.

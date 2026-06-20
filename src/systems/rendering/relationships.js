@@ -3,14 +3,14 @@
  * Handles rendering of character relationship pairs in a dedicated modal
  */
 
-import { escapeHtml } from "../../utils/html.js";
 import { i18n } from "../../core/i18n.js";
-import { extensionSettings } from "../../core/state.js";
-import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import {
-	updateMessageSwipeData,
 	saveChatData,
+	updateMessageSwipeData,
 } from "../../core/persistence.js";
+import { extensionSettings } from "../../core/state.js";
+import { escapeHtml } from "../../utils/html.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 
 /**
  * Helper to log debug messages
@@ -73,6 +73,21 @@ export function renderRelationships() {
 		return;
 	}
 
+	// Build set of characters currently in scene
+	const characterThoughtsData = getTrackerDataForContext("characterThoughts");
+	const charactersInScene = new Set();
+
+	if (characterThoughtsData) {
+		const chars = Array.isArray(characterThoughtsData)
+			? characterThoughtsData
+			: characterThoughtsData?.characters || [];
+		for (const char of chars) {
+			if (char.inScene !== false && char.name) {
+				charactersInScene.add(char.name.toLowerCase());
+			}
+		}
+	}
+
 	const allowedStatuses = getAllowedRelationshipStatuses();
 	let html = '<div class="rpg-relationships-list">';
 
@@ -81,6 +96,12 @@ export function renderRelationships() {
 		const c1 = rel.character1 || "?";
 		const c2 = rel.character2 || "?";
 		const status = rel.status || "Neutral";
+
+		// Check if either character is in scene
+		const c1InScene = charactersInScene.has(c1.toLowerCase());
+		const c2InScene = charactersInScene.has(c2.toLowerCase());
+		const pairHasScenePresence = c1InScene || c2InScene;
+
 		// Handle null values - convert to empty string for display, but mark as unknown
 		const feelsTowards = rel.feelsTowards ?? "";
 		const wantsFrom = rel.wantsFrom ?? "";
@@ -96,9 +117,20 @@ export function renderRelationships() {
 		const wantsFrom2Unknown = rel.wantsFrom2 === null;
 		const secretsFrom2Unknown = rel.secretsFrom2 === null;
 
-		html += '<div class="rpg-relationship-card">';
+		// Add class for scene presence styling
+		const sceneClass = pairHasScenePresence
+			? ""
+			: "rpg-relationship-not-in-scene";
+
+		html += `<div class="rpg-relationship-card ${sceneClass}">`;
 		html += `<div class="rpg-relationship-header">`;
-		html += `<span class="rpg-relationship-names">${escapeHtml(c1)} ↔ ${escapeHtml(c2)}</span>`;
+
+		// Scene presence indicator
+		const sceneIndicator = pairHasScenePresence
+			? '<span class="rpg-scene-indicator in-scene" title="At least one character is in scene">●</span>'
+			: '<span class="rpg-scene-indicator not-in-scene" title="Neither character is in scene">○</span>';
+
+		html += `${sceneIndicator}<span class="rpg-relationship-names">${escapeHtml(c1)} ↔ ${escapeHtml(c2)}</span>`;
 
 		// Status dropdown with emoji
 		html += `<select class="rpg-relationship-status-select rpg-rel-status-${status.toLowerCase()}" data-index="${i}" data-field="status" title="${i18n.getTranslation("relationships.clickToEdit")}">`;
@@ -234,7 +266,10 @@ function _attachEditHandlers($body) {
 		const $this = $(this);
 		if (!value) {
 			$this.addClass("rpg-empty-field");
-			$this.attr("data-placeholder", i18n.getTranslation("relationships.unknown"));
+			$this.attr(
+				"data-placeholder",
+				i18n.getTranslation("relationships.unknown"),
+			);
 		}
 	});
 

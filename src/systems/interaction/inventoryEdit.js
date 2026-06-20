@@ -8,8 +8,8 @@ import {
 	updateMessageSwipeData,
 } from "../../core/persistence.js";
 import { sanitizeItemName } from "../../utils/security.js";
-import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { buildInventorySummary } from "../generation/inventoryFormatter.js";
+import { getTrackerDataForContext } from "../generation/trackerDataUtils.js";
 import { renderInventory } from "../rendering/inventory.js";
 
 /**
@@ -105,7 +105,7 @@ export function updateInventoryItem(field, index, newName, location) {
 	// Save to swipe store directly
 	saveChatData();
 
-	// Re-render inventory
+	// Re-render inventory (hash will be reset by the render function detecting the change)
 	renderInventory();
 }
 
