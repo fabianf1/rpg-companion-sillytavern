@@ -177,7 +177,7 @@ export function generateTrackerInstructions(
 			instructions += customPrompt.replace(/{userName}/g, userName);
 		} else {
 			instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: "Location" becomes "Forest Clearing", "Mood Emoji" becomes "😊". DO NOT include ${userName} in the characters section, only NPCs. Prefer brief, keyword-like descriptions — a few terse phrases (e.g. "tall, scarred, worn cloak") if applicable, NOT full sentences or paragraphs. `;
-			instructions += `The tracker values above (in <previous_tracker_state>) represent the state BEFORE the last assistant message. Update them to reflect ONLY what changed DURING that last message — no more, no less. If the narrative describes time passing, injuries, item usage, dialogue, or other events, reflect those changes. If nothing changed, keep values identical. Do NOT invent events, advance time, or project consequences beyond what the last message explicitly or implicitly describes.`;
+			instructions += `Trackers are a SNAPSHOT of the present moment — what IS true NOW. Update ONLY what changed in the last message. Do NOT track future events, plans, intentions, or what WILL happen. If a character says they will change clothes, record what they wear NOW, not what they will wear.`;
 		}
 
 		// Add lock instruction
