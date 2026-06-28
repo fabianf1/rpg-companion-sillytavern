@@ -6,10 +6,10 @@
 import { chat } from "../../../../../../../script.js";
 import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
-import { findLastAssistantMessageIndex } from "./trackerDataUtils.js";
-import { formatHistoricalTrackerData } from "./valueFormatter.js";
 import { getCharacterCardsInfo } from "./characterInfoBuilder.js";
+import { findLastAssistantMessageIndex } from "./trackerDataUtils.js";
 import { generateRPGPromptText } from "./trackerInstructionsBuilder.js";
+import { formatHistoricalTrackerData } from "./valueFormatter.js";
 
 // ============================================================================
 // SEPARATE UPDATE PROMPT
@@ -44,11 +44,11 @@ export function generateSeparateUpdatePrompt(selectedSections = null) {
 	// Build context injection map if history persistence is enabled
 	const contextInjectionMap = historyPersistence?.enabled
 		? buildContextInjectionMap(
-				recentMessages,
-				trackerConfig,
-				userName,
-				historyPersistence,
-			)
+			recentMessages,
+			trackerConfig,
+			userName,
+			historyPersistence,
+		)
 		: new Map();
 
 	// Build messages array with injected context

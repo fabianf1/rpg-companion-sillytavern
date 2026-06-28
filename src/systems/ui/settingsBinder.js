@@ -571,6 +571,7 @@ function debounce(fn, delay) {
 /**
  * Binds all settings UI controls to their change/input handlers.
  * Call once after the settings HTML is in the DOM.
+ * Uses .rpg namespace for all handlers to prevent duplicates on re-initialization.
  */
 export function bindSettingsUI() {
 	// ── Standard bindings (change event) ──
@@ -578,12 +579,13 @@ export function bindSettingsUI() {
 		const $el = $(binding.selector);
 		if (!$el.length) continue;
 
-		$el.on("change", function () {
+		$el.off("change.rpg").on("change.rpg", function () {
 			let value;
 			if (binding.type === "boolean") {
 				value = $(this).prop("checked");
 			} else if (binding.type === "int") {
-				value = parseInt(String($(this).val()), 10) || 0;
+				const parsed = parseInt(String($(this).val()), 10);
+				value = Number.isNaN(parsed) ? (binding.defaultValue ?? 0) : parsed;
 			} else if (binding.type === "commaSeparated") {
 				value = String($(this).val())
 					.split(",")
@@ -610,8 +612,8 @@ export function bindSettingsUI() {
 		// Determine which render function to call based on the slider key
 		const renderOnInput = getRenderForOpacitySlider(slider.key);
 
-		$slider.on(
-			"input",
+		$slider.off("input.rpg change.rpg").on(
+			"input.rpg",
 			debounce(function () {
 				const opacity = Number($(this).val());
 				setNestedValue(extensionSettings, slider.key, opacity);
@@ -620,7 +622,7 @@ export function bindSettingsUI() {
 			}, 50),
 		);
 
-		$slider.on("change", () => {
+		$slider.on("change.rpg", () => {
 			saveSettings();
 		});
 	}

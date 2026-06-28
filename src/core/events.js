@@ -30,6 +30,19 @@ export function once(eventType, handler) {
  */
 export function off(eventType, handler) {
 	eventSource.off(eventType, handler);
+
+	// Also remove from registeredHandlers map to keep it in sync
+	if (registeredHandlers.has(eventType)) {
+		const handlers = registeredHandlers.get(eventType);
+		const index = handlers.indexOf(handler);
+		if (index !== -1) {
+			handlers.splice(index, 1);
+			// Clean up empty arrays
+			if (handlers.length === 0) {
+				registeredHandlers.delete(eventType);
+			}
+		}
+	}
 }
 
 /**

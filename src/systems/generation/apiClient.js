@@ -15,10 +15,10 @@ import { i18n } from "../../core/i18n.js";
 import { saveChatData } from "../../core/persistence.js";
 import {
 	extensionSettings,
-	isGenerating,
 	setGenerationAbortController,
 	setIsGenerating,
 	setLastActionWasSwipe,
+	tryAcquireGenerationLock,
 } from "../../core/state.js";
 import { renderAppearance } from "../rendering/appearance.js";
 import { renderInfoBox } from "../rendering/infoBox.js";
@@ -35,8 +35,8 @@ import {
 } from "../ui/mobile.js";
 import { removeLocks, restoreLockedContent } from "./lockManager.js";
 import { parseResponse } from "./parser.js";
-import { getTrackerDataForContext } from "./trackerDataUtils.js";
 import { generateSeparateUpdatePrompt } from "./separatePromptBuilder.js";
+import { getTrackerDataForContext } from "./trackerDataUtils.js";
 
 /**
  * Gets the current preset name using the /preset command
@@ -175,22 +175,24 @@ export async function updateRPGData(
 	targetSwipeId = null,
 	signal = null,
 ) {
-	if (isGenerating) {
+	// Atomically check and acquire generation lock to prevent race conditions
+	if (!tryAcquireGenerationLock()) {
 		// console.log('[RPG Companion] Already generating, skipping...');
 		return;
 	}
 
 	if (!extensionSettings.enabled) {
+		setIsGenerating(false);
 		return;
 	}
 
 	if (extensionSettings.generationMode !== "single") {
 		// console.log('[RPG Companion] Not in single mode, skipping manual update');
+		setIsGenerating(false);
 		return;
 	}
 
 	try {
-		setIsGenerating(true);
 		setFabLoadingState(true); // Show spinning FAB on mobile
 		setFabCancelState(true); // Show cancel button on mobile
 		setStripCancelState(true); // Show cancel button on desktop

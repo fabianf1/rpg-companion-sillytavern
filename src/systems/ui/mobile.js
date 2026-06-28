@@ -1,8 +1,13 @@
 /**
  * Mobile UI Module
  * Handles mobile-specific UI functionality: FAB dragging, tabs, keyboard handling
+ *
+ * NOTE: Drag logic is duplicated across setupMobileToggle, setupRefreshButtonDrag,
+ * and setupDebugButtonDrag for historical reasons. Future refactor should extract
+ * a shared createDraggableElement($element, options) helper.
  */
 
+import { MOBILE_BREAKPOINT } from "../../core/config.js";
 import { i18n } from "../../core/i18n.js";
 import { saveSettings } from "../../core/persistence.js";
 import { extensionSettings } from "../../core/state.js";
@@ -13,6 +18,31 @@ import {
 	updateCollapseToggleIcon,
 } from "./layout.js";
 import { hexToRgba } from "./theme.js";
+
+// ============================================================================
+// DRAG HELPER UTILITIES
+// =================================================================
+
+/**
+ * Constrains a position to viewport boundaries with padding.
+ * @param {number} x - Proposed X position
+ * @param {number} y - Proposed Y position
+ * @param {number} elementWidth - Width of the element being positioned
+ * @param {number} elementHeight - Height of the element being positioned
+ * @param {number} padding - Padding from viewport edges (default: 10)
+ * @returns {{x: number, y: number}} - Constrained position
+ */
+function constrainToViewport(x, y, elementWidth, elementHeight, padding = 10) {
+	const minX = padding;
+	const maxX = window.innerWidth - elementWidth - padding;
+	const minY = padding;
+	const maxY = window.innerHeight - elementHeight - padding;
+
+	return {
+		x: Math.max(minX, Math.min(maxX, x)),
+		y: Math.max(minY, Math.min(maxY, y)),
+	};
+}
 
 /**
  * Updates the text labels of the mobile navigation tabs based on the current language.
@@ -163,25 +193,22 @@ export function setupMobileToggle() {
 			e.preventDefault(); // Prevent scrolling while dragging
 
 			// Calculate new position
-			let newX = buttonStartX + deltaX;
-			let newY = buttonStartY + deltaY;
+			const newX = buttonStartX + deltaX;
+			const newY = buttonStartY + deltaY;
 
-			// Get button dimensions
+			// Get button dimensions and constrain to viewport
 			const buttonWidth = $mobileToggle.outerWidth();
 			const buttonHeight = $mobileToggle.outerHeight();
-
-			// Constrain to viewport with 10px padding
-			const minX = 10;
-			const maxX = window.innerWidth - buttonWidth - 10;
-			const minY = 10;
-			const maxY = window.innerHeight - buttonHeight - 10;
-
-			newX = Math.max(minX, Math.min(maxX, newX));
-			newY = Math.max(minY, Math.min(maxY, newY));
+			const constrained = constrainToViewport(
+				newX,
+				newY,
+				buttonWidth,
+				buttonHeight,
+			);
 
 			// Store pending position and request animation frame for smooth update
-			pendingX = newX;
-			pendingY = newY;
+			pendingX = constrained.x;
+			pendingY = constrained.y;
 			if (!rafId) {
 				rafId = requestAnimationFrame(updateFabPosition);
 			}
@@ -229,25 +256,22 @@ export function setupMobileToggle() {
 			e.preventDefault();
 
 			// Calculate new position
-			let newX = buttonStartX + deltaX;
-			let newY = buttonStartY + deltaY;
+			const newX = buttonStartX + deltaX;
+			const newY = buttonStartY + deltaY;
 
-			// Get button dimensions
+			// Get button dimensions and constrain to viewport
 			const buttonWidth = $mobileToggle.outerWidth();
 			const buttonHeight = $mobileToggle.outerHeight();
-
-			// Constrain to viewport with 10px padding
-			const minX = 10;
-			const maxX = window.innerWidth - buttonWidth - 10;
-			const minY = 10;
-			const maxY = window.innerHeight - buttonHeight - 10;
-
-			newX = Math.max(minX, Math.min(maxX, newX));
-			newY = Math.max(minY, Math.min(maxY, newY));
+			const constrained = constrainToViewport(
+				newX,
+				newY,
+				buttonWidth,
+				buttonHeight,
+			);
 
 			// Store pending position and request animation frame for smooth update
-			pendingX = newX;
-			pendingY = newY;
+			pendingX = constrained.x;
+			pendingY = constrained.y;
 			if (!rafId) {
 				rafId = requestAnimationFrame(updateFabPosition);
 			}
@@ -382,13 +406,13 @@ export function setupMobileToggle() {
 	});
 
 	// Handle viewport resize to manage desktop/mobile transitions
-	let wasMobile = window.innerWidth <= 1000;
+	let wasMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 	let resizeTimer;
 
 	$(window).on("resize", () => {
 		clearTimeout(resizeTimer);
 
-		const isMobile = window.innerWidth <= 1000;
+		const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 		const $panel = $("#rpg-companion-panel");
 		const $mobileToggle = $("#rpg-mobile-toggle");
 
@@ -1355,7 +1379,7 @@ export function updateFabWidgets() {
 	if (!widgetSettings || !widgetSettings.enabled) return;
 
 	// Don't show widgets on desktop or when panel is open
-	if (window.innerWidth > 1000) return;
+	if (window.innerWidth > MOBILE_BREAKPOINT) return;
 
 	// Get tracker data from swipe store
 	const infoBox = getTrackerDataForContext("infoBox");

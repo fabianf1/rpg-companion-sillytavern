@@ -4,6 +4,8 @@ const { extension_settings } =
 		? self.SillyTavern.getContext()
 		: { extension_settings: {} };
 
+import { extensionFolderPath } from "./config.js";
+
 class Internationalization {
 	constructor() {
 		this.currentLanguage = "en";
@@ -38,7 +40,7 @@ class Internationalization {
 	}
 
 	async loadTranslations(lang) {
-		const fetchUrl = `/scripts/extensions/third-party/rpg-companion-sillytavern/src/i18n/${lang}.json`;
+		const fetchUrl = `/${extensionFolderPath}/src/i18n/${lang}.json`;
 		try {
 			const response = await fetch(fetchUrl);
 			if (!response.ok) {
@@ -56,6 +58,11 @@ class Internationalization {
 				"[RPG-Companion-i18n] CRITICAL error loading translation file:",
 				error,
 			);
+			// If loading fails and we're not already trying English, fall back to English
+			if (lang !== "en") {
+				console.warn("[RPG-Companion-i18n] Falling back to English translations");
+				await this.loadTranslations("en");
+			}
 		}
 	}
 
@@ -95,10 +102,34 @@ class Internationalization {
 				element.setAttribute("aria-label", translation);
 			}
 		});
+
+		// 4. Translate placeholder attribute
+		const placeholderElements = rootElement.querySelectorAll(
+			"[data-i18n-placeholder]",
+		);
+		placeholderElements.forEach((element) => {
+			const key = element.dataset.i18nPlaceholder;
+			const translation = this.getTranslation(key);
+			if (translation) {
+				element.setAttribute("placeholder", translation);
+			}
+		});
+
+		// 5. Translate alt attribute
+		const altElements = rootElement.querySelectorAll("[data-i18n-alt]");
+		altElements.forEach((element) => {
+			const key = element.dataset.i18nAlt;
+			const translation = this.getTranslation(key);
+			if (translation) {
+				element.setAttribute("alt", translation);
+			}
+		});
 	}
 
 	getTranslation(key) {
-		return this.translations[key] || null;
+		// Return translation if found, otherwise fall back to the key itself
+		// This ensures UI always shows something meaningful even if translation is missing
+		return this.translations[key] || key;
 	}
 
 	async setLanguage(lang) {

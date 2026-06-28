@@ -18,70 +18,8 @@ export const extensionFolderPath = isUserExtension
 	: `scripts/extensions/${extensionName}`;
 
 /**
- * Default extension settings
+ * Mobile breakpoint in pixels
+ * Below this width, the extension uses mobile UI (FAB, mobile tabs, etc.)
+ * Above this width, the extension uses desktop UI (strip widgets, desktop tabs)
  */
-export const defaultSettings = {
-	enabled: true,
-	autoUpdate: true,
-	updateDepth: 4, // How many messages to include in the context
-	relationUpdateDepth: 4, // How many messages to include for relationship updates
-	generationMode: "single", // 'single' - generates RPG data separately (manual or auto)
-	showUserStats: true,
-	showInfoBox: true,
-	showCharacterThoughts: true,
-	showInventory: true, // Show inventory section (v2 system)
-	showQuests: true, // Show quests section
-	showLockIcons: true, // Show lock/unlock icons on tracker items
-	showThoughtsInChat: true, // Show thoughts overlay in chat
-	// Controls when the extension skips injecting tracker instructions/examples/HTML
-	// into generations that appear to be user-injected instructions. Valid values:
-	//  - 'none'          -> never skip (legacy behavior: always inject)
-	//  - 'guided'        -> skip for any guided / instruct or quiet_prompt generation
-	//  - 'impersonation' -> skip only for impersonation-style guided generations
-	// This setting helps compatibility with other extensions like GuidedGenerations.
-	skipInjectionsForGuided: "none",
-	enablePlotButtons: true, // Show plot progression buttons above chat input
-	panelPosition: "right", // 'left', 'right', or 'top'
-	theme: "default", // Theme: default, sci-fi, fantasy, cyberpunk, custom
-	customColors: {
-		bg: "#1a1a2e",
-		accent: "#16213e",
-		text: "#eaeaea",
-		highlight: "#e94560",
-	},
-	statBarColorLow: "#cc3333", // Color for low stat values (red)
-	statBarColorHigh: "#33cc66", // Color for high stat values (green)
-	enableAnimations: true, // Enable smooth animations for stats and content updates
-	mobileFabPosition: {
-		top: "calc(var(--topBarBlockSize) + 60px)",
-		right: "12px",
-	}, // Saved position for mobile FAB button
-	userStats: {
-		health: 100,
-		satiety: 100,
-		energy: 100,
-		hygiene: 100,
-		arousal: 0,
-		mood: "😐",
-		conditions: "None",
-		inventory: {
-			onPerson: [],
-			clothing: [],
-			stored: {},
-			assets: [],
-		},
-	},
-	classicStats: {
-		str: 10,
-		dex: 10,
-		con: 10,
-		int: 10,
-		wis: 10,
-		cha: 10,
-	},
-	lastDiceRoll: null, // Store last dice roll result
-	collapsedInventoryLocations: [], // Array of collapsed storage location names
-	retryAttempts: 0, // Number of retry attempts for API failures (0 = no retries)
-	retryBaseDelay: 2000, // Base delay in ms for exponential backoff
-	partialRefreshSelections: {}, // Per-section toggles for partial refresh modal (empty = all visible sections selected at runtime)
-};
+export const MOBILE_BREAKPOINT = 1000;

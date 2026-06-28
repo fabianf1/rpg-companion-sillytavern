@@ -455,7 +455,7 @@ export function setupDesktopTabs() {
 	i18n.applyTranslations($tabsContainer[0]);
 
 	// Handle tab switching
-	$tabNav.find(".rpg-tab-btn").on("click", function () {
+	$tabNav.find(".rpg-tab-btn").off("click.rpg").on("click.rpg", function () {
 		const tabName = $(this).data("tab");
 
 		// Update active tab button

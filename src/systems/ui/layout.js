@@ -3,6 +3,7 @@
  * Handles panel visibility, section visibility, collapse/expand toggle, and panel positioning
  */
 
+import { MOBILE_BREAKPOINT } from "../../core/config.js";
 import { i18n } from "../../core/i18n.js";
 import {
 	$infoBoxContainer,
@@ -90,7 +91,7 @@ export function updateCollapseToggleIcon() {
 	const $collapseToggle = $("#rpg-collapse-toggle");
 	const $panel = $("#rpg-companion-panel");
 	const $icon = $collapseToggle.find("i");
-	const isMobile = window.innerWidth <= 1000;
+	const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 
 	if (isMobile) {
 		// Mobile: icon direction based on panel position and open state
@@ -164,11 +165,11 @@ export function setupCollapseToggle() {
 	const $panel = $("#rpg-companion-panel");
 	const $icon = $collapseToggle.find("i");
 
-	$collapseToggle.on("click", (e) => {
+	$collapseToggle.off("click.rpg").on("click.rpg", (e) => {
 		e.preventDefault();
 		e.stopPropagation();
 
-		const isMobile = window.innerWidth <= 1000;
+		const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 
 		// On mobile: button toggles panel open/closed (same as desktop behavior)
 		if (isMobile) {
@@ -209,7 +210,7 @@ export function setupCollapseToggle() {
 				}, 500);
 
 				// Close when clicking overlay
-				$overlay.on("click", () => {
+				$overlay.off("click.rpgOverlay").on("click.rpgOverlay", () => {
 					// console.log('[RPG Mobile] Overlay clicked - closing panel');
 					closeMobilePanelWithAnimation();
 					updateCollapseToggleIcon();
@@ -401,7 +402,7 @@ export function updateSectionVisibility() {
 	}
 
 	// Rebuild tabs to reflect visibility changes for inventory and quests
-	const isMobile = window.innerWidth <= 1000;
+	const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 	const hasMobileTabs = $(".rpg-mobile-container").length > 0;
 	const hasDesktopTabs = $(".rpg-tabs-nav").length > 0;
 
@@ -438,7 +439,7 @@ export function updateSectionVisibility() {
 export function applyPanelPosition() {
 	if (!$panelContainer) return;
 
-	const isMobile = window.innerWidth <= 1000;
+	const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 
 	// Remove all position classes
 	$panelContainer.removeClass(

@@ -10,6 +10,7 @@ import {
 	user_avatar,
 } from "../../../../../../../script.js";
 import { getContext } from "../../../../../../extensions.js";
+import { i18n } from "../../core/i18n.js";
 import {
 	autoSwitchPresetForEntity,
 	migrateAppearanceData,
@@ -27,23 +28,26 @@ import {
 	setIsPlotProgression,
 	setLastActionWasSwipe,
 } from "../../core/state.js";
-import { i18n } from "../../core/i18n.js";
 // Utils
 import { getSafeThumbnailUrl } from "../../utils/avatars.js";
 // Generation & Parsing
 import { updateRPGData } from "../generation/apiClient.js";
-import { updateRelationships } from "../generation/relationshipApiClient.js";
 import {
 	incrementCharacterCardCounter,
-	updateCharacterCards,
 	resetCharacterCardCounter,
+	updateCharacterCards,
 } from "../generation/characterCardApiClient.js";
 import { initHistoryInjectionListeners } from "../generation/injector.js";
 import { getLockedItemsFromSwipeStore } from "../generation/lockManager.js";
-import { updateChatThoughts } from "../rendering/thoughts.js";
-import { refreshLorebookDropdowns } from "../rendering/characterCards.js";
+import { updateRelationships } from "../generation/relationshipApiClient.js";
 // Rendering
-import { batchedRenderOnCharacterChange, batchedRenderOnSwipe, batchedRenderOnDelete } from "../rendering/batched.js";
+import {
+	batchedRenderOnCharacterChange,
+	batchedRenderOnDelete,
+	batchedRenderOnSwipe,
+} from "../rendering/batched.js";
+import { refreshLorebookDropdowns } from "../rendering/characterCards.js";
+import { updateChatThoughts } from "../rendering/thoughts.js";
 import { updateStripWidgets } from "../ui/desktop.js";
 // UI
 import { updateFabWidgets } from "../ui/mobile.js";
@@ -133,12 +137,20 @@ export async function onMessageReceived(_data) {
 		const targetSwipeId = targetMessage ? targetMessage.swipe_id || 0 : 0;
 
 		setTimeout(async () => {
-			await runTrackerAndRelationshipUpdate(
-				true,
-				null,
-				targetMessage,
-				targetSwipeId,
-			);
+			try {
+				await runTrackerAndRelationshipUpdate(
+					true,
+					null,
+					targetMessage,
+					targetSwipeId,
+				);
+			} catch (error) {
+				console.error("[RPG Companion] Auto-update failed:", error);
+				toastr.error(
+					"Auto-update failed. See console for details.",
+					"RPG Companion",
+				);
+			}
 		}, 500);
 	}
 
@@ -200,20 +212,39 @@ export async function runTrackerAndRelationshipUpdate(
 		// Handle single-section updates
 		if (selectedSections?.length === 1) {
 			if (selectedSections[0] === "relationships") {
-				return await updateRelationships(targetMessage, targetSwipeId, controller.signal);
+				return await updateRelationships(
+					targetMessage,
+					targetSwipeId,
+					controller.signal,
+				);
 			}
 			if (selectedSections[0] === "characterCards") {
-				return await updateCharacterCards(targetMessage, targetSwipeId, controller.signal);
+				return await updateCharacterCards(
+					targetMessage,
+					targetSwipeId,
+					controller.signal,
+				);
 			}
 		}
 
 		// Build update tasks
 		const tasks = [
-			updateRPGData(isAutoUpdate, selectedSections, targetMessage, targetSwipeId, controller.signal),
+			updateRPGData(
+				isAutoUpdate,
+				selectedSections,
+				targetMessage,
+				targetSwipeId,
+				controller.signal,
+			),
 		];
 
-		if (extensionSettings.showRelationships && (!selectedSections || selectedSections.includes("relationships"))) {
-			tasks.push(updateRelationships(targetMessage, targetSwipeId, controller.signal));
+		if (
+			extensionSettings.showRelationships &&
+			(!selectedSections || selectedSections.includes("relationships"))
+		) {
+			tasks.push(
+				updateRelationships(targetMessage, targetSwipeId, controller.signal),
+			);
 		}
 
 		if (extensionSettings.showCharacterCards) {
@@ -222,7 +253,9 @@ export async function runTrackerAndRelationshipUpdate(
 				: !selectedSections || selectedSections.includes("characterCards");
 			if (shouldRunCards) {
 				resetCharacterCardCounter();
-				tasks.push(updateCharacterCards(targetMessage, targetSwipeId, controller.signal));
+				tasks.push(
+					updateCharacterCards(targetMessage, targetSwipeId, controller.signal),
+				);
 			}
 		}
 
@@ -234,6 +267,13 @@ export async function runTrackerAndRelationshipUpdate(
 				await task;
 			}
 		}
+	} catch (error) {
+		console.error("[RPG Companion] Tracker/relationship update failed:", error);
+		toastr.error(
+			"Failed to update RPG data. See console for details.",
+			"RPG Companion",
+			{ timeOut: 5000 },
+		);
 	} finally {
 		setGenerationAbortController(null);
 		setUpdatingUI(false);
@@ -250,17 +290,25 @@ function setUpdatingUI(isUpdating) {
 	const $stripRefreshBtn = $("#rpg-strip-refresh");
 
 	if (isUpdating) {
-		const updatingText = i18n.getTranslation("template.mainPanel.updating") || "Updating...";
+		const updatingText =
+			i18n.getTranslation("template.mainPanel.updating") || "Updating...";
 		$splitBtn.addClass("is-updating");
-		$updateBtn.find(".rpg-btn-refresh-content")
+		$updateBtn
+			.find(".rpg-btn-refresh-content")
 			.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${updatingText}`);
-		$stripRefreshBtn.html('<i class="fa-solid fa-spinner fa-spin"></i>').prop("disabled", true);
+		$stripRefreshBtn
+			.html('<i class="fa-solid fa-spinner fa-spin"></i>')
+			.prop("disabled", true);
 	} else {
-		const refreshText = i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
+		const refreshText =
+			i18n.getTranslation("template.mainPanel.fullRefresh") || "Full Refresh";
 		$splitBtn.removeClass("is-updating");
-		$updateBtn.find(".rpg-btn-refresh-content")
+		$updateBtn
+			.find(".rpg-btn-refresh-content")
 			.html(`<i class="fa-solid fa-sync"></i> ${refreshText}`);
-		$stripRefreshBtn.html('<i class="fa-solid fa-sync"></i>').prop("disabled", false);
+		$stripRefreshBtn
+			.html('<i class="fa-solid fa-sync"></i>')
+			.prop("disabled", false);
 	}
 }
 

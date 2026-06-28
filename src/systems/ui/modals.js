@@ -431,29 +431,29 @@ export function setupDiceRoller() {
 	diceModal = new DiceModal();
 
 	// Click dice display to open popup
-	$("#rpg-dice-display").on("click", () => {
+	$("#rpg-dice-display").off("click.rpg").on("click.rpg", () => {
 		openDicePopup();
 	});
 
 	// Close popup - handle both close button and backdrop clicks
-	$("#rpg-dice-popup-close").on("click", () => {
+	$("#rpg-dice-popup-close").off("click.rpg").on("click.rpg", () => {
 		closeDicePopup();
 	});
 
 	// Close on backdrop click (clicking outside content)
-	$("#rpg-dice-popup").on("click", function (e) {
+	$("#rpg-dice-popup").off("click.rpg").on("click.rpg", function (e) {
 		if (e.target === this) {
 			closeDicePopup();
 		}
 	});
 
 	// Roll dice button
-	$("#rpg-dice-roll-btn").on("click", async () => {
+	$("#rpg-dice-roll-btn").off("click.rpg").on("click.rpg", async () => {
 		await rollDiceCore(diceModal);
 	});
 
 	// Save roll button (closes popup and saves the roll)
-	$("#rpg-dice-save-btn").on("click", () => {
+	$("#rpg-dice-save-btn").off("click.rpg").on("click.rpg", () => {
 		// Save the pending roll
 		const roll = getPendingDiceRoll();
 		if (roll) {
@@ -466,14 +466,14 @@ export function setupDiceRoller() {
 	});
 
 	// Reset on Enter key
-	$("#rpg-dice-count, #rpg-dice-sides").on("keypress", (e) => {
+	$("#rpg-dice-count, #rpg-dice-sides").off("keypress.rpg").on("keypress.rpg", (e) => {
 		if (e.which === 13) {
 			rollDiceCore(diceModal);
 		}
 	});
 
 	// Clear dice roll button
-	$("#rpg-clear-dice").on("click", (e) => {
+	$("#rpg-clear-dice").off("click.rpg").on("click.rpg", (e) => {
 		e.stopPropagation(); // Prevent opening the dice popup
 		clearDiceRollCore();
 	});
@@ -494,24 +494,24 @@ export function setupSettingsPopup() {
 	settingsModal = new SettingsModal();
 
 	// Open settings popup
-	$("#rpg-open-settings").on("click", () => {
+	$("#rpg-open-settings").off("click.rpg").on("click.rpg", () => {
 		openSettingsPopup();
 	});
 
 	// Close settings popup - close button
-	$("#rpg-close-settings").on("click", () => {
+	$("#rpg-close-settings").off("click.rpg").on("click.rpg", () => {
 		closeSettingsPopup();
 	});
 
 	// Close on backdrop click (clicking outside content)
-	$("#rpg-settings-popup").on("click", function (e) {
+	$("#rpg-settings-popup").off("click.rpg").on("click.rpg", function (e) {
 		if (e.target === this) {
 			closeSettingsPopup();
 		}
 	});
 
 	// Clear cache button with dropdown
-	$("#rpg-clear-cache").on("click", (e) => {
+	$("#rpg-clear-cache").off("click.rpg").on("click.rpg", (e) => {
 		e.stopPropagation(); // Prevent click from triggering dropdown toggle
 
 		const $dropdown = $("#rpg-clear-cache-options");
@@ -528,7 +528,7 @@ export function setupSettingsPopup() {
 	});
 
 	// Close dropdown when clicking anywhere else
-	$(document).on("click", (e) => {
+	$(document).off("click.rpgCacheDropdown").on("click.rpgCacheDropdown", (e) => {
 		if (
 			!$(e.target).closest("#rpg-clear-cache").length &&
 			!$(e.target).closest("#rpg-clear-cache-options").length
@@ -555,7 +555,7 @@ export function setupSettingsPopup() {
 	);
 
 	// Handle clear cache execute button click
-	$("#rpg-clear-cache-execute").on("click", (e) => {
+	$("#rpg-clear-cache-execute").off("click.rpg").on("click.rpg", (e) => {
 		e.stopPropagation();
 
 		// Get selected options
@@ -675,24 +675,24 @@ export function setupPartialRefreshPopup() {
 	partialRefreshModal = new PartialRefreshModal();
 
 	// Close button
-	$("#rpg-partial-refresh-close").on("click", () => {
+	$("#rpg-partial-refresh-close").off("click.rpg").on("click.rpg", () => {
 		closePartialRefreshPopup();
 	});
 
 	// Cancel button
-	$("#rpg-partial-refresh-cancel").on("click", () => {
+	$("#rpg-partial-refresh-cancel").off("click.rpg").on("click.rpg", () => {
 		closePartialRefreshPopup();
 	});
 
 	// Close on backdrop click
-	$("#rpg-partial-refresh-popup").on("click", function (e) {
+	$("#rpg-partial-refresh-popup").off("click.rpg").on("click.rpg", function (e) {
 		if (e.target === this) {
 			closePartialRefreshPopup();
 		}
 	});
 
 	// Execute button
-	$("#rpg-partial-refresh-execute").on("click", () => {
+	$("#rpg-partial-refresh-execute").off("click.rpg").on("click.rpg", () => {
 		if (partialRefreshModal) {
 			// Save selections before executing
 			partialRefreshModal.saveSelections();
@@ -748,22 +748,22 @@ export function getPartialRefreshModal() {
  */
 export function setupRelationshipsPopup() {
 	// Open relationships modal
-	$("#rpg-open-relationships").on("click", () => {
+	$("#rpg-open-relationships").off("click.rpg").on("click.rpg", () => {
 		openRelationshipsModal();
 	});
 
 	// Close button (X)
-	$("#rpg-close-relationships").on("click", () => {
+	$("#rpg-close-relationships").off("click.rpg").on("click.rpg", () => {
 		closeRelationshipsModal();
 	});
 
 	// Close button (footer)
-	$("#rpg-close-relationships-btn").on("click", () => {
+	$("#rpg-close-relationships-btn").off("click.rpg").on("click.rpg", () => {
 		closeRelationshipsModal();
 	});
 
 	// Close on backdrop click
-	$("#rpg-relationships-popup").on("click", function (e) {
+	$("#rpg-relationships-popup").off("click.rpg").on("click.rpg", function (e) {
 		if (e.target === this) {
 			closeRelationshipsModal();
 		}

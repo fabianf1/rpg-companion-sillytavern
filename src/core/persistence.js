@@ -25,38 +25,90 @@ const extensionName = "third-party/rpg-companion-sillytavern";
 
 /**
  * Validates extension settings structure
+ * Performs deep validation of critical nested structures.
  * @param {Object} settings - Settings object to validate
  * @returns {boolean} True if valid, false otherwise
  */
 function validateSettings(settings) {
 	if (!settings || typeof settings !== "object") {
+		console.warn("[RPG Companion] Settings validation failed: settings is not an object");
 		return false;
 	}
 
 	// Check for required top-level properties
-	if (
-		typeof settings.enabled !== "boolean" ||
-		typeof settings.autoUpdate !== "boolean" ||
-		!settings.userStats ||
-		typeof settings.userStats !== "object"
-	) {
-		console.warn(
-			"[RPG Companion] Settings validation failed: missing required properties",
-		);
+	if (typeof settings.enabled !== "boolean") {
+		console.warn("[RPG Companion] Settings validation failed: enabled is not a boolean");
 		return false;
 	}
 
-	// Validate userStats structure
-	const stats = settings.userStats;
-	if (
-		typeof stats.health !== "number" ||
-		typeof stats.satiety !== "number" ||
-		typeof stats.energy !== "number"
-	) {
-		console.warn(
-			"[RPG Companion] Settings validation failed: invalid userStats structure",
-		);
+	if (typeof settings.autoUpdate !== "boolean") {
+		console.warn("[RPG Companion] Settings validation failed: autoUpdate is not a boolean");
 		return false;
+	}
+
+	// Validate userStats exists and is an object
+	if (!settings.userStats || typeof settings.userStats !== "object") {
+		console.warn("[RPG Companion] Settings validation failed: userStats is missing or not an object");
+		return false;
+	}
+
+	// Validate core stats are numbers
+	const stats = settings.userStats;
+	const requiredStats = ["health", "satiety", "energy"];
+	for (const stat of requiredStats) {
+		if (typeof stats[stat] !== "number") {
+			console.warn(`[RPG Companion] Settings validation failed: userStats.${stat} is not a number`);
+			return false;
+		}
+	}
+
+	// Validate trackerConfig structure if present
+	if (settings.trackerConfig && typeof settings.trackerConfig === "object") {
+		// Validate userStats tracker config
+		if (settings.trackerConfig.userStats) {
+			const userStatsConfig = settings.trackerConfig.userStats;
+
+			// Validate customStats is an array if present
+			if (userStatsConfig.customStats && !Array.isArray(userStatsConfig.customStats)) {
+				console.warn("[RPG Companion] Settings validation failed: trackerConfig.userStats.customStats is not an array");
+				return false;
+			}
+
+			// Validate rpgAttributes is an array if present
+			if (userStatsConfig.rpgAttributes && !Array.isArray(userStatsConfig.rpgAttributes)) {
+				console.warn("[RPG Companion] Settings validation failed: trackerConfig.userStats.rpgAttributes is not an array");
+				return false;
+			}
+		}
+
+		// Validate infoBox config
+		if (settings.trackerConfig.infoBox?.widgets && typeof settings.trackerConfig.infoBox.widgets !== "object") {
+			console.warn("[RPG Companion] Settings validation failed: trackerConfig.infoBox.widgets is not an object");
+			return false;
+		}
+	}
+
+	// Validate customColors structure if present
+	if (settings.customColors && typeof settings.customColors === "object") {
+		const requiredColors = ["bg", "accent", "text", "highlight"];
+		for (const color of requiredColors) {
+			if (settings.customColors[color] && typeof settings.customColors[color] !== "string") {
+				console.warn(`[RPG Companion] Settings validation failed: customColors.${color} is not a string`);
+				return false;
+			}
+		}
+	}
+
+	// Validate historyPersistence structure if present
+	if (settings.historyPersistence && typeof settings.historyPersistence === "object") {
+		if (settings.historyPersistence.enabled !== undefined && typeof settings.historyPersistence.enabled !== "boolean") {
+			console.warn("[RPG Companion] Settings validation failed: historyPersistence.enabled is not a boolean");
+			return false;
+		}
+		if (settings.historyPersistence.messageCount !== undefined && typeof settings.historyPersistence.messageCount !== "number") {
+			console.warn("[RPG Companion] Settings validation failed: historyPersistence.messageCount is not a number");
+			return false;
+		}
 	}
 
 	return true;
@@ -244,12 +296,16 @@ export function updateMessageSwipeData(trackerType, data) {
 				continue; // No extra field, skip this message
 			}
 			if (!message.extra.rpg_companion_swipes) {
-				continue; // No extra field, skip this message
+				continue; // No swipe data field, skip this message
 			}
 
 			const swipeId = message.swipe_id || 0;
-			const currentSwipeData =
-				message.extra.rpg_companion_swipes[swipeId] || {};
+
+			// Ensure the swipe entry exists before accessing
+			if (!message.extra.rpg_companion_swipes[swipeId]) {
+				message.extra.rpg_companion_swipes[swipeId] = {};
+			}
+			const currentSwipeData = message.extra.rpg_companion_swipes[swipeId];
 			console.log(`[RPG Companion] Updating message:`, i, "Swipe:", swipeId);
 
 			// If trackerType and data are provided, use them directly
@@ -266,10 +322,22 @@ export function updateMessageSwipeData(trackerType, data) {
 				if (currentSwipeData.userStats) {
 					try {
 						// Ensure we have an object to work with
-						const jsonData =
-							typeof currentSwipeData.userStats === "object"
-								? currentSwipeData.userStats
-								: JSON.parse(currentSwipeData.userStats);
+						let jsonData;
+						if (typeof currentSwipeData.userStats === "object") {
+							jsonData = currentSwipeData.userStats;
+						} else if (typeof currentSwipeData.userStats === "string") {
+							// Only parse if it's actually a string
+							try {
+								jsonData = JSON.parse(currentSwipeData.userStats);
+							} catch (parseError) {
+								console.warn("[RPG Companion] Malformed userStats JSON, skipping parse:", parseError.message);
+								jsonData = null;
+							}
+						} else {
+							console.warn("[RPG Companion] Unexpected userStats type:", typeof currentSwipeData.userStats);
+							jsonData = null;
+						}
+
 						if (jsonData && typeof jsonData === "object") {
 							// Get current tracker data from swipe store
 							const trackerData = getTrackerDataForContext("userStats");
@@ -468,6 +536,12 @@ function validateStoredInventoryStructure(stored) {
 	return needsSave;
 }
 
+// =================================================================
+// Settings Migrations
+// These functions handle upgrading settings from older versions.
+// Future refactor: Extract to src/core/migrations.js
+// =================================================================
+
 /**
  * Migrates old settings format to new trackerConfig format
  * Converts statNames to customStats array and sets up default config
@@ -560,24 +634,6 @@ function migrateToTrackerConfig() {
 		);
 		// console.log('[RPG Companion] Migrated statNames to customStats array');
 	}
-
-	// // Migrate old showRPGAttributes boolean to rpgAttributes array
-	// if (
-	// 	extensionSettings.trackerConfig.userStats.showRPGAttributes !== undefined
-	// ) {
-	// 	const shouldShow =
-	// 		extensionSettings.trackerConfig.userStats.showRPGAttributes;
-	// 	extensionSettings.trackerConfig.userStats.rpgAttributes = [
-	// 		{ id: "str", name: "STR", enabled: shouldShow },
-	// 		{ id: "dex", name: "DEX", enabled: shouldShow },
-	// 		{ id: "con", name: "CON", enabled: shouldShow },
-	// 		{ id: "int", name: "INT", enabled: shouldShow },
-	// 		{ id: "wis", name: "WIS", enabled: shouldShow },
-	// 		{ id: "cha", name: "CHA", enabled: shouldShow },
-	// 	];
-	// 	delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
-	// 	// console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
-	// }
 
 	// Ensure rpgAttributes exists even if no migration was needed
 	if (!extensionSettings.trackerConfig.userStats.rpgAttributes) {
@@ -757,6 +813,12 @@ export function migrateToPresetManager() {
 		saveSettings();
 	}
 }
+
+// =================================================================
+// Data Migration Helpers
+// These functions migrate specific data structures (appearance, etc.)
+// Future refactor: Extract to src/core/migrations.js
+// =================================================================
 
 /**
  * Ensures all custom stats have a maxValue property

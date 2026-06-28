@@ -12,12 +12,12 @@ import {
 import { getContext } from "../../../../../../extensions.js";
 import { extensionSettings } from "../../core/state.js";
 import { DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT } from "./promptBuilder.js";
+import { evaluateSuppression } from "./suppression.js";
 import { generateContextualSummary } from "./trackerInstructionsBuilder.js";
 import {
 	formatHistoricalTrackerData,
 	formatRelationshipsForContext,
 } from "./valueFormatter.js";
-import { evaluateSuppression } from "./suppression.js";
 
 // ============================================================================
 // CONSTANTS AND CONFIGURATION
@@ -227,36 +227,39 @@ function prepareHistoricalContextInjection() {
 }
 
 /**
- * Finds the best match position for message content in the prompt.
- * Tries full content first, then progressively smaller suffixes.
- *
- * @param {string} prompt - The prompt to search in
- * @param {string} messageContent - The message content to find
- * @returns {{start: number, end: number}|null} - Position info or null if not found
+ * Search lengths for progressive suffix matching (handles truncated messages)
  */
-function findMessageInPrompt(prompt, messageContent) {
-	if (!messageContent || !prompt) {
+const SEARCH_LENGTHS = [500, 300, 200, 100, 50];
+
+/**
+ * Finds message content in a larger text using progressive suffix matching.
+ * Tries full content first, then progressively smaller suffixes.
+ * This handles cases where messages are truncated in prompts.
+ *
+ * @param {string} haystack - The text to search in
+ * @param {string} needle - The message content to find
+ * @returns {{start: number, end: number, found: boolean}} - Position info or null if not found
+ */
+function findMessageContent(haystack, needle) {
+	if (!needle || !haystack) {
 		return null;
 	}
 
 	// Try to find the full content first
-	let searchIndex = prompt.lastIndexOf(messageContent);
+	let searchIndex = haystack.lastIndexOf(needle);
 
 	if (searchIndex !== -1) {
-		return { start: searchIndex, end: searchIndex + messageContent.length };
+		return { start: searchIndex, end: searchIndex + needle.length };
 	}
 
-	// If full content not found, try last N characters with progressively smaller chunks
-	// This handles cases where messages are truncated in the prompt
-	const searchLengths = [500, 300, 200, 100, 50];
-
-	for (const len of searchLengths) {
-		if (messageContent.length <= len) {
+	// If full content not found, try progressively smaller suffixes
+	for (const len of SEARCH_LENGTHS) {
+		if (needle.length <= len) {
 			continue;
 		}
 
-		const searchContent = messageContent.slice(-len);
-		searchIndex = prompt.lastIndexOf(searchContent);
+		const searchContent = needle.slice(-len);
+		searchIndex = haystack.lastIndexOf(searchContent);
 
 		if (searchIndex !== -1) {
 			return { start: searchIndex, end: searchIndex + searchContent.length };
@@ -264,6 +267,18 @@ function findMessageInPrompt(prompt, messageContent) {
 	}
 
 	return null;
+}
+
+/**
+ * Checks if a message content exists within another string.
+ * Uses the same progressive suffix matching as findMessageContent.
+ *
+ * @param {string} haystack - The text to search in
+ * @param {string} needle - The message content to find
+ * @returns {boolean} - True if found, false otherwise
+ */
+function messageContentExists(haystack, needle) {
+	return findMessageContent(haystack, needle) !== null;
 }
 
 /**
@@ -297,7 +312,7 @@ function injectContextIntoTextPrompt(prompt) {
 		}
 
 		// Find the message content in the prompt
-		const position = findMessageInPrompt(modifiedPrompt, message.mes);
+		const position = findMessageContent(modifiedPrompt, message.mes);
 
 		if (!position) {
 			// Message not found in prompt (might be truncated or not included)
@@ -350,7 +365,7 @@ function injectContextIntoChatPrompt(chatMessages) {
 		const messageContent = originalMessage.mes;
 
 		// Find this message in the chat completion array by matching content
-		// Try full content first, then progressively smaller suffixes
+		// Use the shared helper for consistent matching logic
 		let found = false;
 
 		for (const promptMsg of chatMessages) {
@@ -358,31 +373,11 @@ function injectContextIntoChatPrompt(chatMessages) {
 				continue;
 			}
 
-			// Try full content match
-			if (promptMsg.content.includes(messageContent)) {
+			// Use the shared helper to check if content exists
+			if (messageContentExists(promptMsg.content, messageContent)) {
 				promptMsg.content = promptMsg.content + ctxContent;
 				injectedCount++;
 				found = true;
-				break;
-			}
-
-			// Try suffix matches for truncated messages
-			const searchLengths = [500, 300, 200, 100, 50];
-			for (const len of searchLengths) {
-				if (messageContent.length <= len) {
-					continue;
-				}
-
-				const searchContent = messageContent.slice(-len);
-				if (promptMsg.content.includes(searchContent)) {
-					promptMsg.content = promptMsg.content + ctxContent;
-					injectedCount++;
-					found = true;
-					break;
-				}
-			}
-
-			if (found) {
 				break;
 			}
 		}

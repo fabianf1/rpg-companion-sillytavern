@@ -10,7 +10,7 @@ import {
 } from "../../../extensions.js";
 
 // Core modules
-import { extensionName } from "./src/core/config.js";
+import { extensionName, MOBILE_BREAKPOINT } from "./src/core/config.js";
 import { registerAllEvents } from "./src/core/events.js";
 import { i18n } from "./src/core/i18n.js";
 import { loadSettings, saveSettings } from "./src/core/persistence.js";
@@ -270,8 +270,8 @@ async function initUI() {
     `;
 	$("body").append(mobileToggleHtml);
 
-	// Hide mobile toggle on desktop viewport (> 1000px)
-	if (window.innerWidth > 1000) {
+	// Hide mobile toggle on desktop viewport (> MOBILE_BREAKPOINT)
+	if (window.innerWidth > MOBILE_BREAKPOINT) {
 		$("#rpg-mobile-toggle").hide();
 	}
 
@@ -377,7 +377,7 @@ async function initUI() {
 	togglePlotButtons();
 	initWeatherEffects();
 	setupMobileToggle();
-	if (window.innerWidth > 1000) {
+	if (window.innerWidth > MOBILE_BREAKPOINT) {
 		setupDesktopTabs();
 	} else {
 		setupMobileTabs();

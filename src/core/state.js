@@ -1,6 +1,10 @@
 /**
  * Core State Management Module
  * Centralizes all extension state variables
+ * 
+ * IMPORTANT: Direct mutation of `extensionSettings` should be avoided outside of
+ * the persistence layer (persistence.js). Use `updateExtensionSettings()` for
+ * partial updates or `setExtensionSettings()` for full replacement.
  */
 
 /**
@@ -12,6 +16,10 @@ export const FALLBACK_AVATAR_DATA_URI =
 
 /**
  * Extension settings - persisted to SillyTavern settings
+ * 
+ * NOTE: This is exported for backward compatibility and read access.
+ * For mutations, prefer using the setter functions below to ensure
+ * consistency and enable future refactoring.
  */
 export let extensionSettings = {
 	settingsVersion: 7, // Version number for settings migrations (v7 = removed HTML, Dialogue Coloring, Deception, Omniscience, CYOA features)
@@ -374,6 +382,21 @@ export let lastActionWasSwipe = false;
 export let isGenerating = false;
 
 /**
+ * Atomically attempts to acquire the generation lock.
+ * Returns true if the lock was acquired (was not already generating),
+ * false if generation was already in progress.
+ * This prevents race conditions when multiple async calls check isGenerating.
+ * @returns {boolean} True if lock was acquired, false if already generating
+ */
+export function tryAcquireGenerationLock() {
+	if (isGenerating) {
+		return false;
+	}
+	isGenerating = true;
+	return true;
+}
+
+/**
  * Tracks if we're currently doing a plot progression
  */
 export let isPlotProgression = false;
@@ -442,10 +465,31 @@ export let $questsContainer = null;
 /**
  * State setters - provide controlled mutation of state variables
  */
+
+/**
+ * Gets the current extension settings (read-only access pattern).
+ * Returns a reference to the settings object - callers should not mutate directly.
+ * For updates, use updateExtensionSettings() or setExtensionSettings().
+ * @returns {Object} Current extension settings
+ */
+export function getExtensionSettings() {
+	return extensionSettings;
+}
+
+/**
+ * Replaces extension settings entirely. Use with caution.
+ * Typically only used during settings load from persistence.
+ * @param {Object} newSettings - Complete settings object to set
+ */
 export function setExtensionSettings(newSettings) {
 	extensionSettings = newSettings;
 }
 
+/**
+ * Performs a partial update of extension settings.
+ * Merges the provided updates into the current settings.
+ * @param {Object} updates - Partial settings object to merge
+ */
 export function updateExtensionSettings(updates) {
 	Object.assign(extensionSettings, updates);
 }
